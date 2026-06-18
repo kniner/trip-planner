@@ -1,12 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { JoinGate } from './components/JoinGate';
 import { ListsView } from './components/ListsView';
+import { MealsView } from './components/MealsView';
 import { ScheduleView } from './components/ScheduleView';
 import { TagView } from './components/TagView';
 import { UserBar } from './components/UserBar';
 import { useStore } from './store/useStore';
 
-type View = 'tag' | 'schedule' | 'lists';
+type View = 'tag' | 'schedule' | 'lists' | 'meals';
 
 export default function App() {
   const init = useStore((s) => s.init);
@@ -59,12 +60,16 @@ export default function App() {
           <ViewTab active={view === 'lists'} onClick={() => setView('lists')}>
             3 · Lists
           </ViewTab>
+          <ViewTab active={view === 'meals'} onClick={() => setView('meals')}>
+            4 · Meals
+          </ViewTab>
         </nav>
       </div>
 
       {view === 'tag' && <TagView />}
       {view === 'schedule' && <ScheduleView />}
       {view === 'lists' && <ListsView />}
+      {view === 'meals' && <MealsView />}
 
       <footer className="mt-8 text-center text-[11px] text-slate-400">
         Tag attractions per park, then schedule them onto specific days. Wait times

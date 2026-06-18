@@ -161,6 +161,48 @@ export interface PlanDoc {
   personalChecks: Record<string, string[]>;
   /** Shared group tasks people sign up for. */
   groupItems: GroupItem[];
+  /** Home meal plan + auto-generated grocery list. */
+  meals: MealPlan;
+}
+
+/** A single ingredient and how much is needed per adult serving. */
+export interface Ingredient {
+  name: string;
+  unit: string;
+  /** Quantity needed per adult-equivalent serving. */
+  perPerson: number;
+}
+
+/** A known meal/recipe with its ingredient list. */
+export interface Recipe {
+  id: string;
+  name: string;
+  ingredients: Ingredient[];
+}
+
+/** A planned meal slot (e.g. "Monday dinner" → Tacos). */
+export interface MealEntry {
+  id: string;
+  label: string;
+  recipeId: string;
+}
+
+/** A manually-added grocery item not tied to a recipe. */
+export interface GroceryExtra {
+  id: string;
+  text: string;
+}
+
+export interface MealPlan {
+  adults: number;
+  kids: number;
+  entries: MealEntry[];
+  /** Checked-off grocery keys/ids (shared, so shoppers don't double-buy). */
+  groceryChecked: string[];
+  /** Manually-added grocery items. */
+  extras: GroceryExtra[];
+  /** Manual adjustments to auto-generated grocery lines, keyed by line key. */
+  groceryOverrides: Record<string, { qty?: number; removed?: boolean }>;
 }
 
 /** Current live wait for an attraction, keyed by attraction id. */

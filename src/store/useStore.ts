@@ -64,6 +64,10 @@ function newDay(park: ParkId, event: EventType, name?: string): Day {
   };
 }
 
+function emptyMealPlan(): PlanDoc['meals'] {
+  return { adults: 8, kids: 3, entries: [], groceryChecked: [], extras: [], groceryOverrides: {} };
+}
+
 function emptyDoc(): PlanDoc {
   const day = newDay('mk', 'regular', 'Magic Kingdom — Day 1');
   return {
@@ -74,6 +78,7 @@ function emptyDoc(): PlanDoc {
     personalItems: [...SUGGESTED_PERSONAL],
     personalChecks: {},
     groupItems: [...SUGGESTED_GROUP],
+    meals: emptyMealPlan(),
   };
 }
 
@@ -105,6 +110,7 @@ function migrate(raw: unknown): PlanDoc {
     personalItems: doc.personalItems ?? [...SUGGESTED_PERSONAL],
     personalChecks: doc.personalChecks ?? {},
     groupItems: doc.groupItems ?? [...SUGGESTED_GROUP],
+    meals: doc.meals ? { ...emptyMealPlan(), ...doc.meals } : emptyMealPlan(),
   };
 }
 
@@ -163,6 +169,18 @@ interface StoreState {
   toggleSignup: (id: string) => void;
   addManualSignup: (id: string, name: string) => void;
   removeManualSignup: (id: string, name: string) => void;
+
+  // Meal planner
+  setMealHeadcount: (adults: number, kids: number) => void;
+  addMealEntry: (label: string, recipeId: string) => void;
+  updateMealEntry: (id: string, patch: Partial<{ label: string; recipeId: string }>) => void;
+  removeMealEntry: (id: string) => void;
+  toggleGrocery: (key: string) => void;
+  addGroceryExtra: (text: string) => void;
+  removeGroceryExtra: (id: string) => void;
+  setGroceryQty: (key: string, qty: number) => void;
+  removeGroceryLine: (key: string) => void;
+  resetGroceryLine: (key: string) => void;
 
   refreshLive: () => Promise<void>;
 }
@@ -609,6 +627,111 @@ export const useStore = create<StoreState>((set, get) => {
             ? { ...i, manualSignups: (i.manualSignups ?? []).filter((n) => n !== name) }
             : i,
         ),
+      });
+    },
+
+    setMealHeadcount(adults, kids) {
+      const doc = get().doc;
+      commit({
+        ...doc,
+        meals: { ...doc.meals, adults: Math.max(0, adults), kids: Math.max(0, kids) },
+      });
+    },
+
+    addMealEntry(label, recipeId) {
+      if (!recipeId) return;
+      const doc = get().doc;
+      commit({
+        ...doc,
+        meals: {
+          ...doc.meals,
+          entries: [...doc.meals.entries, { id: uid(), label: label.trim() || 'Meal', recipeId }],
+        },
+      });
+    },
+
+    updateMealEntry(id, patch) {
+      const doc = get().doc;
+      commit({
+        ...doc,
+        meals: {
+          ...doc.meals,
+          entries: doc.meals.entries.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+        },
+      });
+    },
+
+    removeMealEntry(id) {
+      const doc = get().doc;
+      commit({
+        ...doc,
+        meals: { ...doc.meals, entries: doc.meals.entries.filter((e) => e.id !== id) },
+      });
+    },
+
+    toggleGrocery(key) {
+      const doc = get().doc;
+      const checked = doc.meals.groceryChecked;
+      commit({
+        ...doc,
+        meals: {
+          ...doc.meals,
+          groceryChecked: checked.includes(key)
+            ? checked.filter((k) => k !== key)
+            : [...checked, key],
+        },
+      });
+    },
+
+    addGroceryExtra(text) {
+      const clean = text.trim();
+      if (!clean) return;
+      const doc = get().doc;
+      commit({
+        ...doc,
+        meals: { ...doc.meals, extras: [...doc.meals.extras, { id: uid(), text: clean }] },
+      });
+    },
+
+    setGroceryQty(key, qty) {
+      const doc = get().doc;
+      const prev = doc.meals.groceryOverrides[key] ?? {};
+      commit({
+        ...doc,
+        meals: {
+          ...doc.meals,
+          groceryOverrides: {
+            ...doc.meals.groceryOverrides,
+            [key]: { ...prev, qty: Math.max(0, qty) },
+          },
+        },
+      });
+    },
+
+    removeGroceryLine(key) {
+      const doc = get().doc;
+      const prev = doc.meals.groceryOverrides[key] ?? {};
+      commit({
+        ...doc,
+        meals: {
+          ...doc.meals,
+          groceryOverrides: { ...doc.meals.groceryOverrides, [key]: { ...prev, removed: true } },
+        },
+      });
+    },
+
+    resetGroceryLine(key) {
+      const doc = get().doc;
+      const { [key]: _gone, ...rest } = doc.meals.groceryOverrides;
+      void _gone;
+      commit({ ...doc, meals: { ...doc.meals, groceryOverrides: rest } });
+    },
+
+    removeGroceryExtra(id) {
+      const doc = get().doc;
+      commit({
+        ...doc,
+        meals: { ...doc.meals, extras: doc.meals.extras.filter((x) => x.id !== id) },
       });
     },
 
