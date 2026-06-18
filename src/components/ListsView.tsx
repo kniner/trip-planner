@@ -83,7 +83,9 @@ function PersonalList() {
               />
               <span className={`min-w-0 flex-1 text-sm ${isChecked ? 'text-slate-400 line-through' : ''}`}>
                 {item.text}
-                {who && <span className="ml-1 text-[11px] text-slate-300">· {who}</span>}
+                {who && (
+                  <span className="ml-1 text-[11px] text-slate-300">Added by: {who}</span>
+                )}
               </span>
               <button
                 onClick={() => removePersonalItem(item.id)}
@@ -135,7 +137,9 @@ function GroupList() {
               <div className="flex items-center gap-2">
                 <span className="min-w-0 flex-1 text-sm">
                   {item.text}
-                  {who && <span className="ml-1 text-[11px] text-slate-300">· {who}</span>}
+                  {who && (
+                  <span className="ml-1 text-[11px] text-slate-300">Added by: {who}</span>
+                )}
                 </span>
                 <button
                   onClick={() => toggleSignup(item.id)}
