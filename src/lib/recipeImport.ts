@@ -27,7 +27,16 @@ export async function importRecipeFromUrl(recipeUrl: string): Promise<ImportedRe
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Import failed (${res.status})`);
-  return data as ImportedRecipe;
+  if (!Array.isArray(data.ingredients) || data.ingredients.length === 0) {
+    throw new Error(
+      "Couldn't find recipe ingredients on that page. Try a major recipe site, or add the meal manually.",
+    );
+  }
+  return {
+    name: typeof data.name === 'string' ? data.name : 'Imported recipe',
+    servings: Number(data.servings) || 0,
+    ingredients: data.ingredients.map(String),
+  };
 }
 
 export interface ImportedRow {
@@ -45,7 +54,7 @@ export interface ImportedRow {
  */
 export function toEditorRows(imported: ImportedRecipe): ImportedRow[] {
   const servings = imported.servings > 0 ? imported.servings : 4;
-  return imported.ingredients.map((line) => {
+  return (imported.ingredients ?? []).map((line) => {
     const p = parseIngredient(line);
     const perPerson = p.qty != null ? String(Number((p.qty / servings).toFixed(3))) : '';
     return { name: p.name || line, perPerson, unit: p.unit, gfSub: '' };
