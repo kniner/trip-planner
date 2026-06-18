@@ -256,12 +256,16 @@ function CustomRecipeBuilder() {
   const addCustomRecipe = useStore((s) => s.addCustomRecipe);
   const removeCustomRecipe = useStore((s) => s.removeCustomRecipe);
   const customRecipes = useStore((s) => s.doc.meals.customRecipes);
+  const adults = useStore((s) => s.doc.meals.adults);
+  const kids = useStore((s) => s.doc.meals.kids);
+  const servings = effectiveServings(adults, kids);
+  const safeServings = servings > 0 ? servings : 1;
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [category, setCategory] = useState<MealCategory>('dinner');
-  const [rows, setRows] = useState<{ name: string; perPerson: string; unit: string; gfSub: string }[]>([
-    { name: '', perPerson: '', unit: '', gfSub: '' },
+  const [rows, setRows] = useState<{ name: string; qty: string; unit: string; gfSub: string }[]>([
+    { name: '', qty: '', unit: '', gfSub: '' },
   ]);
   const [importUrl, setImportUrl] = useState('');
   const [importing, setImporting] = useState(false);
@@ -276,13 +280,13 @@ function CustomRecipeBuilder() {
     if (lines.length === 0) return;
     const name = pasteName.trim() || 'Pasted recipe';
     setName(name);
-    setRows(toEditorRows({ name, servings: Number(pasteServings) || 0, ingredients: lines }));
+    setRows(toEditorRows({ name, servings: Number(pasteServings) || 0, ingredients: lines }, servings));
     setOpen(true);
     setPasteOpen(false);
     setPasteText('');
     setPasteName('');
     setImportMsg(
-      `Parsed ${lines.length} ingredients from a recipe of ${Number(pasteServings) || 4}. Review & adjust below.`,
+      `Scaled from ${Number(pasteServings) || 4} servings to your group (~${servings.toFixed(0)}). Review & adjust below.`,
     );
   };
 
@@ -296,13 +300,13 @@ function CustomRecipeBuilder() {
     try {
       const imported = await importRecipeFromUrl(importUrl.trim());
       setName(imported.name);
-      setRows(toEditorRows(imported));
+      setRows(toEditorRows(imported, servings));
       setOpen(true);
       setImportUrl('');
       setImportMsg(
         imported.servings > 0
-          ? `Imported & scaled from a recipe of ${imported.servings}. Review below.`
-          : 'Imported (servings not detected — assumed 4). Review quantities below.',
+          ? `Scaled from ${imported.servings} servings to your group (~${servings.toFixed(0)}). Review below.`
+          : `Imported (source servings not detected — assumed 4) and scaled to ~${servings.toFixed(0)}. Review below.`,
       );
     } catch (e) {
       setImportMsg(e instanceof Error ? e.message : 'Import failed');
@@ -312,19 +316,21 @@ function CustomRecipeBuilder() {
   };
 
   const save = () => {
+    // The editor works in "amount for your group"; store per-serving so the
+    // recipe rescales if headcount changes or it's reused on another day.
     const ingredients: Ingredient[] = rows
-      .filter((r) => r.name.trim() && Number(r.perPerson) > 0)
+      .filter((r) => r.name.trim() && Number(r.qty) > 0)
       .map((r) => ({
         name: r.name.trim(),
         unit: r.unit.trim() || 'count',
-        perPerson: Number(r.perPerson),
+        perPerson: Number(r.qty) / safeServings,
         ...(r.gfSub.trim() ? { gfSub: r.gfSub.trim() } : {}),
       }));
     if (!name.trim() || ingredients.length === 0) return;
     addCustomRecipe({ id: newId(), name: name.trim(), category, ingredients, custom: true });
     setName('');
     setCategory('dinner');
-    setRows([{ name: '', perPerson: '', unit: '', gfSub: '' }]);
+    setRows([{ name: '', qty: '', unit: '', gfSub: '' }]);
     setOpen(false);
   };
 
@@ -444,7 +450,10 @@ function CustomRecipeBuilder() {
             </select>
           </div>
 
-          <p className="text-[11px] text-slate-400">Ingredients (quantity is per adult serving):</p>
+          <p className="text-[11px] text-slate-400">
+            Ingredients — quantity is the amount for your whole group (~{servings.toFixed(0)}{' '}
+            servings):
+          </p>
           {rows.map((r, i) => (
             <div key={i} className="flex flex-wrap items-center gap-1">
               <input
@@ -454,8 +463,8 @@ function CustomRecipeBuilder() {
                 className="min-w-0 flex-1 rounded border border-slate-200 px-2 py-1 text-xs"
               />
               <input
-                value={r.perPerson}
-                onChange={(e) => setRow(i, { perPerson: e.target.value })}
+                value={r.qty}
+                onChange={(e) => setRow(i, { qty: e.target.value })}
                 placeholder="qty"
                 inputMode="decimal"
                 className="w-16 rounded border border-slate-200 px-2 py-1 text-xs"
@@ -484,7 +493,7 @@ function CustomRecipeBuilder() {
           ))}
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setRows((rs) => [...rs, { name: '', perPerson: '', unit: '', gfSub: '' }])}
+              onClick={() => setRows((rs) => [...rs, { name: '', qty: '', unit: '', gfSub: '' }])}
               className="text-xs text-slate-500 underline"
             >
               + ingredient

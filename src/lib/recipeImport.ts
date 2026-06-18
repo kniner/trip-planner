@@ -1,4 +1,3 @@
-import type { Ingredient } from './types';
 import { parseIngredient } from './parseIngredient';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -41,34 +40,24 @@ export async function importRecipeFromUrl(recipeUrl: string): Promise<ImportedRe
 
 export interface ImportedRow {
   name: string;
-  /** Per-adult-serving quantity as a string, or '' when undetected. */
-  perPerson: string;
+  /** Quantity scaled to the target group, as a string ('' when undetected). */
+  qty: string;
   unit: string;
   gfSub: string;
 }
 
 /**
- * Convert an imported recipe's free-text ingredients into per-serving editor
- * rows, dividing each parsed quantity by the recipe's yield so it scales to any
- * headcount. Undetected quantities are left blank for the user to fill in.
+ * Convert an imported recipe's free-text ingredients into editor rows whose
+ * quantities are scaled from the recipe's yield up to the target group size, so
+ * the reviewer sees what they'll actually buy. Undetected quantities are left
+ * blank to fill in.
  */
-export function toEditorRows(imported: ImportedRecipe): ImportedRow[] {
-  const servings = imported.servings > 0 ? imported.servings : 4;
+export function toEditorRows(imported: ImportedRecipe, targetServings: number): ImportedRow[] {
+  const recipeServings = imported.servings > 0 ? imported.servings : 4;
+  const factor = (targetServings > 0 ? targetServings : 1) / recipeServings;
   return (imported.ingredients ?? []).map((line) => {
     const p = parseIngredient(line);
-    const perPerson = p.qty != null ? String(Number((p.qty / servings).toFixed(3))) : '';
-    return { name: p.name || line, perPerson, unit: p.unit, gfSub: '' };
+    const qty = p.qty != null ? String(Number((p.qty * factor).toFixed(2))) : '';
+    return { name: p.name || line, qty, unit: p.unit, gfSub: '' };
   });
-}
-
-/** Build editor rows directly into Ingredient[] (used by tests/util). */
-export function rowsToIngredients(rows: ImportedRow[]): Ingredient[] {
-  return rows
-    .filter((r) => r.name.trim() && Number(r.perPerson) > 0)
-    .map((r) => ({
-      name: r.name.trim(),
-      unit: r.unit.trim() || 'count',
-      perPerson: Number(r.perPerson),
-      ...(r.gfSub.trim() ? { gfSub: r.gfSub.trim() } : {}),
-    }));
 }
