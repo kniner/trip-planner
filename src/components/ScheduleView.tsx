@@ -2,7 +2,9 @@ import { EVENT_LABELS, PARKS } from '../data';
 import { useActiveDay } from '../store/useStore';
 import { DayTabs } from './DayTabs';
 import { EstimatorControls } from './EstimatorControls';
+import { ParkMap } from './ParkMap';
 import { PlanBuilder } from './PlanBuilder';
+import { SuggestNext } from './SuggestNext';
 import { TodoList } from './TodoList';
 
 /**
@@ -24,7 +26,9 @@ export function ScheduleView() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
-        <main className="order-2 lg:order-1">
+        <main className="order-2 space-y-4 lg:order-1">
+          <SuggestNext />
+          <ParkMap />
           <TodoList />
         </main>
         <aside className="order-1 space-y-4 lg:order-2 lg:sticky lg:top-4 lg:self-start">
