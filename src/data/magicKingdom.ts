@@ -89,6 +89,20 @@ export const MAGIC_KINGDOM: Attraction[] = [
     note: 'Winnie the Pooh & friends • buffet • reservation required',
   },
 
+  // Bookable experiences.
+  {
+    id: 'mk-bibbidi-bobbidi-boutique',
+    name: 'Bibbidi Bobbidi Boutique',
+    land: 'Experiences',
+    park: 'mk',
+    kind: 'experience',
+    avgWait: 0,
+    maxWait: 0,
+    duration: 45,
+    coords: { x: 300, y: 255 },
+    note: 'Princess & knight makeovers inside Cinderella Castle • reservation required',
+  },
+
   // Mickey's Not-So-Scary Halloween Party — party-exclusive entertainment.
   {
     id: 'mnsshp-boo-to-you-parade',

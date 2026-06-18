@@ -16,6 +16,7 @@ const KIND_LABEL: Record<Attraction['kind'], string> = {
   dining: 'Character Dining',
   festival: 'Food & Wine',
   entertainment: 'Party Event',
+  experience: 'Experience',
 };
 
 const KIND_BADGE: Record<Attraction['kind'], string> = {
@@ -25,7 +26,11 @@ const KIND_BADGE: Record<Attraction['kind'], string> = {
   dining: 'bg-rose-100 text-rose-600',
   festival: 'bg-amber-100 text-amber-700',
   entertainment: 'bg-purple-100 text-purple-700',
+  experience: 'bg-fuchsia-100 text-fuchsia-700',
 };
+
+/** Reservation-style items don't have queue waits. */
+const RESERVATION_KINDS: Attraction['kind'][] = ['dining', 'experience'];
 
 export function AttractionCard({ attraction, showAddToRoute = true }: Props) {
   const doc = useStore((s) => s.doc);
@@ -38,7 +43,7 @@ export function AttractionCard({ attraction, showAddToRoute = true }: Props) {
   const summary = summarizeTags(attraction.id, doc.tags, doc.collaborators, meId);
   const stop = day.stops.find((s) => s.attractionId === attraction.id);
   const liveWait = live[attraction.id];
-  const showWaits = attraction.kind !== 'dining';
+  const showWaits = !RESERVATION_KINDS.includes(attraction.kind);
 
   return (
     <div className="flex flex-col gap-3 rounded-lg bg-white p-3 shadow-sm ring-1 ring-slate-100">
@@ -89,7 +94,8 @@ export function AttractionCard({ attraction, showAddToRoute = true }: Props) {
           </>
         ) : (
           <span>
-            Reservation · <strong className="text-slate-700">{attraction.duration}m</strong> seated
+            Reservation · <strong className="text-slate-700">{attraction.duration}m</strong>
+            {attraction.kind === 'dining' ? ' seated' : ' appointment'}
           </span>
         )}
       </div>

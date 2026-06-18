@@ -13,7 +13,8 @@ export type AttractionKind =
   | 'attraction'
   | 'dining'
   | 'festival'
-  | 'entertainment';
+  | 'entertainment'
+  | 'experience';
 
 /** Tag a collaborator can apply to an attraction. */
 export type Tag = 'must' | 'nice' | 'avoid';
