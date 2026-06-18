@@ -12,28 +12,37 @@ import { TodoList } from './TodoList';
  */
 export function ScheduleView() {
   const day = useActiveDay();
+  const isOther = day.kind === 'other';
 
   return (
     <div className="space-y-4">
       <DayTabs />
 
       <div className="rounded-lg bg-white p-3 shadow-sm">
-        <h2 className="text-lg font-bold">{PARKS[day.park].name}</h2>
+        <h2 className="text-lg font-bold">{isOther ? day.name : PARKS[day.park].name}</h2>
         <p className="text-xs text-slate-500">
-          {day.name} · {EVENT_LABELS[day.event]}
+          {isOther ? 'Off-park day · light schedule' : `${day.name} · ${EVENT_LABELS[day.event]}`}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
-        <main className="order-2 space-y-4 lg:order-1">
-          <SuggestNext />
-          <TodoList />
-        </main>
-        <aside className="order-1 space-y-4 lg:order-2 lg:sticky lg:top-4 lg:self-start">
-          <EstimatorControls />
+      {isOther ? (
+        // Off-park days are lightly scheduled: just a clock + free-form blocks.
+        <div className="mx-auto max-w-xl space-y-4">
+          <EstimatorControls light />
           <PlanBuilder />
-        </aside>
-      </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
+          <main className="order-2 space-y-4 lg:order-1">
+            <SuggestNext />
+            <TodoList />
+          </main>
+          <aside className="order-1 space-y-4 lg:order-2 lg:sticky lg:top-4 lg:self-start">
+            <EstimatorControls />
+            <PlanBuilder />
+          </aside>
+        </div>
+      )}
     </div>
   );
 }

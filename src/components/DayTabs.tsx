@@ -25,12 +25,15 @@ export function DayTabs() {
   const doc = useStore((s) => s.doc);
   const setActiveDay = useStore((s) => s.setActiveDay);
   const addDay = useStore((s) => s.addDay);
+  const addOtherDay = useStore((s) => s.addOtherDay);
   const removeDay = useStore((s) => s.removeDay);
   const renameDay = useStore((s) => s.renameDay);
 
   const [adding, setAdding] = useState(false);
+  const [dayKind, setDayKind] = useState<'park' | 'other'>('park');
   const [park, setPark] = useState<ParkId>('epcot');
   const [event, setEvent] = useState<EventType>('regular');
+  const [otherName, setOtherName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const validEvents = eventsForPark(park);
@@ -76,10 +79,16 @@ export function DayTabs() {
               )}
               <span
                 className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${
-                  active ? 'bg-white/20 text-white' : EVENT_BADGE[day.event]
+                  active
+                    ? 'bg-white/20 text-white'
+                    : day.kind === 'other'
+                      ? 'bg-teal-100 text-teal-700'
+                      : EVENT_BADGE[day.event]
                 }`}
               >
-                {PARKS[day.park].shortName === 'EPCOT' ? 'EPCOT' : 'MK'} · {EVENT_SHORT[day.event]}
+                {day.kind === 'other'
+                  ? 'Off-park'
+                  : `${PARKS[day.park].shortName === 'EPCOT' ? 'EPCOT' : 'MK'} · ${EVENT_SHORT[day.event]}`}
               </span>
               {doc.days.length > 1 && (
                 <button
@@ -109,38 +118,70 @@ export function DayTabs() {
           className="mt-2 flex flex-wrap items-end gap-2 border-t border-slate-100 pt-2"
           onSubmit={(e) => {
             e.preventDefault();
-            addDay(park, effectiveEvent);
+            if (dayKind === 'other') {
+              addOtherDay(otherName);
+              setOtherName('');
+            } else {
+              addDay(park, effectiveEvent);
+            }
             setAdding(false);
           }}
         >
           <label className="text-xs text-slate-500">
-            Park
+            Kind
             <select
-              value={park}
-              onChange={(e) => setPark(e.target.value as ParkId)}
+              value={dayKind}
+              onChange={(e) => setDayKind(e.target.value as 'park' | 'other')}
               className="mt-0.5 block rounded border border-slate-300 px-2 py-1 text-sm"
             >
-              {PARK_IDS.map((p) => (
-                <option key={p} value={p}>
-                  {PARKS[p].name}
-                </option>
-              ))}
+              <option value="park">At a park</option>
+              <option value="other">Off-park (travel, rest, resort…)</option>
             </select>
           </label>
-          <label className="text-xs text-slate-500">
-            Day type
-            <select
-              value={effectiveEvent}
-              onChange={(e) => setEvent(e.target.value as EventType)}
-              className="mt-0.5 block rounded border border-slate-300 px-2 py-1 text-sm"
-            >
-              {validEvents.map((ev) => (
-                <option key={ev.value} value={ev.value}>
-                  {ev.label}
-                </option>
-              ))}
-            </select>
-          </label>
+
+          {dayKind === 'park' ? (
+            <>
+              <label className="text-xs text-slate-500">
+                Park
+                <select
+                  value={park}
+                  onChange={(e) => setPark(e.target.value as ParkId)}
+                  className="mt-0.5 block rounded border border-slate-300 px-2 py-1 text-sm"
+                >
+                  {PARK_IDS.map((p) => (
+                    <option key={p} value={p}>
+                      {PARKS[p].name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-xs text-slate-500">
+                Day type
+                <select
+                  value={effectiveEvent}
+                  onChange={(e) => setEvent(e.target.value as EventType)}
+                  className="mt-0.5 block rounded border border-slate-300 px-2 py-1 text-sm"
+                >
+                  {validEvents.map((ev) => (
+                    <option key={ev.value} value={ev.value}>
+                      {ev.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </>
+          ) : (
+            <label className="text-xs text-slate-500">
+              Name
+              <input
+                value={otherName}
+                onChange={(e) => setOtherName(e.target.value)}
+                placeholder="e.g. Travel day, Resort day"
+                className="mt-0.5 block w-48 rounded border border-slate-300 px-2 py-1 text-sm"
+              />
+            </label>
+          )}
+
           <button
             type="submit"
             className="rounded bg-slate-900 px-3 py-1.5 text-sm font-medium text-white"

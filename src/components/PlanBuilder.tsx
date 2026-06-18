@@ -38,53 +38,72 @@ export function PlanBuilder() {
     ...manualMembers,
   ];
 
+  const isOther = day.kind === 'other';
   const estimate = useMemo(() => estimatePlan(day, live), [day, live]);
 
   const canOptimize =
-    day.stops.length >= 3 && day.stops.every((s) => s.kind !== 'custom');
+    !isOther && day.stops.length >= 3 && day.stops.every((s) => s.kind !== 'custom');
 
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-900 p-4 text-white sm:grid-cols-4">
         <Stat label="Total" value={fmtDuration(estimate.totalMinutes)} />
-        <Stat label="Walking" value={fmtDuration(estimate.totalWalk)} />
-        <Stat label="In queues" value={fmtDuration(estimate.totalWait)} />
-        {estimate.totalBuffer > 0 ? (
-          <Stat label="Buffer" value={fmtDuration(estimate.totalBuffer)} />
+        {isOther ? (
+          <>
+            <Stat label="Starts" value={day.settings.startTime} />
+            <Stat label="Blocks" value={String(estimate.stops.length)} />
+            <Stat label="Done by" value={estimate.endClock} />
+          </>
         ) : (
-          <Stat label="Done by" value={estimate.endClock} />
+          <>
+            <Stat label="Walking" value={fmtDuration(estimate.totalWalk)} />
+            <Stat label="In queues" value={fmtDuration(estimate.totalWait)} />
+            {estimate.totalBuffer > 0 ? (
+              <Stat label="Buffer" value={fmtDuration(estimate.totalBuffer)} />
+            ) : (
+              <Stat label="Done by" value={estimate.endClock} />
+            )}
+            {estimate.totalBuffer > 0 && <Stat label="Done by" value={estimate.endClock} />}
+          </>
         )}
-        {estimate.totalBuffer > 0 && <Stat label="Done by" value={estimate.endClock} />}
       </div>
 
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-          {day.name} · {day.stops.length} stops
+          {day.name} · {day.stops.length} {isOther ? 'blocks' : 'stops'}
         </h2>
-        <div className="flex gap-1">
-          <button
-            onClick={addSplit}
-            className="rounded border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
-            title="Split the group into parallel sub-routes that rejoin"
-          >
-            ↔ Split group
-          </button>
-          {canOptimize && (
+        {!isOther && (
+          <div className="flex gap-1">
             <button
-              onClick={reorder}
+              onClick={addSplit}
               className="rounded border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
-              title="Reorder stops to minimize walking (nearest-neighbour)"
+              title="Split the group into parallel sub-routes that rejoin"
             >
-              Optimize walking
+              ↔ Split group
             </button>
-          )}
-        </div>
+            {canOptimize && (
+              <button
+                onClick={reorder}
+                className="rounded border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                title="Reorder stops to minimize walking (nearest-neighbour)"
+              >
+                Optimize walking
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {day.stops.length === 0 ? (
         <div className="rounded-lg bg-white p-6 text-center text-sm text-slate-400 shadow-sm">
-          No stops yet. Add attractions with <strong>+ Add</strong>, or drop in a
-          time block below for travel, security and parking.
+          {isOther ? (
+            <>No blocks yet. Drop in a time block below for travel, meals, rest or whatever you like.</>
+          ) : (
+            <>
+              No stops yet. Add attractions with <strong>+ Add</strong>, or drop in a
+              time block below for travel, security and parking.
+            </>
+          )}
         </div>
       ) : (
         <ol className="space-y-2">

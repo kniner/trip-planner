@@ -126,6 +126,12 @@ export interface Day {
   event: EventType;
   stops: PlanStop[];
   settings: PlanSettings;
+  /**
+   * 'park' (default) days plan attractions at a specific park. 'other' days are
+   * lightly scheduled non-park days (travel, rest, resort, dining) that only
+   * hold free-form time blocks — no attractions, map, or wait estimates.
+   */
+  kind?: 'park' | 'other';
 }
 
 export interface Collaborator {

@@ -36,7 +36,7 @@ function Segmented<T extends string>({
   );
 }
 
-export function EstimatorControls() {
+export function EstimatorControls({ light = false }: { light?: boolean } = {}) {
   const settings = useActiveDay().settings;
   const liveStatus = useStore((s) => s.liveStatus);
   const setPace = useStore((s) => s.setPace);
@@ -44,6 +44,24 @@ export function EstimatorControls() {
   const setStartTime = useStore((s) => s.setStartTime);
   const setBuffer = useStore((s) => s.setBuffer);
   const refreshLive = useStore((s) => s.refreshLive);
+
+  // Off-park days don't involve queues or park walking, so only the day's start
+  // time is relevant — hide the wait model, pace and buffer controls.
+  if (light) {
+    return (
+      <div className="space-y-2 rounded-lg bg-white p-4 shadow-sm">
+        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+          Day starts
+        </label>
+        <input
+          type="time"
+          value={settings.startTime}
+          onChange={(e) => setStartTime(e.target.value)}
+          className="rounded border border-slate-300 px-3 py-1.5 text-sm"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 rounded-lg bg-white p-4 shadow-sm">

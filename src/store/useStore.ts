@@ -63,6 +63,20 @@ function newDay(park: ParkId, event: EventType, name?: string): Day {
     event,
     stops: [],
     settings: { pace: 'average', waitMode: 'avg', startTime: '09:00', bufferPerStop: 0 },
+    kind: 'park',
+  };
+}
+
+/** A lightly-scheduled non-park day (travel, rest, resort, dining). */
+function newOtherDay(name?: string): Day {
+  return {
+    id: uid(),
+    name: name?.trim() || 'Off-park day',
+    park: 'mk', // unused for 'other' days; kept valid so park lookups never crash
+    event: 'regular',
+    stops: [],
+    settings: { pace: 'average', waitMode: 'avg', startTime: '09:00', bufferPerStop: 0 },
+    kind: 'other',
   };
 }
 
@@ -106,9 +120,15 @@ function normalizeDay(d: Partial<Day> | undefined): Day {
   const event: EventType =
     raw.event === 'mnsshp' || raw.event === 'food-and-wine' ? raw.event : 'regular';
   const s = (raw.settings ?? {}) as Partial<Day['settings']>;
+  const kind: Day['kind'] = raw.kind === 'other' ? 'other' : 'park';
   return {
     id: typeof raw.id === 'string' ? raw.id : uid(),
-    name: typeof raw.name === 'string' && raw.name ? raw.name : defaultDayName(park, event),
+    name:
+      typeof raw.name === 'string' && raw.name
+        ? raw.name
+        : kind === 'other'
+          ? 'Off-park day'
+          : defaultDayName(park, event),
     park,
     event,
     stops: Array.isArray(raw.stops) ? raw.stops : [],
@@ -118,6 +138,7 @@ function normalizeDay(d: Partial<Day> | undefined): Day {
       startTime: typeof s.startTime === 'string' ? s.startTime : '09:00',
       bufferPerStop: typeof s.bufferPerStop === 'number' ? s.bufferPerStop : 0,
     },
+    kind,
   };
 }
 
@@ -171,6 +192,7 @@ interface StoreState {
   // Days
   setActiveDay: (dayId: string) => void;
   addDay: (park: ParkId, event: EventType, name?: string) => void;
+  addOtherDay: (name?: string) => void;
   removeDay: (dayId: string) => void;
   renameDay: (dayId: string, name: string) => void;
 
@@ -387,6 +409,12 @@ export const useStore = create<StoreState>((set, get) => {
     addDay(park, event, name) {
       const doc = get().doc;
       const day = newDay(park, event, name);
+      commit({ ...doc, days: [...doc.days, day], activeDayId: day.id });
+    },
+
+    addOtherDay(name) {
+      const doc = get().doc;
+      const day = newOtherDay(name);
       commit({ ...doc, days: [...doc.days, day], activeDayId: day.id });
     },
 
