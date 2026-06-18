@@ -51,6 +51,13 @@ const TYPE_LABEL: Record<TypeCat, string> = {
   attraction: 'Attraction',
   food: 'Food',
 };
+
+/** Color a live wait by length: green (short) → amber → red (long). */
+function waitColor(min: number): string {
+  if (min <= 20) return '#16a34a';
+  if (min <= 45) return '#d97706';
+  return '#dc2626';
+}
 function typeCat(kind: Attraction['kind']): TypeCat {
   if (kind === 'ride') return 'ride';
   if (kind === 'show' || kind === 'entertainment') return 'show';
@@ -89,6 +96,10 @@ export function ParkMap() {
   const tags = useStore((s) => s.doc.tags);
   const collaborators = useStore((s) => s.doc.collaborators);
   const meId = useStore((s) => s.meId);
+  const live = useStore((s) => s.live);
+  const liveStatus = useStore((s) => s.liveStatus);
+  const refreshLive = useStore((s) => s.refreshLive);
+  const [showWaits, setShowWaits] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [amenityInfo, setAmenityInfo] = useState<string | null>(null);
   const [layers, setLayers] = useState<Record<AmenityType, boolean>>({
@@ -267,8 +278,46 @@ export function ParkMap() {
               🍬 Trick-or-treat
             </label>
           )}
+          <label className="flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={showWaits}
+              onChange={(e) => {
+                setShowWaits(e.target.checked);
+                if (e.target.checked && liveStatus !== 'ok') void refreshLive();
+              }}
+              className="h-3 w-3 accent-rose-600"
+            />
+            ⏱ Live waits
+          </label>
         </span>
       </div>
+
+      {showWaits && (
+        <p className="text-[10px]">
+          {liveStatus === 'ok' && (
+            <span className="text-slate-400">
+              Live waits from queue-times.com ·{' '}
+              <span className="font-medium text-emerald-600">≤20</span>{' '}
+              <span className="font-medium text-amber-600">≤45</span>{' '}
+              <span className="font-medium text-rose-600">45+</span> min ·{' '}
+              <button onClick={() => void refreshLive()} className="underline">
+                refresh
+              </button>
+            </span>
+          )}
+          {liveStatus === 'loading' && <span className="text-slate-400">Loading live waits…</span>}
+          {liveStatus === 'unavailable' && (
+            <span className="text-amber-600">
+              Live feed unavailable right now — try{' '}
+              <button onClick={() => void refreshLive()} className="underline">
+                refresh
+              </button>
+              .
+            </span>
+          )}
+        </p>
+      )}
 
       <div className="relative">
         <svg
@@ -361,6 +410,8 @@ export function ParkMap() {
             const consensus = summarizeTags(it.id, tags, collaborators, meId).consensus;
             const fill = consensus ? TAG_META[consensus].color : UNTAGGED;
             const isSel = it.id === selectedId;
+            const lw = showWaits ? live[it.id] : undefined;
+            const showBadge = !!lw && lw.isOpen;
             return (
               <g
                 key={it.id}
@@ -381,6 +432,29 @@ export function ParkMap() {
                 >
                   <title>{it.name}</title>
                 </circle>
+                {showBadge && (
+                  <g pointerEvents="none">
+                    <circle
+                      cx={it.coords.x + 9 * s}
+                      cy={it.coords.y - 9 * s}
+                      r={7 * s}
+                      fill={waitColor(lw!.wait)}
+                      stroke="#fff"
+                      strokeWidth={1.5 * s}
+                    />
+                    <text
+                      x={it.coords.x + 9 * s}
+                      y={it.coords.y - 9 * s}
+                      dy="0.35em"
+                      textAnchor="middle"
+                      fontSize={7 * s}
+                      fontWeight={700}
+                      fill="#fff"
+                    >
+                      {lw!.wait}
+                    </text>
+                  </g>
+                )}
               </g>
             );
           })}
@@ -460,6 +534,15 @@ export function ParkMap() {
       {selected ? (
         <p className="text-[11px] text-slate-600">
           <strong>{selected.name}</strong> · {selected.land} · {TYPE_LABEL[typeCat(selected.kind)]}
+          {(() => {
+            const lw = live[selected.id];
+            if (!lw) return null;
+            return (
+              <span style={{ color: lw.isOpen ? waitColor(lw.wait) : undefined }} className="ml-1 font-semibold">
+                {' '}· {lw.isOpen ? `${lw.wait} min now` : 'closed'}
+              </span>
+            );
+          })()}
         </p>
       ) : amenityInfo ? (
         <p className="text-[11px] text-slate-600">{amenityInfo}</p>
