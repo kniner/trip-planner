@@ -1,8 +1,12 @@
 import { useMemo, useState } from 'react';
 import { CATEGORY_LABELS, CATEGORY_ORDER, RECIPES, RECIPES_BY_ID } from '../data/recipes';
 import { computeGrocery, effectiveServings } from '../lib/grocery';
+import { importRecipeFromUrl, toEditorRows } from '../lib/recipeImport';
+import { isSupabaseConfigured } from '../store/sync';
 import type { Ingredient, MealCategory, Recipe } from '../lib/types';
 import { useStore } from '../store/useStore';
+
+const CAN_IMPORT = isSupabaseConfigured();
 
 const newId = () => Math.random().toString(36).slice(2, 10);
 
@@ -223,9 +227,34 @@ function CustomRecipeBuilder() {
   const [rows, setRows] = useState<{ name: string; perPerson: string; unit: string; gfSub: string }[]>([
     { name: '', perPerson: '', unit: '', gfSub: '' },
   ]);
+  const [importUrl, setImportUrl] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState('');
 
   const setRow = (i: number, patch: Partial<(typeof rows)[number]>) =>
     setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+
+  const runImport = async () => {
+    if (!importUrl.trim()) return;
+    setImporting(true);
+    setImportMsg('');
+    try {
+      const imported = await importRecipeFromUrl(importUrl.trim());
+      setName(imported.name);
+      setRows(toEditorRows(imported));
+      setOpen(true);
+      setImportUrl('');
+      setImportMsg(
+        imported.servings > 0
+          ? `Imported & scaled from a recipe of ${imported.servings}. Review below.`
+          : 'Imported (servings not detected — assumed 4). Review quantities below.',
+      );
+    } catch (e) {
+      setImportMsg(e instanceof Error ? e.message : 'Import failed');
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const save = () => {
     const ingredients: Ingredient[] = rows
@@ -259,6 +288,27 @@ function CustomRecipeBuilder() {
               </button>
             </span>
           ))}
+        </div>
+      )}
+
+      {CAN_IMPORT && (
+        <div className="mb-2">
+          <div className="flex gap-2">
+            <input
+              value={importUrl}
+              onChange={(e) => setImportUrl(e.target.value)}
+              placeholder="Paste a recipe link to import & scale…"
+              className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm"
+            />
+            <button
+              onClick={runImport}
+              disabled={importing || !importUrl.trim()}
+              className="rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+            >
+              {importing ? 'Importing…' : 'Import'}
+            </button>
+          </div>
+          {importMsg && <p className="mt-1 text-[11px] text-slate-500">{importMsg}</p>}
         </div>
       )}
 
