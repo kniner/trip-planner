@@ -95,6 +95,33 @@ function emptyDoc(): PlanDoc {
 }
 
 /**
+ * Normalize one day so a malformed/older shape (missing settings, bad park,
+ * non-array stops) can never crash the estimator or UI. This matters because
+ * every remote update is migrated, so one bad write must not white-screen
+ * every connected client.
+ */
+function normalizeDay(d: Partial<Day> | undefined): Day {
+  const raw = (d ?? {}) as Partial<Day>;
+  const park: ParkId = raw.park && PARKS[raw.park] ? raw.park : 'mk';
+  const event: EventType =
+    raw.event === 'mnsshp' || raw.event === 'food-and-wine' ? raw.event : 'regular';
+  const s = (raw.settings ?? {}) as Partial<Day['settings']>;
+  return {
+    id: typeof raw.id === 'string' ? raw.id : uid(),
+    name: typeof raw.name === 'string' && raw.name ? raw.name : defaultDayName(park, event),
+    park,
+    event,
+    stops: Array.isArray(raw.stops) ? raw.stops : [],
+    settings: {
+      pace: s.pace === 'slow' || s.pace === 'fast' ? s.pace : 'average',
+      waitMode: s.waitMode === 'max' || s.waitMode === 'live' ? s.waitMode : 'avg',
+      startTime: typeof s.startTime === 'string' ? s.startTime : '09:00',
+      bufferPerStop: typeof s.bufferPerStop === 'number' ? s.bufferPerStop : 0,
+    },
+  };
+}
+
+/**
  * Bring older/partial persisted docs up to the current shape. Early versions
  * stored a single top-level `stops`/`settings`; wrap those into a default
  * Magic Kingdom day so existing plans aren't lost.
@@ -104,24 +131,25 @@ function migrate(raw: unknown): PlanDoc {
     stops?: Day['stops'];
     settings?: Day['settings'];
   };
-  let days = doc.days;
+  let days = Array.isArray(doc.days) ? doc.days : undefined;
   if (!days || days.length === 0) {
     const legacy = newDay('mk', 'regular', 'Magic Kingdom — Day 1');
     if (doc.stops) legacy.stops = doc.stops;
     if (doc.settings) legacy.settings = doc.settings;
     days = [legacy];
   }
+  days = days.map(normalizeDay);
   const activeDayId = days.some((d) => d.id === doc.activeDayId)
     ? doc.activeDayId!
     : days[0].id;
   return {
-    collaborators: doc.collaborators ?? [],
-    tags: doc.tags ?? [],
+    collaborators: Array.isArray(doc.collaborators) ? doc.collaborators : [],
+    tags: Array.isArray(doc.tags) ? doc.tags : [],
     days,
     activeDayId,
-    personalItems: doc.personalItems ?? [...SUGGESTED_PERSONAL],
+    personalItems: Array.isArray(doc.personalItems) ? doc.personalItems : [...SUGGESTED_PERSONAL],
     personalChecks: doc.personalChecks ?? {},
-    groupItems: doc.groupItems ?? [...SUGGESTED_GROUP],
+    groupItems: Array.isArray(doc.groupItems) ? doc.groupItems : [...SUGGESTED_GROUP],
     meals: doc.meals ? { ...emptyMealPlan(), ...doc.meals } : emptyMealPlan(),
   };
 }
@@ -317,6 +345,14 @@ export const useStore = create<StoreState>((set, get) => {
           ),
         })),
         personalChecks,
+        meals: {
+          ...doc.meals,
+          groceryMeta: Object.fromEntries(
+            Object.entries(doc.meals.groceryMeta).map(([k, m]) =>
+              m.assignee === userId ? [k, { ...m, assignee: undefined }] : [k, m],
+            ),
+          ),
+        },
       });
       if (get().meId === userId) {
         localStorage.removeItem(ME_KEY);

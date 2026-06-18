@@ -156,6 +156,36 @@ describe('estimatePlan', () => {
     expect(est.totalMinutes).toBe(60);
   });
 
+  it("attributes the longest split group's legs to the day totals", () => {
+    // Longest group has two rides (a real walk + waits); the totals should
+    // reflect that group, and the pieces must still sum to totalMinutes.
+    const day = dayWith({
+      stops: [
+        {
+          id: 'sp',
+          kind: 'split',
+          branches: [
+            {
+              id: 'a',
+              name: 'Rides crew',
+              stops: [
+                { id: 'a1', kind: 'item', attractionId: 'space-mountain' },
+                { id: 'a2', kind: 'item', attractionId: 'jungle-cruise' },
+              ],
+            },
+            { id: 'b', name: 'Solo', stops: [{ id: 'b1', kind: 'item', attractionId: 'dumbo' }] },
+          ],
+        },
+      ],
+    });
+    const est = estimatePlan(day, {});
+    expect(est.totalWalk).toBeGreaterThan(0); // the rides crew's between-ride walk
+    expect(est.totalWait).toBeGreaterThan(0);
+    expect(est.totalMinutes).toBe(
+      est.totalWalk + est.totalWait + est.totalDuration + est.totalBuffer,
+    );
+  });
+
   it('uses a fixed meet-up time as the split rejoin when set', () => {
     const day = dayWith({
       stops: [

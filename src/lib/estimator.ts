@@ -261,7 +261,19 @@ export function estimatePlan(day: EstimateInput, live: LiveWaits): PlanEstimate 
         branches,
       });
 
-      totalDuration += effectiveDuration;
+      // Attribute the critical (longest) group's legs to the day totals so the
+      // Walking/In-queues/Buffer tiles reflect what that group actually does;
+      // any extra slack up to a fixed meet-up counts as duration. The pieces
+      // always sum to effectiveDuration, keeping totalMinutes exact.
+      const longest = branchResults.find((b) => b.r.end === maxEnd && maxEnd > 0)?.r;
+      const lw = longest?.totalWalk ?? 0;
+      const lWait = longest?.totalWait ?? 0;
+      const lBuf = longest?.totalBuffer ?? 0;
+      totalWalk += lw;
+      totalWait += lWait;
+      totalBuffer += lBuf;
+      // Remainder (the group's experience time plus any slack to the meet-up).
+      totalDuration += effectiveDuration - lw - lWait - lBuf;
       cursor = cursorAfter;
       prevItemId = undefined; // groups reconvene; next walk leg is ambiguous
       continue;
