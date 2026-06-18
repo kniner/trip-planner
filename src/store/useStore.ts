@@ -27,6 +27,11 @@ const ME_KEY = 'mk-planner:me';
 /** Legacy local checked status — migrated into the synced doc per user. */
 const CHECKED_KEY = 'mk-planner:checked';
 
+/** Case-insensitive, whitespace-normalized key for matching names. */
+function nameKey(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
 function loadLegacyChecked(): string[] {
   try {
     const raw = localStorage.getItem(CHECKED_KEY);
@@ -227,9 +232,7 @@ export const useStore = create<StoreState>((set, get) => {
 
       // Returning user: same name (case-insensitive) resumes as the same person,
       // keeping all their existing tags — no duplicate collaborator.
-      const existing = doc.collaborators.find(
-        (c) => c.name.toLowerCase() === clean.toLowerCase(),
-      );
+      const existing = doc.collaborators.find((c) => nameKey(c.name) === nameKey(clean));
       if (existing) {
         localStorage.setItem(ME_KEY, existing.id);
         set({ meId: existing.id });
@@ -475,7 +478,7 @@ export const useStore = create<StoreState>((set, get) => {
         branches.map((b) => {
           if (b.id !== branchId) return b;
           const manual = b.manualMembers ?? [];
-          if (manual.some((n) => n.toLowerCase() === clean.toLowerCase())) return b;
+          if (manual.some((n) => nameKey(n) === nameKey(clean))) return b;
           return { ...b, manualMembers: [...manual, clean] };
         }),
       );
@@ -591,7 +594,7 @@ export const useStore = create<StoreState>((set, get) => {
         groupItems: doc.groupItems.map((i) => {
           if (i.id !== id) return i;
           const manual = i.manualSignups ?? [];
-          if (manual.some((n) => n.toLowerCase() === clean.toLowerCase())) return i;
+          if (manual.some((n) => nameKey(n) === nameKey(clean))) return i;
           return { ...i, manualSignups: [...manual, clean] };
         }),
       });
