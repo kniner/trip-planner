@@ -104,10 +104,10 @@ function NoteEditor({ note, onSave }: { note?: string; onSave: (n: string) => vo
           setDraft(note);
           setEditing(true);
         }}
-        className="block w-full text-left text-[11px] text-slate-500 hover:text-slate-700"
+        className="block w-full whitespace-pre-wrap text-left text-[11px] italic leading-snug text-slate-400 hover:text-slate-600"
         title="Edit note"
       >
-        📝 {note}
+        {note}
       </button>
     );
   }
@@ -118,9 +118,9 @@ function NoteEditor({ note, onSave }: { note?: string; onSave: (n: string) => vo
         setDraft('');
         setEditing(true);
       }}
-      className="text-[11px] text-slate-300 hover:text-slate-500"
+      className="text-[10px] text-slate-200 hover:text-slate-400"
     >
-      + add note
+      + note
     </button>
   );
 }
