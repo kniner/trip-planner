@@ -102,6 +102,8 @@ function BranchCard({ splitId, branch, splitDuration, fixedMeetUp, items, lands,
   const late = diff < 0;
   const members = branch.members;
   const manual = branch.manualMembers;
+  const memberCollaborators = collaborators.filter((c) => members.includes(c.id));
+  const availableCollaborators = collaborators.filter((c) => !members.includes(c.id));
 
   const addCustom = () => {
     if (!customName.trim() || customMin <= 0) return;
@@ -152,31 +154,26 @@ function BranchCard({ splitId, branch, splitDuration, fixedMeetUp, items, lands,
         )}
       </div>
 
-      {/* Who's in this group */}
+      {/* Who's in this group — only this group's members are shown. */}
       <div className="mb-1.5 space-y-1 rounded bg-white/60 p-1.5">
         <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Who's in this group</p>
         <div className="flex flex-wrap gap-1">
-          {collaborators.map((c) => {
-            const on = members.includes(c.id);
-            return (
+          {memberCollaborators.map((c) => (
+            <span
+              key={c.id}
+              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
+              style={{ background: c.color }}
+            >
+              {c.name}
               <button
-                key={c.id}
                 onClick={() => toggleBranchMember(splitId, branch.id, c.id)}
-                className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]"
-                style={
-                  on
-                    ? { background: c.color, borderColor: c.color, color: 'white' }
-                    : { borderColor: '#cbd5e1', color: '#475569' }
-                }
+                className="text-white/70 hover:text-white"
+                title="Remove from group"
               >
-                <span
-                  className="h-1.5 w-1.5 rounded-full"
-                  style={{ background: on ? 'white' : c.color }}
-                />
-                {c.name}
+                ✕
               </button>
-            );
-          })}
+            </span>
+          ))}
           {manual.map((n) => (
             <span
               key={`m-${n}`}
@@ -191,27 +188,48 @@ function BranchCard({ splitId, branch, splitDuration, fixedMeetUp, items, lands,
               </button>
             </span>
           ))}
-        </div>
-        <form
-          className="flex gap-1"
-          onSubmit={(e) => {
-            e.preventDefault();
-            addBranchManualMember(splitId, branch.id, memberName);
-            setMemberName('');
-          }}
-        >
-          <input
-            value={memberName}
-            onChange={(e) => setMemberName(e.target.value)}
-            placeholder="+ add someone by name"
-            className="min-w-0 flex-1 rounded border border-slate-200 px-2 py-0.5 text-[11px]"
-          />
-          {memberName.trim() && (
-            <button type="submit" className="shrink-0 rounded bg-slate-700 px-2 py-0.5 text-[11px] font-medium text-white">
-              Add
-            </button>
+          {memberCollaborators.length === 0 && manual.length === 0 && (
+            <span className="text-[11px] text-slate-400">Nobody assigned yet.</span>
           )}
-        </form>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {availableCollaborators.length > 0 && (
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) toggleBranchMember(splitId, branch.id, e.target.value);
+              }}
+              className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] text-slate-600"
+            >
+              <option value="">+ add person…</option>
+              {availableCollaborators.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          )}
+          <form
+            className="flex min-w-0 flex-1 gap-1"
+            onSubmit={(e) => {
+              e.preventDefault();
+              addBranchManualMember(splitId, branch.id, memberName);
+              setMemberName('');
+            }}
+          >
+            <input
+              value={memberName}
+              onChange={(e) => setMemberName(e.target.value)}
+              placeholder="+ add a name not in the app"
+              className="min-w-0 flex-1 rounded border border-slate-200 px-2 py-0.5 text-[11px]"
+            />
+            {memberName.trim() && (
+              <button type="submit" className="shrink-0 rounded bg-slate-700 px-2 py-0.5 text-[11px] font-medium text-white">
+                Add
+              </button>
+            )}
+          </form>
+        </div>
       </div>
 
       {branch.stops.length === 0 ? (
