@@ -302,11 +302,17 @@ export function estimatePlan(day: EstimateInput, live: LiveWaits): PlanEstimate 
       const lw = longest?.totalWalk ?? 0;
       const lWait = longest?.totalWait ?? 0;
       const lBuf = longest?.totalBuffer ?? 0;
-      totalWalk += lw;
-      totalWait += lWait;
-      totalBuffer += lBuf;
-      // Remainder (the group's experience time plus any slack to the meet-up).
-      totalDuration += effectiveDuration - lw - lWait - lBuf;
+      // Only attribute the critical group's legs when they fit inside the block
+      // (a too-early fixed meet-up can compress it); otherwise count it all as
+      // duration. Either way the buckets sum to effectiveDuration.
+      if (lw + lWait + lBuf <= effectiveDuration) {
+        totalWalk += lw;
+        totalWait += lWait;
+        totalBuffer += lBuf;
+        totalDuration += effectiveDuration - lw - lWait - lBuf;
+      } else {
+        totalDuration += effectiveDuration;
+      }
       cursor = cursorAfter;
       prevItemId = undefined; // groups reconvene; next walk leg is ambiguous
       continue;
