@@ -55,7 +55,7 @@ function defaultDayName(park: ParkId, event: EventType): string {
   return `${PARKS[park].shortName} Day`;
 }
 
-function newDay(park: ParkId, event: EventType, name?: string): Day {
+function newDay(park: ParkId, event: EventType, name?: string, date?: string): Day {
   return {
     id: uid(),
     name: name ?? defaultDayName(park, event),
@@ -64,11 +64,12 @@ function newDay(park: ParkId, event: EventType, name?: string): Day {
     stops: [],
     settings: { pace: 'average', waitMode: 'avg', startTime: '09:00', bufferPerStop: 0 },
     kind: 'park',
+    ...(date ? { date } : {}),
   };
 }
 
 /** A lightly-scheduled non-park day (travel, rest, resort, dining). */
-function newOtherDay(name?: string): Day {
+function newOtherDay(name?: string, date?: string): Day {
   return {
     id: uid(),
     name: name?.trim() || 'Off-park day',
@@ -77,6 +78,7 @@ function newOtherDay(name?: string): Day {
     stops: [],
     settings: { pace: 'average', waitMode: 'avg', startTime: '09:00', bufferPerStop: 0 },
     kind: 'other',
+    ...(date ? { date } : {}),
   };
 }
 
@@ -139,6 +141,9 @@ function normalizeDay(d: Partial<Day> | undefined): Day {
       bufferPerStop: typeof s.bufferPerStop === 'number' ? s.bufferPerStop : 0,
     },
     kind,
+    ...(typeof raw.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.date)
+      ? { date: raw.date }
+      : {}),
   };
 }
 
@@ -191,10 +196,11 @@ interface StoreState {
 
   // Days
   setActiveDay: (dayId: string) => void;
-  addDay: (park: ParkId, event: EventType, name?: string) => void;
-  addOtherDay: (name?: string) => void;
+  addDay: (park: ParkId, event: EventType, name?: string, date?: string) => void;
+  addOtherDay: (name?: string, date?: string) => void;
   removeDay: (dayId: string) => void;
   renameDay: (dayId: string, name: string) => void;
+  setDayDate: (dayId: string, date: string | undefined) => void;
 
   setTag: (attractionId: string, tag: Tag | null) => void;
 
@@ -407,15 +413,15 @@ export const useStore = create<StoreState>((set, get) => {
       commit({ ...doc, activeDayId: dayId });
     },
 
-    addDay(park, event, name) {
+    addDay(park, event, name, date) {
       const doc = get().doc;
-      const day = newDay(park, event, name);
+      const day = newDay(park, event, name, date);
       commit({ ...doc, days: [...doc.days, day], activeDayId: day.id });
     },
 
-    addOtherDay(name) {
+    addOtherDay(name, date) {
       const doc = get().doc;
-      const day = newOtherDay(name);
+      const day = newOtherDay(name, date);
       commit({ ...doc, days: [...doc.days, day], activeDayId: day.id });
     },
 
@@ -433,6 +439,13 @@ export const useStore = create<StoreState>((set, get) => {
       const days = doc.days.map((d) =>
         d.id === dayId ? { ...d, name: name.trim() || d.name } : d,
       );
+      commit({ ...doc, days });
+    },
+
+    setDayDate(dayId, date) {
+      const valid = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined;
+      const doc = get().doc;
+      const days = doc.days.map((d) => (d.id === dayId ? { ...d, date: valid } : d));
       commit({ ...doc, days });
     },
 

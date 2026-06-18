@@ -132,6 +132,8 @@ export interface Day {
   event: EventType;
   stops: PlanStop[];
   settings: PlanSettings;
+  /** Calendar date this day falls on, ISO "YYYY-MM-DD" (optional). */
+  date?: string;
   /**
    * 'park' (default) days plan attractions at a specific park. 'other' days are
    * lightly scheduled non-park days (travel, rest, resort, dining) that only

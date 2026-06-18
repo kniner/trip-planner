@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { EVENT_SHORT, PARK_IDS, PARKS } from '../data';
+import { formatShortDate } from '../lib/dates';
 import type { EventType, ParkId } from '../lib/types';
 import { useStore } from '../store/useStore';
 
@@ -34,6 +35,7 @@ export function DayTabs() {
   const [park, setPark] = useState<ParkId>('epcot');
   const [event, setEvent] = useState<EventType>('regular');
   const [otherName, setOtherName] = useState('');
+  const [date, setDate] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const validEvents = eventsForPark(park);
@@ -90,6 +92,11 @@ export function DayTabs() {
                   ? 'Off-park'
                   : `${PARKS[day.park].shortName === 'EPCOT' ? 'EPCOT' : 'MK'} · ${EVENT_SHORT[day.event]}`}
               </span>
+              {day.date && (
+                <span className={`text-[10px] ${active ? 'text-white/70' : 'text-slate-400'}`}>
+                  {formatShortDate(day.date)}
+                </span>
+              )}
               {doc.days.length > 1 && (
                 <button
                   onClick={() => removeDay(day.id)}
@@ -119,11 +126,12 @@ export function DayTabs() {
           onSubmit={(e) => {
             e.preventDefault();
             if (dayKind === 'other') {
-              addOtherDay(otherName);
+              addOtherDay(otherName, date || undefined);
               setOtherName('');
             } else {
-              addDay(park, effectiveEvent);
+              addDay(park, effectiveEvent, undefined, date || undefined);
             }
+            setDate('');
             setAdding(false);
           }}
         >
@@ -182,6 +190,15 @@ export function DayTabs() {
             </label>
           )}
 
+          <label className="text-xs text-slate-500">
+            Date <span className="text-slate-400">(optional)</span>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="mt-0.5 block rounded border border-slate-300 px-2 py-1 text-sm"
+            />
+          </label>
           <button
             type="submit"
             className="rounded bg-slate-900 px-3 py-1.5 text-sm font-medium text-white"
