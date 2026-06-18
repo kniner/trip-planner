@@ -22,8 +22,12 @@ export default function App() {
   // device falls back to the join screen rather than acting as a ghost user.
   const joined = meId != null && collaborators.some((c) => c.id === meId);
 
-  // The trip's first member owns the schedule (only they can see it for now).
-  const isOwner = meId != null && collaborators[0]?.id === meId;
+  // The schedule owner (explicitly claimed, else the trip's first member) is the
+  // only one who can see the Schedule page for now.
+  const ownerId = useStore((s) => s.doc.ownerId) ?? collaborators[0]?.id;
+  const claimOwnership = useStore((s) => s.claimOwnership);
+  const isOwner = meId != null && ownerId === meId;
+  const ownerName = collaborators.find((c) => c.id === ownerId)?.name;
   const effectiveView = view === 'schedule' && !isOwner ? 'tag' : view;
 
   useEffect(() => {
@@ -74,6 +78,34 @@ export default function App() {
             Meals
           </ViewTab>
         </nav>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
+          <span>
+            Schedule owner:{' '}
+            <span className="font-semibold text-slate-700">
+              {ownerName ?? 'unclaimed'}
+            </span>
+            {isOwner && ' (you)'}
+          </span>
+          {!isOwner && (
+            <button
+              onClick={() => {
+                if (
+                  window.confirm(
+                    ownerName
+                      ? `Take over schedule ownership from ${ownerName}? Only you will see the Schedule page.`
+                      : 'Claim schedule ownership? Only you will see the Schedule page.',
+                  )
+                ) {
+                  claimOwnership();
+                }
+              }}
+              className="rounded-md bg-indigo-600 px-3 py-1 font-semibold text-white hover:bg-indigo-500"
+            >
+              Make me the owner
+            </button>
+          )}
+        </div>
       </div>
 
       {effectiveView === 'tag' && <TagView />}

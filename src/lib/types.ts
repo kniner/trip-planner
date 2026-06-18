@@ -160,6 +160,8 @@ export interface GroupItem {
 /** The full shared, synced plan document, spanning multiple days/parks. */
 export interface PlanDoc {
   collaborators: Collaborator[];
+  /** Collaborator id who owns the schedule (only they see the Schedule page). */
+  ownerId?: string;
   /** Tags are global per item, shared across every day of the trip. */
   tags: TagEntry[];
   days: Day[];

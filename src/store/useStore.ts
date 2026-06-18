@@ -144,6 +144,7 @@ function migrate(raw: unknown): PlanDoc {
     : days[0].id;
   return {
     collaborators: Array.isArray(doc.collaborators) ? doc.collaborators : [],
+    ownerId: doc.ownerId,
     tags: Array.isArray(doc.tags) ? doc.tags : [],
     days,
     activeDayId,
@@ -164,6 +165,7 @@ interface StoreState {
   init: () => Promise<void>;
   join: (name: string) => void;
   leave: () => void;
+  claimOwnership: () => void;
   removeCollaborator: (userId: string) => void;
 
   // Days
@@ -311,12 +313,21 @@ export const useStore = create<StoreState>((set, get) => {
       const collaborator: Collaborator = { id, name: clean, color };
       localStorage.setItem(ME_KEY, id);
       set({ meId: id });
-      commit({ ...doc, collaborators: [...doc.collaborators, collaborator] });
+      // The very first member to join becomes the schedule owner by default.
+      const ownerId = doc.collaborators.length === 0 && !doc.ownerId ? id : doc.ownerId;
+      commit({ ...doc, collaborators: [...doc.collaborators, collaborator], ownerId });
     },
 
     leave() {
       localStorage.removeItem(ME_KEY);
       set({ meId: null });
+    },
+
+    claimOwnership() {
+      const meId = me();
+      if (!meId) return;
+      const doc = get().doc;
+      commit({ ...doc, ownerId: meId });
     },
 
     removeCollaborator(userId) {
