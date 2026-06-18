@@ -60,6 +60,30 @@ sync”** badge instead of “This device only”.
 Copy `.env.example` to `.env.local` and fill in the same values, then
 `npm run dev`.
 
+## 6. (Optional) Recipe import from a link
+
+The "paste a recipe link to import & scale" button in the Meals tab needs a
+small server-side function (browsers can't fetch other websites directly). The
+function code already lives in the repo at `supabase/functions/recipe-import/`.
+Deploy it once from your computer:
+
+```bash
+# Install the Supabase CLI (one time)
+npm install -g supabase
+
+# From the project folder
+supabase login
+supabase link --project-ref YOUR-PROJECT-REF
+supabase functions deploy recipe-import
+```
+
+- `YOUR-PROJECT-REF` is the code in your Supabase URL: `https://<ref>.supabase.co`.
+- No web-app redeploy is needed — the Import button starts working once the
+  function is deployed.
+- Reads schema.org recipe data, which most major recipe sites include; some
+  blogs/paywalled pages won't have it ("No recipe data found"). Imported
+  quantities are approximate and open in the editor for review before saving.
+
 ---
 
 ### Security note
