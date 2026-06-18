@@ -1,12 +1,9 @@
 import { useMemo, useState } from 'react';
 import { itemsForDay } from '../data';
-import { summarizeTags, TAG_META, TAG_RANK } from '../lib/tags';
+import { summarizeTags, TAG_META } from '../lib/tags';
 import { useActiveDay, useStore } from '../store/useStore';
 
-type Scope = 'priority' | 'all';
-
-/** Rank used for sorting; untagged sits between nice and avoid. */
-const RANK_UNTAGGED = 2;
+type Scope = 'wishlist' | 'all';
 
 export function TodoList() {
   const doc = useStore((s) => s.doc);
@@ -14,7 +11,7 @@ export function TodoList() {
   const addStop = useStore((s) => s.addStop);
   const removeStop = useStore((s) => s.removeStop);
   const day = useActiveDay();
-  const [scope, setScope] = useState<Scope>('priority');
+  const [scope, setScope] = useState<Scope>('wishlist');
 
   // Which day names each item is currently scheduled on (across the trip).
   const scheduledOn = useMemo(() => {
@@ -35,12 +32,18 @@ export function TodoList() {
     return items
       .map((item) => {
         const summary = summarizeTags(item.id, doc.tags, doc.collaborators, meId);
-        const tag = summary.consensus;
-        const rank = tag ? TAG_RANK[tag] : RANK_UNTAGGED;
-        return { item, tag, rank };
+        // Wishlist score: a "must" counts double a "nice".
+        const score = summary.counts.must * 2 + summary.counts.nice;
+        const wishlisted = summary.counts.must > 0 || summary.counts.nice > 0;
+        return { item, summary, score, wishlisted };
       })
-      .filter((r) => (scope === 'priority' ? r.tag === 'must' || r.tag === 'nice' : true))
-      .sort((a, b) => a.rank - b.rank || a.item.name.localeCompare(b.item.name));
+      .filter((r) => (scope === 'wishlist' ? r.wishlisted : true))
+      .sort(
+        (a, b) =>
+          b.score - a.score ||
+          b.summary.counts.must - a.summary.counts.must ||
+          a.item.name.localeCompare(b.item.name),
+      );
   }, [day.park, day.event, doc.tags, doc.collaborators, meId, scope]);
 
   const inThisDay = (id: string) => day.stops.find((s) => s.attractionId === id);
@@ -49,20 +52,20 @@ export function TodoList() {
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-bold">To-do list</h2>
+          <h2 className="text-lg font-bold">Wishlist to-do</h2>
           <p className="text-xs text-slate-500">
-            Tagged picks for <strong>{day.name}</strong>, by priority — add them to
-            this day's route.
+            Everyone's picks for <strong>{day.name}</strong>, ranked by how much the
+            group wants them. Add them into this day's route.
           </p>
         </div>
         <div className="flex rounded-lg bg-slate-100 p-0.5 text-xs">
           <button
-            onClick={() => setScope('priority')}
+            onClick={() => setScope('wishlist')}
             className={`rounded-md px-2.5 py-1 font-semibold ${
-              scope === 'priority' ? 'bg-white shadow-sm' : 'text-slate-500'
+              scope === 'wishlist' ? 'bg-white shadow-sm' : 'text-slate-500'
             }`}
           >
-            Must & nice
+            Wishlisted
           </button>
           <button
             onClick={() => setScope('all')}
@@ -77,12 +80,12 @@ export function TodoList() {
 
       {rows.length === 0 ? (
         <div className="rounded-lg bg-white p-6 text-center text-sm text-slate-400 shadow-sm">
-          Nothing tagged for this park yet. Head to the <strong>Tag</strong> page to
-          mark some must-dos and nice-to-dos.
+          Nothing wishlisted for this park yet. Ask the group to mark must-dos and
+          nice-to-dos on the <strong>Tag</strong> page.
         </div>
       ) : (
         <ul className="space-y-2">
-          {rows.map(({ item, tag }) => {
+          {rows.map(({ item, summary, score }) => {
             const stop = inThisDay(item.id);
             const elsewhere = (scheduledOn.get(item.id) ?? []).filter(
               (n) => n !== day.name,
@@ -90,38 +93,59 @@ export function TodoList() {
             return (
               <li
                 key={item.id}
-                className="flex items-center gap-3 rounded-lg bg-white p-3 shadow-sm ring-1 ring-slate-100"
+                className="rounded-lg bg-white p-3 shadow-sm ring-1 ring-slate-100"
               >
-                {tag ? (
-                  <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ background: TAG_META[tag].color }}
-                    title={TAG_META[tag].label}
-                  />
-                ) : (
-                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-slate-200" />
-                )}
+                <div className="flex items-start gap-3">
+                  {score > 0 && (
+                    <span
+                      className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white"
+                      title="Group wishlist score (must = 2, nice = 1)"
+                    >
+                      {score}
+                    </span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">{item.name}</p>
+                    <p className="truncate text-[11px] text-slate-400">
+                      {item.land}
+                      {elsewhere.length > 0 && (
+                        <span className="text-amber-600"> · already on {elsewhere.join(', ')}</span>
+                      )}
+                    </p>
 
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{item.name}</p>
-                  <p className="truncate text-[11px] text-slate-400">
-                    {item.land}
-                    {elsewhere.length > 0 && (
-                      <span className="text-amber-600"> · already on {elsewhere.join(', ')}</span>
+                    {summary.entries.length > 0 && (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {summary.entries.map(({ collaborator, tag }) => (
+                          <span
+                            key={collaborator.id}
+                            className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px]"
+                            title={`${collaborator.name}: ${TAG_META[tag].label}`}
+                          >
+                            <span
+                              className="h-2 w-2 rounded-full"
+                              style={{ background: collaborator.color }}
+                            />
+                            <span className="text-slate-600">{collaborator.name}</span>
+                            <span style={{ color: TAG_META[tag].color }}>
+                              {TAG_META[tag].short}
+                            </span>
+                          </span>
+                        ))}
+                      </div>
                     )}
-                  </p>
-                </div>
+                  </div>
 
-                <button
-                  onClick={() => (stop ? removeStop(stop.id) : addStop(item.id))}
-                  className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-medium ${
-                    stop
-                      ? 'bg-slate-900 text-white'
-                      : 'border border-slate-300 text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  {stop ? '✓ Added' : '+ Add'}
-                </button>
+                  <button
+                    onClick={() => (stop ? removeStop(stop.id) : addStop(item.id))}
+                    className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-medium ${
+                      stop
+                        ? 'bg-slate-900 text-white'
+                        : 'border border-slate-300 text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    {stop ? '✓ Added' : '+ Add'}
+                  </button>
+                </div>
               </li>
             );
           })}

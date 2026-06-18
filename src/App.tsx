@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { JoinGate } from './components/JoinGate';
 import { ScheduleView } from './components/ScheduleView';
 import { TagView } from './components/TagView';
 import { UserBar } from './components/UserBar';
@@ -9,6 +10,7 @@ type View = 'tag' | 'schedule';
 export default function App() {
   const init = useStore((s) => s.init);
   const ready = useStore((s) => s.ready);
+  const meId = useStore((s) => s.meId);
   const [view, setView] = useState<View>('tag');
 
   useEffect(() => {
@@ -22,6 +24,9 @@ export default function App() {
       </div>
     );
   }
+
+  // Hard gate: no name, no app.
+  if (!meId) return <JoinGate />;
 
   return (
     <div className="mx-auto max-w-7xl p-4">
