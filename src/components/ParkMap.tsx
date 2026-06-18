@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react';
 import { ITEMS_BY_ID, itemsForDay } from '../data';
+import { amenitiesForPark } from '../data/amenities';
 import { summarizeTags, TAG_META } from '../lib/tags';
 import type { Attraction } from '../lib/types';
 import { useActiveDay, useStore } from '../store/useStore';
+
+const AMENITY_GLYPH = { restroom: '🚻', water: '🚰' } as const;
 
 const UNTAGGED = '#cbd5e1';
 const PAD = 40;
@@ -41,8 +44,12 @@ export function ParkMap() {
   const collaborators = useStore((s) => s.doc.collaborators);
   const meId = useStore((s) => s.meId);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [amenityInfo, setAmenityInfo] = useState<string | null>(null);
+  const [showRestrooms, setShowRestrooms] = useState(false);
+  const [showWater, setShowWater] = useState(false);
 
   const items = useMemo(() => itemsForDay(day.park, day.event), [day.park, day.event]);
+  const amenities = useMemo(() => amenitiesForPark(day.park), [day.park]);
 
   const view = useMemo(() => {
     const xs = items.map((i) => i.coords.x);
@@ -82,11 +89,31 @@ export function ParkMap() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 text-[10px] text-slate-500">
+      <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500">
         <span className="text-slate-400">Outline:</span>
         {(Object.keys(OUTLINE) as TypeCat[]).map((t) => (
           <Legend key={t} swatch={<Dot fill="#fff" stroke={OUTLINE[t]} />} label={TYPE_LABEL[t]} />
         ))}
+        <span className="ml-1 flex items-center gap-2">
+          <label className="flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={showRestrooms}
+              onChange={(e) => setShowRestrooms(e.target.checked)}
+              className="h-3 w-3 accent-slate-700"
+            />
+            🚻 Restrooms
+          </label>
+          <label className="flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={showWater}
+              onChange={(e) => setShowWater(e.target.checked)}
+              className="h-3 w-3 accent-slate-700"
+            />
+            🚰 Water
+          </label>
+        </span>
       </div>
 
       <svg
@@ -112,7 +139,14 @@ export function ParkMap() {
           const fill = consensus ? TAG_META[consensus].color : UNTAGGED;
           const isSel = it.id === selectedId;
           return (
-            <g key={it.id} onClick={() => setSelectedId(isSel ? null : it.id)} style={{ cursor: 'pointer' }}>
+            <g
+              key={it.id}
+              onClick={() => {
+                setSelectedId(isSel ? null : it.id);
+                setAmenityInfo(null);
+              }}
+              style={{ cursor: 'pointer' }}
+            >
               {/* larger transparent hit target for easy tapping */}
               <circle cx={it.coords.x} cy={it.coords.y} r={13} fill="transparent" />
               <circle
@@ -129,6 +163,25 @@ export function ParkMap() {
           );
         })}
 
+        {amenities
+          .filter((a) => (a.type === 'restroom' ? showRestrooms : showWater))
+          .map((a) => (
+            <g
+              key={a.id}
+              onClick={() => {
+                setAmenityInfo(`${a.type === 'restroom' ? 'Restroom' : 'Water fountain'} · ${a.land}`);
+                setSelectedId(null);
+              }}
+              style={{ cursor: 'pointer' }}
+            >
+              <circle cx={a.coords.x} cy={a.coords.y} r={11} fill="transparent" />
+              <text x={a.coords.x} y={a.coords.y} dy="0.35em" textAnchor="middle" fontSize={15}>
+                {AMENITY_GLYPH[a.type]}
+                <title>{a.type === 'restroom' ? 'Restroom' : 'Water fountain'} · {a.land}</title>
+              </text>
+            </g>
+          ))}
+
         {routePoints.map((p) => (
           <g key={`r-${p.n}`} pointerEvents="none">
             <circle cx={p.x} cy={p.y} r={10} fill="#0f172a" />
@@ -144,10 +197,12 @@ export function ParkMap() {
           <strong>{selected.name}</strong> · {selected.land} ·{' '}
           {TYPE_LABEL[typeCat(selected.kind)]}
         </p>
+      ) : amenityInfo ? (
+        <p className="text-[11px] text-slate-600">{amenityInfo}</p>
       ) : (
         <p className="text-[10px] text-slate-400">
-          Tap a dot to see what it is. Schematic layout; dashed line is your route.
-          (Restrooms aren’t mapped.)
+          Tap a dot to see what it is. Toggle restrooms/water above. Schematic
+          layout; dashed line is your route.
         </p>
       )}
     </section>
