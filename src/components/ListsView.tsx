@@ -57,15 +57,7 @@ function AddRow({
             onChange={(e) => setIsShared(e.target.checked)}
             className="h-3.5 w-3.5 accent-emerald-600"
           />
-          {isShared ? (
-            <span className="font-medium text-emerald-600">
-              Share with everyone
-            </span>
-          ) : (
-            <span>
-              Private <span className="text-slate-400">(default) — check to share with everyone</span>
-            </span>
-          )}
+          Share with everyone <span className="text-slate-400">(otherwise private to you)</span>
         </label>
       )}
     </form>
