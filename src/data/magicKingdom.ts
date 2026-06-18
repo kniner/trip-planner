@@ -98,7 +98,7 @@ export const MAGIC_KINGDOM: Attraction[] = [
     kind: 'experience',
     avgWait: 0,
     maxWait: 0,
-    duration: 45,
+    duration: 60,
     coords: { x: 300, y: 255 },
     note: 'Princess & knight makeovers inside Cinderella Castle • reservation required',
   },
