@@ -99,8 +99,10 @@ export interface PlanStop {
   custom?: CustomEntry;
   /** Set when kind === 'split'. */
   branches?: SplitBranch[];
-  /** Optional target arrival time, "HH:MM" 24h. */
+  /** Optional soft target arrival time, "HH:MM" 24h (shows early/late). */
   arrival?: string;
+  /** Pinned exact start time, "HH:MM" 24h (e.g. a parade) — anchors the clock. */
+  fixedTime?: string;
 }
 
 export interface PlanSettings {

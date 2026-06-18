@@ -16,6 +16,10 @@ export interface EstimatedStop {
   arriveOffset: number;
   /** If a target arrival was set, how far off the estimate is (minutes). */
   arrivalDelta?: number;
+  /** Free minutes waited before a pinned fixed-time stop (e.g. a parade). */
+  idle?: number;
+  /** Minutes you'd arrive AFTER a pinned fixed time (a conflict; 0/undefined if OK). */
+  conflictMin?: number;
   /** Present when the stop is a parallel split: one entry per group. */
   branches?: EstimatedBranch[];
 }
@@ -41,7 +45,9 @@ export interface PlanEstimate {
   totalWait: number;
   totalDuration: number;
   totalBuffer: number;
-  /** Grand total minutes (walk + wait + duration + buffer). */
+  /** Free time spent waiting for pinned fixed-time stops. */
+  totalIdle: number;
+  /** Grand total minutes (walk + wait + duration + buffer + idle). */
   totalMinutes: number;
   endClock: string;
 }
@@ -88,6 +94,7 @@ interface StepResult {
   wait: number;
   duration: number;
   buffer: number;
+  idle: number;
 }
 
 /**
@@ -126,10 +133,29 @@ function stepStop(
     nextPrev = attraction.id;
   }
 
-  const arriveOffset = cursor + walk;
+  // When you'd arrive (after walking) if nothing pinned this stop.
+  const reachOffset = cursor + walk;
+  const reachAbs = startAbs + reachOffset;
+
+  // A pinned fixed time (parade, fireworks, dining reservation) anchors the
+  // stop to the clock: arrive early → free time until showtime; arrive late →
+  // a flagged conflict (you keep your real arrival, but we warn you).
+  let arriveOffset = reachOffset;
+  let idle = 0;
+  let conflictMin: number | undefined;
+  if (stop.fixedTime) {
+    const fixedAbs = parseClock(stop.fixedTime);
+    if (reachAbs <= fixedAbs) {
+      idle = fixedAbs - reachAbs;
+      arriveOffset = fixedAbs - startAbs;
+    } else {
+      conflictMin = reachAbs - fixedAbs;
+    }
+  }
+
   const cursorAfter = arriveOffset + wait + duration + buffer;
   const arriveAbs = startAbs + arriveOffset;
-  const target = stop.arrival ? parseClock(stop.arrival) : undefined;
+  const target = !stop.fixedTime && stop.arrival ? parseClock(stop.arrival) : undefined;
 
   return {
     est: {
@@ -139,6 +165,8 @@ function stepStop(
       wait,
       duration,
       buffer,
+      idle,
+      conflictMin,
       arriveOffset,
       arriveClock: formatClock(arriveAbs),
       leaveClock: formatClock(startAbs + cursorAfter),
@@ -150,6 +178,7 @@ function stepStop(
     wait,
     duration,
     buffer,
+    idle,
   };
 }
 
@@ -159,6 +188,7 @@ interface LinearResult {
   totalWait: number;
   totalDuration: number;
   totalBuffer: number;
+  totalIdle: number;
   /** Elapsed minutes for the whole sequence. */
   end: number;
 }
@@ -176,6 +206,7 @@ function estimateLinear(
   let totalWait = 0;
   let totalDuration = 0;
   let totalBuffer = 0;
+  let totalIdle = 0;
   const est: EstimatedStop[] = [];
 
   for (const stop of stops) {
@@ -188,9 +219,10 @@ function estimateLinear(
     totalWait += r.wait;
     totalDuration += r.duration;
     totalBuffer += r.buffer;
+    totalIdle += r.idle;
   }
 
-  return { stops: est, totalWalk, totalWait, totalDuration, totalBuffer, end: cursor };
+  return { stops: est, totalWalk, totalWait, totalDuration, totalBuffer, totalIdle, end: cursor };
 }
 
 /**
@@ -212,6 +244,7 @@ export function estimatePlan(day: EstimateInput, live: LiveWaits): PlanEstimate 
   let totalWait = 0;
   let totalDuration = 0;
   let totalBuffer = 0;
+  let totalIdle = 0;
   const est: EstimatedStop[] = [];
 
   for (const stop of stops) {
@@ -288,6 +321,7 @@ export function estimatePlan(day: EstimateInput, live: LiveWaits): PlanEstimate 
     totalWait += r.wait;
     totalDuration += r.duration;
     totalBuffer += r.buffer;
+    totalIdle += r.idle;
   }
 
   return {
@@ -296,7 +330,8 @@ export function estimatePlan(day: EstimateInput, live: LiveWaits): PlanEstimate 
     totalWait,
     totalDuration,
     totalBuffer,
-    totalMinutes: totalWalk + totalWait + totalDuration + totalBuffer,
+    totalIdle,
+    totalMinutes: totalWalk + totalWait + totalDuration + totalBuffer + totalIdle,
     endClock: formatClock(startAbs + cursor),
   };
 }

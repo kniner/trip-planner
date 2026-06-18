@@ -180,6 +180,7 @@ interface StoreState {
   removeStop: (stopId: string) => void;
   moveStop: (stopId: string, dir: -1 | 1) => void;
   setArrival: (stopId: string, arrival: string | undefined) => void;
+  setFixedTime: (stopId: string, fixedTime: string | undefined) => void;
   reorderToLandRoute: () => void;
 
   // Parallel split groups (operate on the active day)
@@ -440,6 +441,15 @@ export const useStore = create<StoreState>((set, get) => {
         ...day,
         stops: day.stops.map((s) =>
           s.id === stopId ? { ...s, arrival: arrival || undefined } : s,
+        ),
+      }));
+    },
+
+    setFixedTime(stopId, fixedTime) {
+      updateActiveDay((day) => ({
+        ...day,
+        stops: day.stops.map((s) =>
+          s.id === stopId ? { ...s, fixedTime: fixedTime || undefined } : s,
         ),
       }));
     },

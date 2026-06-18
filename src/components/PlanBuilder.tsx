@@ -24,7 +24,7 @@ export function PlanBuilder() {
   const live = useStore((s) => s.live);
   const removeStop = useStore((s) => s.removeStop);
   const moveStop = useStore((s) => s.moveStop);
-  const setArrival = useStore((s) => s.setArrival);
+  const setFixedTime = useStore((s) => s.setFixedTime);
   const reorder = useStore((s) => s.reorderToLandRoute);
   const addCustomStop = useStore((s) => s.addCustomStop);
   const addSplit = useStore((s) => s.addSplit);
@@ -149,6 +149,11 @@ export function PlanBuilder() {
                 {es.walk > 0 && (
                   <div className="mb-2 text-[11px] text-slate-400">↓ walk {es.walk}m</div>
                 )}
+                {es.idle && es.idle > 0 ? (
+                  <div className="mb-2 text-[11px] text-emerald-600">
+                    ↓ {es.idle}m free until {es.arriveClock}
+                  </div>
+                ) : null}
                 <div className="flex items-start gap-2">
                   <span
                     className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${
@@ -182,38 +187,36 @@ export function PlanBuilder() {
                     </div>
 
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
-                      <span>arrive ~{es.arriveClock}</span>
+                      <span className={es.stop.fixedTime ? 'font-semibold text-slate-700' : ''}>
+                        {es.stop.fixedTime ? '📌 ' : ''}arrive ~{es.arriveClock}
+                      </span>
                       {!isCustom && <span>wait {es.wait}m</span>}
                       <span>takes {es.duration}m</span>
                       {es.buffer > 0 && <span className="text-emerald-600">+{es.buffer}m buffer</span>}
                       <span>leave ~{es.leaveClock}</span>
                     </div>
 
-                    <div className="mt-2 flex items-center gap-2">
-                      <label className="text-[11px] text-slate-400">Target arrival</label>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <label className="text-[11px] text-slate-400">📌 Fixed time</label>
                       <input
                         type="time"
-                        value={es.stop.arrival ?? ''}
-                        onChange={(e) => setArrival(es.stop.id, e.target.value)}
+                        value={es.stop.fixedTime ?? ''}
+                        onChange={(e) => setFixedTime(es.stop.id, e.target.value)}
                         className="rounded border border-slate-200 px-2 py-0.5 text-xs"
                       />
-                      {es.arrivalDelta !== undefined && (
-                        <span
-                          className={`text-[11px] font-medium ${
-                            es.arrivalDelta > 5
-                              ? 'text-red-500'
-                              : es.arrivalDelta < -5
-                                ? 'text-blue-500'
-                                : 'text-emerald-600'
-                          }`}
+                      {es.stop.fixedTime && (
+                        <button
+                          onClick={() => setFixedTime(es.stop.id, undefined)}
+                          className="text-[11px] text-slate-400 underline hover:text-slate-600"
                         >
-                          {es.arrivalDelta === 0
-                            ? 'on time'
-                            : es.arrivalDelta > 0
-                              ? `${es.arrivalDelta}m late`
-                              : `${-es.arrivalDelta}m early`}
-                        </span>
+                          unpin
+                        </button>
                       )}
+                      {es.conflictMin && es.conflictMin > 0 ? (
+                        <span className="text-[11px] font-medium text-red-500">
+                          ⚠ {es.conflictMin}m too late for this start
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                 </div>

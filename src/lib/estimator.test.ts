@@ -214,6 +214,40 @@ describe('estimatePlan', () => {
     expect(est.endClock).toBe('11:00');
   });
 
+  it('anchors a pinned fixed-time stop and inserts free time before it', () => {
+    // A short ride, then a parade pinned at 15:00 with a 9:00 start.
+    const day = dayWith({
+      stops: [
+        { id: '1', kind: 'item', attractionId: 'dumbo' },
+        { id: 'p', kind: 'custom', custom: { name: 'Parade', durationMin: 20 }, fixedTime: '15:00' },
+      ],
+    });
+    const est = estimatePlan(day, {});
+    const parade = est.stops[1];
+    expect(parade.arriveClock).toBe('15:00'); // pinned to the clock
+    expect(parade.idle).toBeGreaterThan(0); // free time before it
+    expect(parade.conflictMin).toBeUndefined();
+    expect(est.endClock).toBe('15:20'); // parade ends 20 min later
+    // Identity holds with idle included.
+    expect(est.totalMinutes).toBe(
+      est.totalWalk + est.totalWait + est.totalDuration + est.totalBuffer + est.totalIdle,
+    );
+  });
+
+  it('flags a conflict when you cannot reach a fixed-time stop in time', () => {
+    const day = dayWith({
+      stops: [
+        // A 90-minute dining block starting 09:00 ends 10:30...
+        { id: 'd', kind: 'custom', custom: { name: 'Brunch', durationMin: 90 } },
+        // ...so a 09:30 fixed showtime is unreachable.
+        { id: 's', kind: 'custom', custom: { name: 'Show', durationMin: 15 }, fixedTime: '09:30' },
+      ],
+    });
+    const est = estimatePlan(day, {});
+    expect(est.stops[1].conflictMin).toBe(60); // arrive 10:30, show at 09:30
+    expect(est.stops[1].idle ?? 0).toBe(0);
+  });
+
   it('computes arrival delta against a target time', () => {
     const day = dayWith({
       stops: [{ id: '1', kind: 'item', attractionId: 'space-mountain', arrival: '09:30' }],
