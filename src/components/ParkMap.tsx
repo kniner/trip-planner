@@ -77,8 +77,9 @@ const ZONES: Record<ParkId, { label: string; color: string; match: (land: string
 /**
  * Schematic, zoomable park map: land zones, walking paths, attractions (fill =
  * group tag, outline = type), the planned route, landmarks, and toggleable
- * amenity layers (restrooms/water/PhotoPass/photo spots/kids). Tap a marker for
- * details; pinch isn't needed — use the +/−/reset buttons and drag to pan.
+ * amenity layers (restrooms/water/PhotoPass/photo spots/kids/breaks). Tap a
+ * marker for details; pinch, mouse-wheel, or the +/−/reset buttons to zoom, and
+ * drag to pan. Markers scale with zoom so they don't overlap.
  */
 export function ParkMap() {
   const day = useActiveDay();
