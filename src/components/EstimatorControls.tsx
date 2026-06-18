@@ -1,6 +1,6 @@
 import type { Pace, WaitMode } from '../lib/types';
 import { PACE_LABELS } from '../lib/walking';
-import { useStore } from '../store/useStore';
+import { useActiveDay, useStore } from '../store/useStore';
 
 const PACES: Pace[] = ['slow', 'average', 'fast'];
 
@@ -37,7 +37,7 @@ function Segmented<T extends string>({
 }
 
 export function EstimatorControls() {
-  const settings = useStore((s) => s.doc.settings);
+  const settings = useActiveDay().settings;
   const liveStatus = useStore((s) => s.liveStatus);
   const setPace = useStore((s) => s.setPace);
   const setWaitMode = useStore((s) => s.setWaitMode);

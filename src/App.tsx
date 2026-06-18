@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { AttractionList } from './components/AttractionList';
+import { DayTabs } from './components/DayTabs';
 import { EstimatorControls } from './components/EstimatorControls';
 import { PlanBuilder } from './components/PlanBuilder';
 import { UserBar } from './components/UserBar';
@@ -25,15 +26,17 @@ export default function App() {
     <div className="mx-auto max-w-7xl p-4">
       <header className="mb-4">
         <h1 className="text-2xl font-extrabold tracking-tight">
-          ✨ Magic Kingdom Planner
+          ✨ Walt Disney World Planner
         </h1>
         <p className="text-sm text-slate-500">
-          Tag rides, build a route, and estimate your day — together.
+          Plan every day across Magic Kingdom & EPCOT — tag rides, build routes,
+          and estimate your time, together.
         </p>
       </header>
 
-      <div className="mb-4">
+      <div className="mb-4 space-y-3">
         <UserBar />
+        <DayTabs />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
@@ -48,9 +51,10 @@ export default function App() {
       </div>
 
       <footer className="mt-8 text-center text-[11px] text-slate-400">
-        Wait times are planning estimates. Live data via queue-times.com when available.
-        Plans sync across browser tabs on this device; swap the sync provider for
-        cross-device collaboration.
+        Wait times are planning estimates; character dining assumes a 90-minute
+        seating. Live data via queue-times.com when available. Plans sync across
+        browser tabs on this device; swap the sync provider for cross-device
+        collaboration.
       </footer>
     </div>
   );

@@ -1,0 +1,184 @@
+import type { Attraction } from '../lib/types';
+
+/**
+ * Magic Kingdom dataset.
+ *
+ * Wait times (avgWait/maxWait) are typical planning figures in minutes; live
+ * current waits are overlaid separately from queue-times.com. `coords` place
+ * each item on a rough ~600x600m grid (origin top-left) approximating the real
+ * park, with Cinderella Castle near the center (300, 300). Items marked
+ * `onlyDuringEvent: 'mnsshp'` appear only on Mickey's Not-So-Scary Halloween
+ * Party nights.
+ */
+export const MAGIC_KINGDOM: Attraction[] = [
+  // Main Street, U.S.A.
+  {
+    id: 'wdw-railroad',
+    name: 'Walt Disney World Railroad — Main Street',
+    land: 'Main Street, U.S.A.',
+    park: 'mk',
+    kind: 'ride',
+    avgWait: 10,
+    maxWait: 20,
+    duration: 20,
+    coords: { x: 300, y: 470 },
+    liveName: 'Walt Disney World Railroad',
+  },
+
+  // Adventureland
+  { id: 'jungle-cruise', name: 'Jungle Cruise', land: 'Adventureland', park: 'mk', kind: 'ride', avgWait: 35, maxWait: 90, duration: 10, coords: { x: 165, y: 360 }, liveName: 'Jungle Cruise' },
+  { id: 'pirates', name: 'Pirates of the Caribbean', land: 'Adventureland', park: 'mk', kind: 'ride', avgWait: 30, maxWait: 75, duration: 9, coords: { x: 130, y: 380 }, liveName: 'Pirates of the Caribbean' },
+  { id: 'tiki-room', name: "Walt Disney's Enchanted Tiki Room", land: 'Adventureland', park: 'mk', kind: 'show', avgWait: 10, maxWait: 20, duration: 17, coords: { x: 185, y: 350 }, liveName: "Walt Disney's Enchanted Tiki Room" },
+  { id: 'magic-carpets', name: 'The Magic Carpets of Aladdin', land: 'Adventureland', park: 'mk', kind: 'ride', avgWait: 20, maxWait: 45, duration: 2, coords: { x: 168, y: 375 }, liveName: 'The Magic Carpets of Aladdin' },
+  { id: 'swiss-treehouse', name: 'Swiss Family Treehouse', land: 'Adventureland', park: 'mk', kind: 'attraction', avgWait: 5, maxWait: 15, duration: 12, coords: { x: 178, y: 340 }, liveName: 'Swiss Family Treehouse' },
+
+  // Frontierland
+  { id: 'big-thunder', name: 'Big Thunder Mountain Railroad', land: 'Frontierland', park: 'mk', kind: 'ride', avgWait: 40, maxWait: 95, duration: 4, coords: { x: 110, y: 240 }, liveName: 'Big Thunder Mountain Railroad' },
+  { id: 'tianas', name: "Tiana's Bayou Adventure", land: 'Frontierland', park: 'mk', kind: 'ride', avgWait: 50, maxWait: 120, duration: 11, coords: { x: 100, y: 270 }, liveName: "Tiana's Bayou Adventure" },
+  { id: 'country-bears', name: 'Country Bear Jamboree', land: 'Frontierland', park: 'mk', kind: 'show', avgWait: 10, maxWait: 25, duration: 16, coords: { x: 140, y: 240 }, liveName: 'Country Bear Jamboree' },
+  { id: 'tom-sawyer', name: 'Tom Sawyer Island', land: 'Frontierland', park: 'mk', kind: 'attraction', avgWait: 5, maxWait: 15, duration: 30, coords: { x: 130, y: 210 }, liveName: 'Tom Sawyer Island' },
+
+  // Liberty Square
+  { id: 'haunted-mansion', name: 'Haunted Mansion', land: 'Liberty Square', park: 'mk', kind: 'ride', avgWait: 35, maxWait: 85, duration: 8, coords: { x: 200, y: 180 }, liveName: 'Haunted Mansion' },
+  { id: 'hall-of-presidents', name: 'The Hall of Presidents', land: 'Liberty Square', park: 'mk', kind: 'show', avgWait: 10, maxWait: 20, duration: 23, coords: { x: 220, y: 200 }, liveName: 'The Hall of Presidents' },
+  { id: 'riverboat', name: 'Liberty Square Riverboat', land: 'Liberty Square', park: 'mk', kind: 'ride', avgWait: 15, maxWait: 30, duration: 17, coords: { x: 170, y: 200 }, liveName: 'Liberty Square Riverboat' },
+
+  // Fantasyland
+  { id: 'seven-dwarfs', name: 'Seven Dwarfs Mine Train', land: 'Fantasyland', park: 'mk', kind: 'ride', avgWait: 55, maxWait: 130, duration: 3, coords: { x: 320, y: 140 }, liveName: 'Seven Dwarfs Mine Train' },
+  { id: 'peter-pan', name: "Peter Pan's Flight", land: 'Fantasyland', park: 'mk', kind: 'ride', avgWait: 45, maxWait: 90, duration: 3, coords: { x: 280, y: 170 }, liveName: "Peter Pan's Flight" },
+  { id: 'small-world', name: "it's a small world", land: 'Fantasyland', park: 'mk', kind: 'ride', avgWait: 20, maxWait: 45, duration: 11, coords: { x: 260, y: 150 }, liveName: "it's a small world" },
+  { id: 'winnie-pooh', name: 'The Many Adventures of Winnie the Pooh', land: 'Fantasyland', park: 'mk', kind: 'ride', avgWait: 25, maxWait: 55, duration: 4, coords: { x: 340, y: 160 }, liveName: 'The Many Adventures of Winnie the Pooh' },
+  { id: 'mad-tea-party', name: 'Mad Tea Party', land: 'Fantasyland', park: 'mk', kind: 'ride', avgWait: 20, maxWait: 40, duration: 2, coords: { x: 350, y: 175 }, liveName: 'Mad Tea Party' },
+  { id: 'carrousel', name: 'Prince Charming Regal Carrousel', land: 'Fantasyland', park: 'mk', kind: 'ride', avgWait: 10, maxWait: 25, duration: 2, coords: { x: 300, y: 180 }, liveName: 'Prince Charming Regal Carrousel' },
+  { id: 'little-mermaid', name: 'Under the Sea ~ Journey of The Little Mermaid', land: 'Fantasyland', park: 'mk', kind: 'ride', avgWait: 20, maxWait: 45, duration: 6, coords: { x: 370, y: 150 }, liveName: 'Under the Sea ~ Journey of The Little Mermaid' },
+  { id: 'philharmagic', name: "Mickey's PhilharMagic", land: 'Fantasyland', park: 'mk', kind: 'show', avgWait: 15, maxWait: 30, duration: 12, coords: { x: 290, y: 185 }, liveName: "Mickey's PhilharMagic" },
+  { id: 'dumbo', name: 'Dumbo the Flying Elephant', land: 'Fantasyland', park: 'mk', kind: 'ride', avgWait: 20, maxWait: 45, duration: 2, coords: { x: 360, y: 130 }, liveName: 'Dumbo the Flying Elephant' },
+
+  // Tomorrowland
+  { id: 'space-mountain', name: 'Space Mountain', land: 'Tomorrowland', park: 'mk', kind: 'ride', avgWait: 45, maxWait: 110, duration: 3, coords: { x: 430, y: 250 }, liveName: 'Space Mountain' },
+  { id: 'buzz', name: "Buzz Lightyear's Space Ranger Spin", land: 'Tomorrowland', park: 'mk', kind: 'ride', avgWait: 25, maxWait: 55, duration: 5, coords: { x: 410, y: 290 }, liveName: "Buzz Lightyear's Space Ranger Spin" },
+  { id: 'peoplemover', name: 'Tomorrowland Transit Authority PeopleMover', land: 'Tomorrowland', park: 'mk', kind: 'ride', avgWait: 10, maxWait: 25, duration: 10, coords: { x: 430, y: 280 }, liveName: 'Tomorrowland Transit Authority PeopleMover' },
+  { id: 'astro-orbiter', name: 'Astro Orbiter', land: 'Tomorrowland', park: 'mk', kind: 'ride', avgWait: 20, maxWait: 40, duration: 2, coords: { x: 425, y: 275 }, liveName: 'Astro Orbiter' },
+  { id: 'carousel-progress', name: "Walt Disney's Carousel of Progress", land: 'Tomorrowland', park: 'mk', kind: 'show', avgWait: 5, maxWait: 15, duration: 21, coords: { x: 450, y: 270 }, liveName: "Walt Disney's Carousel of Progress" },
+  { id: 'speedway', name: 'Tomorrowland Speedway', land: 'Tomorrowland', park: 'mk', kind: 'ride', avgWait: 30, maxWait: 60, duration: 5, coords: { x: 430, y: 210 }, liveName: 'Tomorrowland Speedway' },
+  { id: 'laugh-floor', name: 'Monsters, Inc. Laugh Floor', land: 'Tomorrowland', park: 'mk', kind: 'show', avgWait: 15, maxWait: 30, duration: 15, coords: { x: 415, y: 300 }, liveName: 'Monsters, Inc. Laugh Floor' },
+
+  // Character dining (table-service; book in advance). Duration assumes 90 min.
+  {
+    id: 'mk-cinderellas-royal-table',
+    name: "Cinderella's Royal Table",
+    land: 'Character Dining',
+    park: 'mk',
+    kind: 'dining',
+    avgWait: 0,
+    maxWait: 0,
+    duration: 90,
+    coords: { x: 300, y: 270 },
+    note: 'Inside the castle • Disney Princesses • reservation required',
+  },
+  {
+    id: 'mk-crystal-palace',
+    name: 'The Crystal Palace',
+    land: 'Character Dining',
+    park: 'mk',
+    kind: 'dining',
+    avgWait: 0,
+    maxWait: 0,
+    duration: 90,
+    coords: { x: 250, y: 350 },
+    note: 'Winnie the Pooh & friends • buffet • reservation required',
+  },
+
+  // Mickey's Not-So-Scary Halloween Party — party-exclusive entertainment.
+  {
+    id: 'mnsshp-boo-to-you-parade',
+    name: "Mickey's 'Boo-to-You' Halloween Parade",
+    land: 'MNSSHP — Party Exclusive',
+    park: 'mk',
+    kind: 'entertainment',
+    avgWait: 30,
+    maxWait: 60,
+    duration: 18,
+    coords: { x: 300, y: 430 },
+    onlyDuringEvent: 'mnsshp',
+    note: 'Led by the Headless Horseman • runs twice nightly • camp early for a spot',
+  },
+  {
+    id: 'mnsshp-not-so-spooky-spectacular',
+    name: "Disney's Not-So-Spooky Spectacular",
+    land: 'MNSSHP — Party Exclusive',
+    park: 'mk',
+    kind: 'entertainment',
+    avgWait: 20,
+    maxWait: 45,
+    duration: 12,
+    coords: { x: 300, y: 330 },
+    onlyDuringEvent: 'mnsshp',
+    note: 'Party fireworks with Jack Skellington as host',
+  },
+  {
+    id: 'mnsshp-hocus-pocus',
+    name: 'Hocus Pocus Villain Spelltacular',
+    land: 'MNSSHP — Party Exclusive',
+    park: 'mk',
+    kind: 'entertainment',
+    avgWait: 15,
+    maxWait: 30,
+    duration: 22,
+    coords: { x: 300, y: 320 },
+    onlyDuringEvent: 'mnsshp',
+    note: 'Castle stage show with the Sanderson Sisters',
+  },
+  {
+    id: 'mnsshp-jack-sally',
+    name: 'Jack Skellington & Sally Meet & Greet',
+    land: 'MNSSHP — Party Exclusive',
+    park: 'mk',
+    kind: 'entertainment',
+    avgWait: 35,
+    maxWait: 75,
+    duration: 15,
+    coords: { x: 230, y: 230 },
+    onlyDuringEvent: 'mnsshp',
+    note: 'Rare party-only meet near Frontierland',
+  },
+  {
+    id: 'mnsshp-villains',
+    name: 'Disney Villains Meet & Greets',
+    land: 'MNSSHP — Party Exclusive',
+    park: 'mk',
+    kind: 'entertainment',
+    avgWait: 30,
+    maxWait: 70,
+    duration: 15,
+    coords: { x: 320, y: 360 },
+    onlyDuringEvent: 'mnsshp',
+    note: 'Cruella, Gus & Jaq, the Tremaines and more appear only at the party',
+  },
+  {
+    id: 'mnsshp-cadaver-dans',
+    name: 'Cadaver Dans',
+    land: 'MNSSHP — Party Exclusive',
+    park: 'mk',
+    kind: 'entertainment',
+    avgWait: 10,
+    maxWait: 20,
+    duration: 15,
+    coords: { x: 150, y: 220 },
+    onlyDuringEvent: 'mnsshp',
+    note: 'Spooky barbershop quartet on the Rivers of America',
+  },
+  {
+    id: 'mnsshp-trick-or-treat',
+    name: 'Trick-or-Treat Trails',
+    land: 'MNSSHP — Party Exclusive',
+    park: 'mk',
+    kind: 'attraction',
+    avgWait: 5,
+    maxWait: 15,
+    duration: 10,
+    coords: { x: 220, y: 300 },
+    onlyDuringEvent: 'mnsshp',
+    note: 'Free candy at stations around the park (allergy-friendly options too)',
+  },
+];
