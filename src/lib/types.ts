@@ -107,6 +107,12 @@ export interface PlanStop {
   arrival?: string;
   /** Pinned exact start time, "HH:MM" 24h (e.g. a parade) — anchors the clock. */
   fixedTime?: string;
+  /**
+   * Manual wait-time override in minutes (item stops only). Overrides the
+   * avg/max/live estimate — handy for party nights (MNSSHP) where real waits
+   * differ a lot from typical-day averages.
+   */
+  waitOverride?: number;
 }
 
 export interface PlanSettings {

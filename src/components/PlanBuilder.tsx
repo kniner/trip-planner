@@ -25,6 +25,7 @@ export function PlanBuilder() {
   const removeStop = useStore((s) => s.removeStop);
   const moveStop = useStore((s) => s.moveStop);
   const setFixedTime = useStore((s) => s.setFixedTime);
+  const setWaitOverride = useStore((s) => s.setWaitOverride);
   const reorder = useStore((s) => s.reorderToLandRoute);
   const addCustomStop = useStore((s) => s.addCustomStop);
   const addSplit = useStore((s) => s.addSplit);
@@ -209,7 +210,11 @@ export function PlanBuilder() {
                       <span className={es.stop.fixedTime ? 'font-semibold text-slate-700' : ''}>
                         {es.stop.fixedTime ? '📌 ' : ''}arrive ~{es.arriveClock}
                       </span>
-                      {!isCustom && <span>wait {es.wait}m</span>}
+                      {!isCustom && (
+                        <span className={es.stop.waitOverride !== undefined ? 'font-semibold text-indigo-600' : ''}>
+                          wait {es.wait}m{es.stop.waitOverride !== undefined ? ' (set)' : ''}
+                        </span>
+                      )}
                       <span>takes {es.duration}m</span>
                       {es.buffer > 0 && <span className="text-emerald-600">+{es.buffer}m buffer</span>}
                       <span>leave ~{es.leaveClock}</span>
@@ -237,6 +242,39 @@ export function PlanBuilder() {
                         </span>
                       ) : null}
                     </div>
+
+                    {!isCustom && (
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <label className="text-[11px] text-slate-400">⏱ Wait override</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={es.stop.waitOverride ?? ''}
+                          placeholder={String(es.wait)}
+                          onChange={(e) =>
+                            setWaitOverride(
+                              es.stop.id,
+                              e.target.value === '' ? undefined : Number(e.target.value),
+                            )
+                          }
+                          className={`w-16 rounded border px-2 py-0.5 text-xs ${
+                            es.stop.waitOverride !== undefined
+                              ? 'border-indigo-300 bg-indigo-50'
+                              : 'border-slate-200'
+                          }`}
+                          title="Set the real wait for this stop (e.g. a party night)"
+                        />
+                        <span className="text-[11px] text-slate-400">min</span>
+                        {es.stop.waitOverride !== undefined && (
+                          <button
+                            onClick={() => setWaitOverride(es.stop.id, undefined)}
+                            className="text-[11px] text-slate-400 underline hover:text-slate-600"
+                          >
+                            reset to estimate
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </li>

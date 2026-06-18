@@ -127,7 +127,11 @@ function stepStop(
     label = attraction.name;
     const prev = prevItemId ? ITEMS_BY_ID[prevItemId] : undefined;
     walk = prev ? walkMinutes(prev, attraction, settings.pace) : 0;
-    wait = waitFor(attraction.id, settings.waitMode, live);
+    // A manual override (e.g. real MNSSHP party waits) wins over the model.
+    wait =
+      typeof stop.waitOverride === 'number'
+        ? stop.waitOverride
+        : waitFor(attraction.id, settings.waitMode, live);
     duration = attraction.duration;
     buffer = bufferPerStop;
     nextPrev = attraction.id;

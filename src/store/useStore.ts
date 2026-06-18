@@ -205,6 +205,7 @@ interface StoreState {
   moveStop: (stopId: string, dir: -1 | 1) => void;
   setArrival: (stopId: string, arrival: string | undefined) => void;
   setFixedTime: (stopId: string, fixedTime: string | undefined) => void;
+  setWaitOverride: (stopId: string, minutes: number | undefined) => void;
   reorderToLandRoute: () => void;
 
   // Parallel split groups (operate on the active day)
@@ -495,6 +496,19 @@ export const useStore = create<StoreState>((set, get) => {
         ...day,
         stops: day.stops.map((s) =>
           s.id === stopId ? { ...s, fixedTime: fixedTime || undefined } : s,
+        ),
+      }));
+    },
+
+    setWaitOverride(stopId, minutes) {
+      const clean =
+        typeof minutes === 'number' && Number.isFinite(minutes) && minutes >= 0
+          ? Math.round(minutes)
+          : undefined;
+      updateActiveDay((day) => ({
+        ...day,
+        stops: day.stops.map((s) =>
+          s.id === stopId ? { ...s, waitOverride: clean } : s,
         ),
       }));
     },
