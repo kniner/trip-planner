@@ -693,6 +693,7 @@ function GroceryRow({ item }: { item: GItem }) {
   const setGroceryExtraQty = useStore((s) => s.setGroceryExtraQty);
   const toggleGroceryClaim = useStore((s) => s.toggleGroceryClaim);
   const setGroceryStore = useStore((s) => s.setGroceryStore);
+  const addHomePackItem = useStore((s) => s.addHomePackItem);
 
   const isChecked = meals.groceryChecked.includes(item.key);
   const override = item.isExtra ? undefined : meals.groceryOverrides[item.key];
@@ -701,6 +702,7 @@ function GroceryRow({ item }: { item: GItem }) {
   const meta = meals.groceryMeta[item.key] ?? {};
   const claimer = collaborators.find((c) => c.id === meta.assignee);
   const mine = meta.assignee === meId;
+  const isHome = (meta.store ?? '').trim().toLowerCase() === 'home';
 
   return (
     <li className="space-y-1.5 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100">
@@ -762,12 +764,21 @@ function GroceryRow({ item }: { item: GItem }) {
         <input
           list="grocery-stores"
           value={meta.store ?? ''}
-          onChange={(e) => setGroceryStore(item.key, e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value;
+            setGroceryStore(item.key, v);
+            // Claimed + sourced from home → it's a thing to pack, not buy.
+            if (mine && v.trim().toLowerCase() === 'home') addHomePackItem(item.name);
+          }}
           placeholder="store"
           className="w-28 rounded border border-slate-200 px-1.5 py-0.5 text-[11px]"
         />
         <button
-          onClick={() => toggleGroceryClaim(item.key)}
+          onClick={() => {
+            const willBeMine = !mine;
+            toggleGroceryClaim(item.key);
+            if (willBeMine && isHome) addHomePackItem(item.name);
+          }}
           className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
             mine
               ? 'bg-emerald-600 text-white'

@@ -236,6 +236,8 @@ interface StoreState {
   resetGroceryLine: (key: string) => void;
   toggleGroceryClaim: (key: string) => void;
   setGroceryStore: (key: string, store: string) => void;
+  /** Add a claimed "from home" grocery item to the claimer's packing list. */
+  addHomePackItem: (name: string) => void;
 
   refreshLive: () => Promise<void>;
 }
@@ -930,6 +932,27 @@ export const useStore = create<StoreState>((set, get) => {
       commit({
         ...doc,
         meals: { ...doc.meals, extras: doc.meals.extras.filter((x) => x.id !== id) },
+      });
+    },
+
+    addHomePackItem(name) {
+      const meId = me();
+      if (!meId) return;
+      const clean = name.trim();
+      if (!clean) return;
+      const text = `Bring from home: ${clean}`;
+      const doc = get().doc;
+      // Private to the claimer, and deduped so re-claiming never piles up copies.
+      const exists = doc.personalItems.some(
+        (p) => p.addedBy === meId && p.text.trim().toLowerCase() === text.toLowerCase(),
+      );
+      if (exists) return;
+      commit({
+        ...doc,
+        personalItems: [
+          ...doc.personalItems,
+          { id: uid(), text, addedBy: meId, private: true },
+        ],
       });
     },
 
