@@ -28,7 +28,15 @@ export function PlanBuilder() {
   const reorder = useStore((s) => s.reorderToLandRoute);
   const addCustomStop = useStore((s) => s.addCustomStop);
   const addSplit = useStore((s) => s.addSplit);
+  const collaborators = useStore((s) => s.doc.collaborators);
   const day = useActiveDay();
+
+  const memberNames = (members: string[], manualMembers: string[]): string[] => [
+    ...members
+      .map((id) => collaborators.find((c) => c.id === id)?.name)
+      .filter((n): n is string => !!n),
+    ...manualMembers,
+  ];
 
   const estimate = useMemo(() => estimatePlan(day, live), [day, live]);
 
@@ -94,6 +102,21 @@ export function PlanBuilder() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold">Split — parallel groups</p>
                       <p className="text-[11px] text-slate-500">starts ~{es.arriveClock}</p>
+                      <div className="mt-1 flex flex-col gap-0.5">
+                        {(es.branches ?? []).map((b) => {
+                          const names = memberNames(b.members, b.manualMembers);
+                          return (
+                            <p key={b.id} className="text-[11px] text-slate-600">
+                              <strong>{b.name}:</strong>{' '}
+                              {names.length > 0 ? (
+                                names.join(', ')
+                              ) : (
+                                <span className="text-slate-400">unassigned</span>
+                              )}
+                            </p>
+                          );
+                        })}
+                      </div>
                     </div>
                     <div className="flex shrink-0 gap-1">
                       <IconBtn onClick={() => moveStop(es.stop.id, -1)} disabled={i === 0}>
