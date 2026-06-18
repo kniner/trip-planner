@@ -104,7 +104,7 @@ function NoteEditor({ note, onSave }: { note?: string; onSave: (n: string) => vo
           setDraft(note);
           setEditing(true);
         }}
-        className="block w-full whitespace-pre-wrap text-left text-[11px] italic leading-snug text-slate-400 hover:text-slate-600"
+        className="block w-full whitespace-pre-wrap text-left text-[11px] italic leading-snug text-slate-500 active:text-slate-700"
         title="Edit note"
       >
         {note}
@@ -118,7 +118,7 @@ function NoteEditor({ note, onSave }: { note?: string; onSave: (n: string) => vo
         setDraft('');
         setEditing(true);
       }}
-      className="text-[10px] text-slate-200 hover:text-slate-400"
+      className="text-[11px] text-slate-400 active:text-slate-600"
     >
       + note
     </button>
