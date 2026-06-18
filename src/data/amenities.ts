@@ -10,7 +10,8 @@ export type AmenityType =
   | 'photopass'
   | 'photospot'
   | 'landmark'
-  | 'kids';
+  | 'kids'
+  | 'break';
 
 export interface Amenity {
   id: string;
@@ -86,6 +87,20 @@ export const AMENITIES: Amenity[] = [
   { id: 'mk-kids-sorcerers', park: 'mk', type: 'kids', land: 'Sorcerers of the Magic Kingdom (Firehouse)', coords: { x: 290, y: 460 }, note: 'Free trading-card spell game with portals park-wide' },
   { id: 'mk-kids-tom-sawyer', park: 'mk', type: 'kids', land: 'Tom Sawyer Island (Frontierland)', coords: { x: 130, y: 210 }, note: 'Caves, bridges & a fort to explore (raft over)' },
   { id: 'ep-kids-ducktales', park: 'epcot', type: 'kids', land: 'World Showcase Adventure', coords: { x: 300, y: 430 }, note: 'DuckTales interactive phone game around the pavilions' },
+  { id: 'mk-kids-belle', park: 'mk', type: 'kids', land: 'Enchanted Tales with Belle (Fantasyland)', coords: { x: 270, y: 165 }, note: 'Indoor interactive story — kids get parts in the show' },
+  { id: 'mk-kids-caseyjr', park: 'mk', type: 'kids', land: "Casey Jr. Splash 'N' Soak (Storybook Circus)", coords: { x: 360, y: 120 }, note: 'Water play area to cool off (bring a change of clothes)' },
+
+  // Indoor / air-conditioned break spots (good for a rest, especially with kids)
+  { id: 'mk-break-cop', park: 'mk', type: 'break', land: "Carousel of Progress (Tomorrowland)", coords: { x: 452, y: 268 }, note: '21-min AC sit-down show — a classic break' },
+  { id: 'mk-break-hop', park: 'mk', type: 'break', land: 'Hall of Presidents (Liberty Square)', coords: { x: 222, y: 198 }, note: 'AC theater, ~23 min — sit and cool off' },
+  { id: 'mk-break-bears', park: 'mk', type: 'break', land: 'Country Bear Jamboree (Frontierland)', coords: { x: 142, y: 238 }, note: 'Short AC show — easy downtime' },
+  { id: 'mk-break-tiki', park: 'mk', type: 'break', land: 'Enchanted Tiki Room (Adventureland)', coords: { x: 187, y: 348 }, note: 'AC sit-down show — quick rest' },
+  { id: 'mk-break-baby', park: 'mk', type: 'break', land: 'Baby Care Center (Main Street)', coords: { x: 288, y: 455 }, note: 'Quiet AC lounge — nursing, changing, feeding, calm-down space' },
+  { id: 'mk-break-arcade', park: 'mk', type: 'break', land: 'Tomorrowland Light & Power Co. arcade', coords: { x: 415, y: 295 }, note: 'Indoor arcade by Buzz — out of the sun' },
+
+  { id: 'ep-break-seas', park: 'epcot', type: 'break', land: 'The Seas pavilion (World Nature)', coords: { x: 140, y: 162 }, note: 'Huge AC aquarium — wander & rest, great for kids' },
+  { id: 'ep-break-american', park: 'epcot', type: 'break', land: 'The American Adventure (World Showcase)', coords: { x: 260, y: 600 }, note: 'AC theater show, ~29 min — a real sit-down break' },
+  { id: 'ep-break-shorts', park: 'epcot', type: 'break', land: 'Disney & Pixar Short Film Festival', coords: { x: 200, y: 255 }, note: 'AC theater of animated shorts — easy downtime' },
 ];
 
 export function amenitiesForPark(park: ParkId): Amenity[] {

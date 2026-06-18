@@ -16,6 +16,7 @@ const AMENITY_GLYPH: Record<AmenityType, string> = {
   photospot: '✨',
   landmark: '🏰',
   kids: '🧸',
+  break: '🧊',
 };
 const AMENITY_LABEL: Record<AmenityType, string> = {
   restroom: 'Restroom',
@@ -24,6 +25,7 @@ const AMENITY_LABEL: Record<AmenityType, string> = {
   photospot: 'Photo spot',
   landmark: 'Landmark',
   kids: 'Kids interactive',
+  break: 'Indoor break',
 };
 /** Layers the user can toggle (landmarks are always shown). */
 const AMENITY_TOGGLES: { type: AmenityType; label: string }[] = [
@@ -32,6 +34,7 @@ const AMENITY_TOGGLES: { type: AmenityType; label: string }[] = [
   { type: 'photopass', label: '📷 PhotoPass' },
   { type: 'photospot', label: '✨ Photo spots' },
   { type: 'kids', label: '🧸 Kids' },
+  { type: 'break', label: '🧊 Indoor breaks' },
 ];
 
 type TypeCat = 'ride' | 'show' | 'attraction' | 'food';
@@ -91,6 +94,7 @@ export function ParkMap() {
     photospot: false,
     landmark: true,
     kids: false,
+    break: false,
   });
 
   const items = useMemo(() => itemsForDay(day.park, day.event), [day.park, day.event]);
@@ -112,6 +116,8 @@ export function ParkMap() {
   const [center, setCenter] = useState<{ x: number; y: number } | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const drag = useRef<{ x: number; y: number; cx: number; cy: number } | null>(null);
+  const pointers = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinch = useRef<{ dist: number; zoom: number } | null>(null);
 
   useEffect(() => {
     // Reset view when the park changes.
@@ -161,20 +167,55 @@ export function ParkMap() {
   const vbW = base.w / zoom;
   const vbH = base.h / zoom;
   const viewBox = `${cx - vbW / 2} ${cy - vbH / 2} ${vbW} ${vbH}`;
+  // Markers are sized in viewBox units; dividing by zoom keeps them a constant
+  // on-screen size so they shrink (relative to the map) and overlap less.
+  const s = 1 / zoom;
+
+  const twoPointerDist = () => {
+    const pts = [...pointers.current.values()];
+    if (pts.length < 2) return 0;
+    return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+  };
 
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
-    drag.current = { x: e.clientX, y: e.clientY, cx, cy };
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     (e.target as Element).setPointerCapture?.(e.pointerId);
+    if (pointers.current.size >= 2) {
+      drag.current = null;
+      pinch.current = { dist: twoPointerDist(), zoom };
+    } else {
+      drag.current = { x: e.clientX, y: e.clientY, cx, cy };
+    }
   };
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!drag.current || !svgRef.current) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    const dxView = ((e.clientX - drag.current.x) * vbW) / rect.width;
-    const dyView = ((e.clientY - drag.current.y) * vbH) / rect.height;
-    setCenter({ x: drag.current.cx - dxView, y: drag.current.cy - dyView });
+    if (!pointers.current.has(e.pointerId)) return;
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (pinch.current && pointers.current.size >= 2) {
+      const ratio = twoPointerDist() / (pinch.current.dist || 1);
+      setZoom(Math.min(Math.max(pinch.current.zoom * ratio, 1), 6));
+      return;
+    }
+    if (drag.current && svgRef.current) {
+      const rect = svgRef.current.getBoundingClientRect();
+      const dxView = ((e.clientX - drag.current.x) * vbW) / rect.width;
+      const dyView = ((e.clientY - drag.current.y) * vbH) / rect.height;
+      setCenter({ x: drag.current.cx - dxView, y: drag.current.cy - dyView });
+    }
   };
-  const endDrag = () => {
-    drag.current = null;
+  const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
+    pointers.current.delete(e.pointerId);
+    if (pointers.current.size < 2) pinch.current = null;
+    if (pointers.current.size === 0) {
+      drag.current = null;
+    } else {
+      // A finger remains after a pinch — resume panning from it.
+      const [p] = [...pointers.current.values()];
+      drag.current = { x: p.x, y: p.y, cx, cy };
+    }
+  };
+  const onWheel = (e: React.WheelEvent<SVGSVGElement>) => {
+    setZoom((z) => Math.min(Math.max(z * (e.deltaY < 0 ? 1.1 : 0.9), 1), 6));
   };
 
   const selected = selectedId ? ITEMS_BY_ID[selectedId] : undefined;
@@ -220,14 +261,15 @@ export function ParkMap() {
           aria-label={`Map of ${day.park === 'mk' ? 'Magic Kingdom' : 'EPCOT'}`}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
-          onPointerUp={endDrag}
-          onPointerLeave={endDrag}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+          onWheel={onWheel}
         >
           {/* Land zones */}
           {zones.map((z) => (
             <g key={z.label} pointerEvents="none">
               <rect x={z.x} y={z.y} width={z.w} height={z.h} rx={16} fill={z.color} opacity={0.4} />
-              <text x={z.x + z.w / 2} y={z.y + 15} textAnchor="middle" fontSize={13} fontWeight={700} fill="#334155" opacity={0.75}>
+              <text x={z.x + z.w / 2} y={z.y + 15 * s} textAnchor="middle" fontSize={13 * s} fontWeight={700} fill="#334155" opacity={0.75}>
                 {z.label}
               </text>
             </g>
@@ -240,7 +282,7 @@ export function ParkMap() {
               points={p.map((pt) => `${pt.x},${pt.y}`).join(' ')}
               fill="none"
               stroke="#ffffff"
-              strokeWidth={7}
+              strokeWidth={7 * s}
               strokeLinecap="round"
               strokeLinejoin="round"
               opacity={0.9}
@@ -254,9 +296,9 @@ export function ParkMap() {
               points={routePoints.map((p) => `${p.x},${p.y}`).join(' ')}
               fill="none"
               stroke="#0f172a"
-              strokeWidth={3}
+              strokeWidth={3 * s}
               strokeLinejoin="round"
-              strokeDasharray="6 5"
+              strokeDasharray={`${6 * s} ${5 * s}`}
               opacity={0.55}
               pointerEvents="none"
             />
@@ -276,14 +318,14 @@ export function ParkMap() {
                 }}
                 style={{ cursor: 'pointer' }}
               >
-                <circle cx={it.coords.x} cy={it.coords.y} r={13} fill="transparent" />
+                <circle cx={it.coords.x} cy={it.coords.y} r={13 * s} fill="transparent" />
                 <circle
                   cx={it.coords.x}
                   cy={it.coords.y}
-                  r={isSel ? 9 : 7}
+                  r={(isSel ? 9 : 7) * s}
                   fill={fill}
                   stroke={OUTLINE[typeCat(it.kind)]}
-                  strokeWidth={isSel ? 4 : 2}
+                  strokeWidth={(isSel ? 4 : 2) * s}
                 >
                   <title>{it.name}</title>
                 </circle>
@@ -305,8 +347,8 @@ export function ParkMap() {
                   }}
                   style={{ cursor: 'pointer' }}
                 >
-                  <circle cx={a.coords.x} cy={a.coords.y} r={11} fill="transparent" />
-                  <text x={a.coords.x} y={a.coords.y} dy="0.35em" textAnchor="middle" fontSize={15}>
+                  <circle cx={a.coords.x} cy={a.coords.y} r={11 * s} fill="transparent" />
+                  <text x={a.coords.x} y={a.coords.y} dy="0.35em" textAnchor="middle" fontSize={15 * s}>
                     {AMENITY_GLYPH[a.type]}
                     <title>{caption}</title>
                   </text>
@@ -328,8 +370,8 @@ export function ParkMap() {
                   }}
                   style={{ cursor: 'pointer' }}
                 >
-                  <circle cx={a.coords.x} cy={a.coords.y} r={14} fill="transparent" />
-                  <text x={a.coords.x} y={a.coords.y} dy="0.35em" textAnchor="middle" fontSize={22}>
+                  <circle cx={a.coords.x} cy={a.coords.y} r={14 * s} fill="transparent" />
+                  <text x={a.coords.x} y={a.coords.y} dy="0.35em" textAnchor="middle" fontSize={22 * s}>
                     {AMENITY_GLYPH.landmark}
                     <title>{caption}</title>
                   </text>
@@ -340,8 +382,8 @@ export function ParkMap() {
           {/* Route order numbers */}
           {routePoints.map((p) => (
             <g key={`r-${p.n}`} pointerEvents="none">
-              <circle cx={p.x} cy={p.y} r={10} fill="#0f172a" />
-              <text x={p.x} y={p.y} dy="0.35em" textAnchor="middle" fontSize={11} fontWeight="bold" fill="white">
+              <circle cx={p.x} cy={p.y} r={10 * s} fill="#0f172a" />
+              <text x={p.x} y={p.y} dy="0.35em" textAnchor="middle" fontSize={11 * s} fontWeight="bold" fill="white">
                 {p.n}
               </text>
             </g>
