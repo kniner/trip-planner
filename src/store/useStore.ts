@@ -76,6 +76,7 @@ function emptyMealPlan(): PlanDoc['meals'] {
     groceryChecked: [],
     extras: [],
     groceryOverrides: {},
+    groceryMeta: {},
   };
 }
 
@@ -198,6 +199,8 @@ interface StoreState {
   setGroceryQty: (key: string, qty: number) => void;
   removeGroceryLine: (key: string) => void;
   resetGroceryLine: (key: string) => void;
+  toggleGroceryClaim: (key: string) => void;
+  setGroceryStore: (key: string, store: string) => void;
 
   refreshLive: () => Promise<void>;
 }
@@ -767,6 +770,33 @@ export const useStore = create<StoreState>((set, get) => {
       const { [key]: _gone, ...rest } = doc.meals.groceryOverrides;
       void _gone;
       commit({ ...doc, meals: { ...doc.meals, groceryOverrides: rest } });
+    },
+
+    toggleGroceryClaim(key) {
+      const meId = me();
+      if (!meId) return;
+      const doc = get().doc;
+      const meta = doc.meals.groceryMeta[key] ?? {};
+      const assignee = meta.assignee === meId ? undefined : meId;
+      commit({
+        ...doc,
+        meals: {
+          ...doc.meals,
+          groceryMeta: { ...doc.meals.groceryMeta, [key]: { ...meta, assignee } },
+        },
+      });
+    },
+
+    setGroceryStore(key, store) {
+      const doc = get().doc;
+      const meta = doc.meals.groceryMeta[key] ?? {};
+      commit({
+        ...doc,
+        meals: {
+          ...doc.meals,
+          groceryMeta: { ...doc.meals.groceryMeta, [key]: { ...meta, store: store.trim() || undefined } },
+        },
+      });
     },
 
     removeGroceryExtra(id) {

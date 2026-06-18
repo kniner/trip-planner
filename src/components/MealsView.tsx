@@ -505,114 +505,100 @@ function CustomRecipeBuilder() {
   );
 }
 
+interface GItem {
+  key: string;
+  name: string;
+  unit?: string;
+  baseQty?: number;
+  isExtra: boolean;
+}
+
 function Grocery({ grocery }: { grocery: ReturnType<typeof computeGrocery> }) {
   const meals = useStore((s) => s.doc.meals);
-  const toggleGrocery = useStore((s) => s.toggleGrocery);
   const addGroceryExtra = useStore((s) => s.addGroceryExtra);
-  const removeGroceryExtra = useStore((s) => s.removeGroceryExtra);
-  const setGroceryQty = useStore((s) => s.setGroceryQty);
-  const removeGroceryLine = useStore((s) => s.removeGroceryLine);
   const resetGroceryLine = useStore((s) => s.resetGroceryLine);
   const [extra, setExtra] = useState('');
+  const [byStore, setByStore] = useState(false);
 
-  const checked = new Set(meals.groceryChecked);
+  const items = useMemo<GItem[]>(() => {
+    const list: GItem[] = [];
+    for (const line of grocery) {
+      if (meals.groceryOverrides[line.key]?.removed) continue;
+      list.push({ key: line.key, name: line.name, unit: line.unit, baseQty: line.qty, isExtra: false });
+    }
+    for (const x of meals.extras) list.push({ key: x.id, name: x.text, isExtra: true });
+    return list;
+  }, [grocery, meals.extras, meals.groceryOverrides]);
+
+  const stores = useMemo(
+    () =>
+      Array.from(
+        new Set(Object.values(meals.groceryMeta).map((m) => m.store).filter(Boolean)),
+      ) as string[],
+    [meals.groceryMeta],
+  );
+
+  const groups = useMemo(() => {
+    if (!byStore) return [{ store: null as string | null, items }];
+    const map = new Map<string, GItem[]>();
+    for (const it of items) {
+      const s = meals.groceryMeta[it.key]?.store ?? '';
+      const arr = map.get(s) ?? [];
+      arr.push(it);
+      map.set(s, arr);
+    }
+    return [...map.entries()]
+      .sort(([a], [b]) => (a === '' ? 1 : b === '' ? -1 : a.localeCompare(b)))
+      .map(([s, its]) => ({ store: s || null, items: its }));
+  }, [byStore, items, meals.groceryMeta]);
 
   return (
     <section className="space-y-3">
-      <div>
-        <h2 className="text-lg font-bold">Grocery list</h2>
-        <p className="text-xs text-slate-500">
-          Auto-built from your meals · {grocery.length} ingredients. Edit any
-          quantity, remove lines, or check off as you shop.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h2 className="text-lg font-bold">Grocery list</h2>
+          <p className="text-xs text-slate-500">
+            Auto-built from your meals · {grocery.length} ingredients. Claim items,
+            assign a store, edit quantities, check off as you shop.
+          </p>
+        </div>
+        <label className="flex items-center gap-1 text-[11px] text-slate-500">
+          <input
+            type="checkbox"
+            checked={byStore}
+            onChange={(e) => setByStore(e.target.checked)}
+            className="h-3.5 w-3.5 accent-slate-700"
+          />
+          Group by store
+        </label>
       </div>
 
-      <ul className="space-y-1.5">
-        {grocery.map((line) => {
-          const override = meals.groceryOverrides[line.key];
-          if (override?.removed) return null;
-          const isChecked = checked.has(line.key);
-          const qty = override?.qty ?? line.qty;
-          const adjusted = override?.qty !== undefined;
-          return (
-            <li
-              key={line.key}
-              className="flex items-center gap-2 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100"
-            >
-              <input
-                type="checkbox"
-                checked={isChecked}
-                onChange={() => toggleGrocery(line.key)}
-                className="h-4 w-4 shrink-0 accent-emerald-600"
-              />
-              <span className={`flex-1 text-sm ${isChecked ? 'text-slate-400 line-through' : ''}`}>
-                {line.name}
-              </span>
-              <input
-                type="number"
-                min={0}
-                step="0.25"
-                value={qty}
-                onChange={(e) => setGroceryQty(line.key, Number(e.target.value))}
-                className={`w-16 shrink-0 rounded border px-1.5 py-0.5 text-right text-xs ${
-                  adjusted ? 'border-amber-300 bg-amber-50' : 'border-slate-200'
-                }`}
-                title={adjusted ? 'Manually adjusted' : 'Auto-estimated — edit to override'}
-              />
-              <span className="w-12 shrink-0 text-xs text-slate-500">{line.unit}</span>
-              {adjusted ? (
-                <button
-                  onClick={() => resetGroceryLine(line.key)}
-                  className="shrink-0 text-xs text-slate-300 hover:text-slate-600"
-                  title="Reset to estimate"
-                >
-                  ↺
-                </button>
-              ) : (
-                <button
-                  onClick={() => removeGroceryLine(line.key)}
-                  className="shrink-0 text-xs text-slate-300 hover:text-red-500"
-                  title="Remove from list"
-                >
-                  ✕
-                </button>
-              )}
-            </li>
-          );
-        })}
+      <datalist id="grocery-stores">
+        {stores.map((s) => (
+          <option key={s} value={s} />
+        ))}
+      </datalist>
 
-        {meals.extras.map((x) => {
-          const isChecked = checked.has(x.id);
-          return (
-            <li
-              key={x.id}
-              className="flex items-center gap-2 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100"
-            >
-              <input
-                type="checkbox"
-                checked={isChecked}
-                onChange={() => toggleGrocery(x.id)}
-                className="h-4 w-4 shrink-0 accent-emerald-600"
-              />
-              <span className={`flex-1 text-sm ${isChecked ? 'text-slate-400 line-through' : ''}`}>
-                {x.text}
-              </span>
-              <button
-                onClick={() => removeGroceryExtra(x.id)}
-                className="shrink-0 text-xs text-slate-300 hover:text-red-500"
-              >
-                ✕
-              </button>
-            </li>
-          );
-        })}
-
-        {grocery.length === 0 && meals.extras.length === 0 && (
-          <li className="rounded-lg bg-white p-4 text-center text-sm text-slate-400 shadow-sm">
-            Add meals to generate the grocery list, or add your own staples below.
-          </li>
-        )}
-      </ul>
+      {items.length === 0 ? (
+        <p className="rounded-lg bg-white p-4 text-center text-sm text-slate-400 shadow-sm">
+          Add meals to generate the grocery list, or add your own staples below.
+        </p>
+      ) : (
+        groups.map((g) => (
+          <div key={g.store ?? '__none'}>
+            {byStore && (
+              <h3 className="mb-1 mt-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+                {g.store ?? 'No store assigned'}
+              </h3>
+            )}
+            <ul className="space-y-1.5">
+              {g.items.map((it) => (
+                <GroceryRow key={it.key} item={it} />
+              ))}
+            </ul>
+          </div>
+        ))
+      )}
 
       {grocery.some((l) => meals.groceryOverrides[l.key]?.removed) && (
         <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
@@ -655,5 +641,99 @@ function Grocery({ grocery }: { grocery: ReturnType<typeof computeGrocery> }) {
         </button>
       </form>
     </section>
+  );
+}
+
+function GroceryRow({ item }: { item: GItem }) {
+  const meals = useStore((s) => s.doc.meals);
+  const collaborators = useStore((s) => s.doc.collaborators);
+  const meId = useStore((s) => s.meId);
+  const toggleGrocery = useStore((s) => s.toggleGrocery);
+  const setGroceryQty = useStore((s) => s.setGroceryQty);
+  const removeGroceryLine = useStore((s) => s.removeGroceryLine);
+  const resetGroceryLine = useStore((s) => s.resetGroceryLine);
+  const removeGroceryExtra = useStore((s) => s.removeGroceryExtra);
+  const toggleGroceryClaim = useStore((s) => s.toggleGroceryClaim);
+  const setGroceryStore = useStore((s) => s.setGroceryStore);
+
+  const isChecked = meals.groceryChecked.includes(item.key);
+  const override = item.isExtra ? undefined : meals.groceryOverrides[item.key];
+  const qty = override?.qty ?? item.baseQty ?? 0;
+  const adjusted = !item.isExtra && override?.qty !== undefined;
+  const meta = meals.groceryMeta[item.key] ?? {};
+  const claimer = collaborators.find((c) => c.id === meta.assignee);
+  const mine = meta.assignee === meId;
+
+  return (
+    <li className="space-y-1.5 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100">
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={isChecked}
+          onChange={() => toggleGrocery(item.key)}
+          className="h-4 w-4 shrink-0 accent-emerald-600"
+        />
+        <span className={`flex-1 text-sm ${isChecked ? 'text-slate-400 line-through' : ''}`}>
+          {item.name}
+        </span>
+        {!item.isExtra && (
+          <>
+            <input
+              type="number"
+              min={0}
+              step="0.25"
+              value={qty}
+              onChange={(e) => setGroceryQty(item.key, Number(e.target.value))}
+              className={`w-16 shrink-0 rounded border px-1.5 py-0.5 text-right text-xs ${
+                adjusted ? 'border-amber-300 bg-amber-50' : 'border-slate-200'
+              }`}
+              title={adjusted ? 'Manually adjusted' : 'Auto-estimated — edit to override'}
+            />
+            <span className="w-10 shrink-0 text-xs text-slate-500">{item.unit}</span>
+          </>
+        )}
+        {adjusted ? (
+          <button
+            onClick={() => resetGroceryLine(item.key)}
+            className="shrink-0 text-xs text-slate-300 hover:text-slate-600"
+            title="Reset to estimate"
+          >
+            ↺
+          </button>
+        ) : (
+          <button
+            onClick={() => (item.isExtra ? removeGroceryExtra(item.key) : removeGroceryLine(item.key))}
+            className="shrink-0 text-xs text-slate-300 hover:text-red-500"
+            title="Remove from list"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 pl-6">
+        <input
+          list="grocery-stores"
+          value={meta.store ?? ''}
+          onChange={(e) => setGroceryStore(item.key, e.target.value)}
+          placeholder="store"
+          className="w-28 rounded border border-slate-200 px-1.5 py-0.5 text-[11px]"
+        />
+        <button
+          onClick={() => toggleGroceryClaim(item.key)}
+          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+            mine
+              ? 'bg-emerald-600 text-white'
+              : claimer
+                ? 'border text-slate-600'
+                : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
+          }`}
+          style={claimer && !mine ? { borderColor: claimer.color, color: claimer.color } : undefined}
+          title="Sign up to get this item"
+        >
+          {mine ? "✓ You've got it" : claimer ? `${claimer.name} — tap to take` : "I'll get it"}
+        </button>
+      </div>
+    </li>
   );
 }

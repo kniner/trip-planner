@@ -217,6 +217,8 @@ export interface MealPlan {
   extras: GroceryExtra[];
   /** Manual adjustments to auto-generated grocery lines, keyed by line key. */
   groceryOverrides: Record<string, { qty?: number; removed?: boolean }>;
+  /** Who's getting each grocery item and from which store, keyed by line key/id. */
+  groceryMeta: Record<string, { assignee?: string; store?: string }>;
 }
 
 /** Current live wait for an attraction, keyed by attraction id. */
