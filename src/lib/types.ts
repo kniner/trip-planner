@@ -121,6 +121,27 @@ export interface Collaborator {
   color: string;
 }
 
+/**
+ * A suggested personal/packing item. The list of items is shared (anyone can
+ * add, and it appears for everyone), but each person's done/checked status is
+ * tracked locally per device — see the store's `checkedItems`.
+ */
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  /** Collaborator id who added it (undefined for seeded suggestions). */
+  addedBy?: string;
+}
+
+/** A shared group task people can sign up for. */
+export interface GroupItem {
+  id: string;
+  text: string;
+  addedBy?: string;
+  /** Collaborator ids who have signed up for this item. */
+  signups: string[];
+}
+
 /** The full shared, synced plan document, spanning multiple days/parks. */
 export interface PlanDoc {
   collaborators: Collaborator[];
@@ -128,6 +149,10 @@ export interface PlanDoc {
   tags: TagEntry[];
   days: Day[];
   activeDayId: string;
+  /** Shared personal/packing suggestions (each person checks them off locally). */
+  personalItems: ChecklistItem[];
+  /** Shared group tasks people sign up for. */
+  groupItems: GroupItem[];
 }
 
 /** Current live wait for an attraction, keyed by attraction id. */

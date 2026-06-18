@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { ITEMS_BY_ID, PARKS } from '../data';
+import { SUGGESTED_GROUP, SUGGESTED_PERSONAL } from '../data/checklist';
 import { distanceMeters } from '../lib/walking';
 import type {
   Collaborator,
@@ -23,6 +24,17 @@ const COLORS = [
 ];
 
 const ME_KEY = 'mk-planner:me';
+/** Local, per-device checked status for personal checklist items. */
+const CHECKED_KEY = 'mk-planner:checked';
+
+function loadChecked(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(CHECKED_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+  } catch {
+    return {};
+  }
+}
 
 function uid(): string {
   return Math.random().toString(36).slice(2, 10);
@@ -47,7 +59,14 @@ function newDay(park: ParkId, event: EventType, name?: string): Day {
 
 function emptyDoc(): PlanDoc {
   const day = newDay('mk', 'regular', 'Magic Kingdom — Day 1');
-  return { collaborators: [], tags: [], days: [day], activeDayId: day.id };
+  return {
+    collaborators: [],
+    tags: [],
+    days: [day],
+    activeDayId: day.id,
+    personalItems: [...SUGGESTED_PERSONAL],
+    groupItems: [...SUGGESTED_GROUP],
+  };
 }
 
 /**
@@ -75,6 +94,8 @@ function migrate(raw: unknown): PlanDoc {
     tags: doc.tags ?? [],
     days,
     activeDayId,
+    personalItems: doc.personalItems ?? [...SUGGESTED_PERSONAL],
+    groupItems: doc.groupItems ?? [...SUGGESTED_GROUP],
   };
 }
 
@@ -84,6 +105,8 @@ interface StoreState {
   live: LiveWaits;
   liveStatus: 'idle' | 'loading' | 'ok' | 'unavailable';
   ready: boolean;
+  /** Local per-device done status for personal checklist items. */
+  checkedItems: Record<string, boolean>;
 
   init: () => Promise<void>;
   join: (name: string) => void;
@@ -118,6 +141,14 @@ interface StoreState {
   setWaitMode: (mode: WaitMode) => void;
   setStartTime: (time: string) => void;
   setBuffer: (minutes: number) => void;
+
+  // Checklist & group sign-up lists
+  addPersonalItem: (text: string) => void;
+  removePersonalItem: (id: string) => void;
+  toggleChecked: (id: string) => void;
+  addGroupItem: (text: string) => void;
+  removeGroupItem: (id: string) => void;
+  toggleSignup: (id: string) => void;
 
   refreshLive: () => Promise<void>;
 }
@@ -160,11 +191,12 @@ export const useStore = create<StoreState>((set, get) => {
     live: {},
     liveStatus: 'idle',
     ready: false,
+    checkedItems: {},
 
     async init() {
       const remote = await provider.load();
       const storedMe = localStorage.getItem(ME_KEY);
-      set({ doc: migrate(remote), meId: storedMe, ready: true });
+      set({ doc: migrate(remote), meId: storedMe, ready: true, checkedItems: loadChecked() });
 
       provider.subscribe((doc) => set({ doc: migrate(doc) }));
       void get().refreshLive();
@@ -389,6 +421,63 @@ export const useStore = create<StoreState>((set, get) => {
         ...day,
         settings: { ...day.settings, bufferPerStop: Math.max(0, minutes) },
       }));
+    },
+
+    addPersonalItem(text) {
+      const clean = text.trim();
+      if (!clean) return;
+      const doc = get().doc;
+      commit({
+        ...doc,
+        personalItems: [...doc.personalItems, { id: uid(), text: clean, addedBy: me() ?? undefined }],
+      });
+    },
+
+    removePersonalItem(id) {
+      const doc = get().doc;
+      commit({ ...doc, personalItems: doc.personalItems.filter((i) => i.id !== id) });
+    },
+
+    toggleChecked(id) {
+      const next = { ...get().checkedItems, [id]: !get().checkedItems[id] };
+      try {
+        localStorage.setItem(CHECKED_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore quota errors */
+      }
+      set({ checkedItems: next });
+    },
+
+    addGroupItem(text) {
+      const clean = text.trim();
+      if (!clean) return;
+      const doc = get().doc;
+      commit({
+        ...doc,
+        groupItems: [...doc.groupItems, { id: uid(), text: clean, addedBy: me() ?? undefined, signups: [] }],
+      });
+    },
+
+    removeGroupItem(id) {
+      const doc = get().doc;
+      commit({ ...doc, groupItems: doc.groupItems.filter((i) => i.id !== id) });
+    },
+
+    toggleSignup(id) {
+      const meId = me();
+      if (!meId) return;
+      const doc = get().doc;
+      commit({
+        ...doc,
+        groupItems: doc.groupItems.map((i) => {
+          if (i.id !== id) return i;
+          const signed = i.signups.includes(meId);
+          return {
+            ...i,
+            signups: signed ? i.signups.filter((u) => u !== meId) : [...i.signups, meId],
+          };
+        }),
+      });
     },
 
     async refreshLive() {
