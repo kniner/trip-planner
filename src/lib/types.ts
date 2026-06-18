@@ -138,8 +138,10 @@ export interface GroupItem {
   id: string;
   text: string;
   addedBy?: string;
-  /** Collaborator ids who have signed up for this item. */
+  /** Collaborator ids (app users) who have signed up for this item. */
   signups: string[];
+  /** Free-text names signed up manually (for people not using the app). */
+  manualSignups?: string[];
 }
 
 /** The full shared, synced plan document, spanning multiple days/parks. */

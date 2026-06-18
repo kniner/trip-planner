@@ -151,6 +151,8 @@ interface StoreState {
   addGroupItem: (text: string) => void;
   removeGroupItem: (id: string) => void;
   toggleSignup: (id: string) => void;
+  addManualSignup: (id: string, name: string) => void;
+  removeManualSignup: (id: string, name: string) => void;
 
   refreshLive: () => Promise<void>;
 }
@@ -490,6 +492,33 @@ export const useStore = create<StoreState>((set, get) => {
             signups: signed ? i.signups.filter((u) => u !== meId) : [...i.signups, meId],
           };
         }),
+      });
+    },
+
+    addManualSignup(id, name) {
+      const clean = name.trim();
+      if (!clean) return;
+      const doc = get().doc;
+      commit({
+        ...doc,
+        groupItems: doc.groupItems.map((i) => {
+          if (i.id !== id) return i;
+          const manual = i.manualSignups ?? [];
+          if (manual.some((n) => n.toLowerCase() === clean.toLowerCase())) return i;
+          return { ...i, manualSignups: [...manual, clean] };
+        }),
+      });
+    },
+
+    removeManualSignup(id, name) {
+      const doc = get().doc;
+      commit({
+        ...doc,
+        groupItems: doc.groupItems.map((i) =>
+          i.id === id
+            ? { ...i, manualSignups: (i.manualSignups ?? []).filter((n) => n !== name) }
+            : i,
+        ),
       });
     },
 
