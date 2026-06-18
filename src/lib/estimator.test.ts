@@ -156,6 +156,34 @@ describe('estimatePlan', () => {
     expect(est.totalMinutes).toBe(60);
   });
 
+  it('uses a fixed meet-up time as the split rejoin when set', () => {
+    const day = dayWith({
+      stops: [
+        {
+          id: 'sp',
+          kind: 'split',
+          arrival: '11:00', // fixed meet-up two hours after a 09:00 start
+          branches: [
+            {
+              id: 'a',
+              name: 'Boutique',
+              stops: [{ id: 'a1', kind: 'item', attractionId: 'mk-bibbidi-bobbidi-boutique' }],
+            },
+            {
+              id: 'b',
+              name: 'Rides',
+              stops: [{ id: 'b1', kind: 'item', attractionId: 'space-mountain' }],
+            },
+          ],
+        },
+      ],
+    });
+    const est = estimatePlan(day, {});
+    // Rejoin is fixed at 11:00 regardless of group lengths (120 min block).
+    expect(est.stops[0].duration).toBe(120);
+    expect(est.endClock).toBe('11:00');
+  });
+
   it('computes arrival delta against a target time', () => {
     const day = dayWith({
       stops: [{ id: '1', kind: 'item', attractionId: 'space-mountain', arrival: '09:30' }],

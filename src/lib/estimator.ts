@@ -219,18 +219,15 @@ export function estimatePlan(day: EstimateInput, live: LiveWaits): PlanEstimate 
       }));
       const maxEnd = branchResults.reduce((m, b) => Math.max(m, b.r.end), 0);
 
-      // The longest group is the critical path: it drives both the rejoin time
-      // and the time charged to the day's totals (the rest runs concurrently).
-      const longest = branchResults.find((b) => b.r.end === maxEnd && maxEnd > 0);
-      if (longest) {
-        totalWalk += longest.r.totalWalk;
-        totalWait += longest.r.totalWait;
-        totalDuration += longest.r.totalDuration;
-        totalBuffer += longest.r.totalBuffer;
-      }
+      // If a fixed meet-up time is set, the rejoin happens then (groups wait or
+      // run short); otherwise the longest group sets the rejoin. The whole split
+      // counts as activity time toward the day total so the clock stays exact.
+      const meetUp = stop.arrival ? parseClock(stop.arrival) : undefined;
+      const effectiveDuration =
+        meetUp !== undefined && meetUp >= splitStartAbs ? meetUp - splitStartAbs : maxEnd;
 
       const arriveOffset = cursor;
-      const cursorAfter = cursor + maxEnd;
+      const cursorAfter = cursor + effectiveDuration;
       let longestSeen = false;
       const branches: EstimatedBranch[] = branchResults.map((b) => {
         const isLongest = !longestSeen && b.r.end === maxEnd && maxEnd > 0;
@@ -250,7 +247,7 @@ export function estimatePlan(day: EstimateInput, live: LiveWaits): PlanEstimate 
         label: 'Split — parallel groups',
         walk: 0,
         wait: 0,
-        duration: maxEnd,
+        duration: effectiveDuration,
         buffer: 0,
         arriveOffset,
         arriveClock: formatClock(splitStartAbs),
@@ -258,6 +255,7 @@ export function estimatePlan(day: EstimateInput, live: LiveWaits): PlanEstimate 
         branches,
       });
 
+      totalDuration += effectiveDuration;
       cursor = cursorAfter;
       prevItemId = undefined; // groups reconvene; next walk leg is ambiguous
       continue;

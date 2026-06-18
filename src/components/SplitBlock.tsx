@@ -2,12 +2,6 @@ import { itemsForDay, landsForDay } from '../data';
 import type { EstimatedStop } from '../lib/estimator';
 import { useActiveDay, useStore } from '../store/useStore';
 
-function fmtDuration(min: number): string {
-  const h = Math.floor(min / 60);
-  const m = Math.round(min % 60);
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
-}
-
 interface Props {
   es: EstimatedStop;
 }
@@ -22,25 +16,53 @@ export function SplitBlock({ es }: Props) {
   const addToBranch = useStore((s) => s.addToBranch);
   const removeFromBranch = useStore((s) => s.removeFromBranch);
   const moveWithinBranch = useStore((s) => s.moveWithinBranch);
+  const setArrival = useStore((s) => s.setArrival);
 
   const items = itemsForDay(day.park, day.event);
   const lands = landsForDay(day.park, day.event);
   const branches = es.branches ?? [];
+  const fixedMeetUp = !!es.stop.arrival;
 
   return (
     <div className="space-y-2">
-      <p className="text-[11px] text-slate-500">
-        Groups go their own way here, then rejoin at{' '}
-        <strong className="text-slate-700">~{es.leaveClock}</strong> · longest group{' '}
-        {fmtDuration(es.duration)}.
-      </p>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
+        <span>
+          Rejoin at <strong className="text-slate-700">~{es.leaveClock}</strong>
+        </span>
+        <label className="flex items-center gap-1">
+          Meet up at
+          <input
+            type="time"
+            value={es.stop.arrival ?? ''}
+            onChange={(e) => setArrival(splitId, e.target.value)}
+            className="rounded border border-slate-200 px-1.5 py-0.5 text-[11px]"
+          />
+        </label>
+        {fixedMeetUp && (
+          <button
+            onClick={() => setArrival(splitId, undefined)}
+            className="text-slate-400 underline hover:text-slate-600"
+          >
+            clear
+          </button>
+        )}
+        {!fixedMeetUp && <span className="text-slate-400">(or longest group sets it)</span>}
+      </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {branches.map((branch) => (
+        {branches.map((branch) => {
+          // Slack/late vs the rejoin time (es.duration is the block length).
+          const diff = es.duration - branch.total;
+          const late = diff < 0;
+          return (
           <div
             key={branch.id}
             className={`rounded-lg border p-2 ${
-              branch.isLongest ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-slate-50'
+              late
+                ? 'border-red-300 bg-red-50'
+                : branch.isLongest
+                  ? 'border-amber-300 bg-amber-50'
+                  : 'border-slate-200 bg-slate-50'
             }`}
           >
             <div className="mb-1.5 flex items-center gap-1">
@@ -49,9 +71,24 @@ export function SplitBlock({ es }: Props) {
                 onBlur={(e) => renameBranch(splitId, branch.id, e.target.value)}
                 className="min-w-0 flex-1 rounded bg-transparent px-1 text-sm font-semibold focus:bg-white"
               />
-              {branch.isLongest && (
-                <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
-                  rejoin {branch.endClock}
+              {branch.total > 0 && (
+                <span
+                  className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                    late
+                      ? 'bg-red-200 text-red-800'
+                      : diff > 0
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-amber-200 text-amber-800'
+                  }`}
+                  title={`This group is busy until ~${branch.endClock}`}
+                >
+                  {late
+                    ? `${-diff}m over`
+                    : diff > 0
+                      ? `${diff}m to spare`
+                      : fixedMeetUp
+                        ? 'on time'
+                        : 'sets rejoin'}
                 </span>
               )}
               {branches.length > 1 && (
@@ -127,7 +164,8 @@ export function SplitBlock({ es }: Props) {
               })}
             </select>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       <button
