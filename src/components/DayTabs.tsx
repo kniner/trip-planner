@@ -43,10 +43,19 @@ export function DayTabs() {
     ? event
     : validEvents[0].value;
 
+  // Show days in calendar order: dated days ascending, undated days kept last
+  // in their original order (sort is stable). ISO dates compare chronologically.
+  const orderedDays = [...doc.days].sort((a, b) => {
+    if (a.date && b.date) return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+    if (a.date) return -1;
+    if (b.date) return 1;
+    return 0;
+  });
+
   return (
     <div className="rounded-lg bg-white p-2 shadow-sm">
       <div className="flex flex-wrap items-center gap-2">
-        {doc.days.map((day) => {
+        {orderedDays.map((day) => {
           const active = day.id === doc.activeDayId;
           const isEditing = editingId === day.id;
           return (
