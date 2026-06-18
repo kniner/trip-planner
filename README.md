@@ -5,6 +5,17 @@ A collaborative web app for planning multiple days across **Magic Kingdom** and
 attractions, build a route, and get a realistic time estimate for each day —
 together.
 
+## How it works
+
+The app has two pages:
+
+1. **Tag attractions** — pick a park (Magic Kingdom or EPCOT) and tag everything
+   you care about as *Must do / Nice to do / Avoid*. This is a per-park wishlist,
+   independent of any specific day.
+2. **Schedule your days** — create day tabs (each a park + day-type), then pull
+   your tagged picks from a **priority-sorted to-do list** into each day's route,
+   add custom time blocks, and watch the time/walking estimate update.
+
 ## Features
 
 - **Multi-day, multi-park.** Plan as many days as you want via day tabs. Each day

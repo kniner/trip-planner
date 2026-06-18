@@ -5,6 +5,8 @@ import { TagControl } from './TagControl';
 
 interface Props {
   attraction: Attraction;
+  /** Show the "+ Add to route" button (hidden on the tagging page). */
+  showAddToRoute?: boolean;
 }
 
 const KIND_LABEL: Record<Attraction['kind'], string> = {
@@ -25,7 +27,7 @@ const KIND_BADGE: Record<Attraction['kind'], string> = {
   entertainment: 'bg-purple-100 text-purple-700',
 };
 
-export function AttractionCard({ attraction }: Props) {
+export function AttractionCard({ attraction, showAddToRoute = true }: Props) {
   const doc = useStore((s) => s.doc);
   const meId = useStore((s) => s.meId);
   const live = useStore((s) => s.live);
@@ -49,16 +51,18 @@ export function AttractionCard({ attraction }: Props) {
             {KIND_LABEL[attraction.kind]}
           </span>
         </div>
-        <button
-          onClick={() => (stop ? removeStop(stop.id) : addStop(attraction.id))}
-          className={`shrink-0 rounded-md px-2 py-1 text-xs font-medium ${
-            stop
-              ? 'bg-slate-900 text-white'
-              : 'border border-slate-300 text-slate-700 hover:bg-slate-50'
-          }`}
-        >
-          {stop ? '✓ In route' : '+ Add'}
-        </button>
+        {showAddToRoute && (
+          <button
+            onClick={() => (stop ? removeStop(stop.id) : addStop(attraction.id))}
+            className={`shrink-0 rounded-md px-2 py-1 text-xs font-medium ${
+              stop
+                ? 'bg-slate-900 text-white'
+                : 'border border-slate-300 text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            {stop ? '✓ In route' : '+ Add'}
+          </button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">

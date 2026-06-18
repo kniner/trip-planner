@@ -83,8 +83,19 @@ export function itemsForDay(park: ParkId, event: EventType): Attraction[] {
   });
 }
 
+/** Every item in a park, regardless of event (used by the tagging page). */
+export function itemsForPark(park: ParkId): Attraction[] {
+  return ITEMS.filter((item) => item.park === park);
+}
+
 /** The lands (in display order) that actually contain items for this day. */
 export function landsForDay(park: ParkId, event: EventType): string[] {
   const present = new Set(itemsForDay(park, event).map((i) => i.land));
+  return PARKS[park].lands.filter((l) => present.has(l));
+}
+
+/** The lands (in display order) that contain any item in this park. */
+export function landsForPark(park: ParkId): string[] {
+  const present = new Set(itemsForPark(park).map((i) => i.land));
   return PARKS[park].lands.filter((l) => present.has(l));
 }

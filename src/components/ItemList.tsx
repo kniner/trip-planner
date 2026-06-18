@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react';
-import { EVENT_LABELS, itemsForDay, landsForDay, PARKS } from '../data';
 import { summarizeTags, TAG_META } from '../lib/tags';
-import type { Tag } from '../lib/types';
-import { useActiveDay, useStore } from '../store/useStore';
+import type { Attraction, Tag } from '../lib/types';
+import { useStore } from '../store/useStore';
 import { AttractionCard } from './AttractionCard';
 
 type Filter = 'all' | Tag | 'untagged';
@@ -15,42 +14,33 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'untagged', label: 'Untagged' },
 ];
 
-export function AttractionList() {
+interface Props {
+  items: Attraction[];
+  lands: string[];
+  /** Show each card's "+ Add to route" button. */
+  showAddToRoute?: boolean;
+}
+
+/** Searchable, tag-filterable, land-grouped grid of attraction cards. */
+export function ItemList({ items, lands, showAddToRoute = true }: Props) {
   const doc = useStore((s) => s.doc);
   const meId = useStore((s) => s.meId);
-  const day = useActiveDay();
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
 
-  const dayItems = useMemo(
-    () => itemsForDay(day.park, day.event),
-    [day.park, day.event],
-  );
-  const lands = useMemo(
-    () => landsForDay(day.park, day.event),
-    [day.park, day.event],
-  );
-
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return dayItems.filter((a) => {
+    return items.filter((a) => {
       if (q && !a.name.toLowerCase().includes(q)) return false;
       if (filter === 'all') return true;
       const summary = summarizeTags(a.id, doc.tags, doc.collaborators, meId);
       if (filter === 'untagged') return summary.consensus === null;
       return summary.consensus === filter;
     });
-  }, [dayItems, filter, query, doc.tags, doc.collaborators, meId]);
+  }, [items, filter, query, doc.tags, doc.collaborators, meId]);
 
   return (
     <section className="space-y-3">
-      <div>
-        <h2 className="text-lg font-bold">{PARKS[day.park].name}</h2>
-        <p className="text-xs text-slate-500">
-          {EVENT_LABELS[day.event]} · {dayItems.length} things to do
-        </p>
-      </div>
-
       <div className="flex flex-wrap items-center gap-2">
         <input
           value={query}
@@ -84,16 +74,16 @@ export function AttractionList() {
       </div>
 
       {lands.map((land) => {
-        const items = visible.filter((a) => a.land === land);
-        if (items.length === 0) return null;
+        const landItems = visible.filter((a) => a.land === land);
+        if (landItems.length === 0) return null;
         return (
           <div key={land}>
             <h3 className="mb-2 mt-4 text-sm font-bold uppercase tracking-wide text-slate-500">
               {land}
             </h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {items.map((a) => (
-                <AttractionCard key={a.id} attraction={a} />
+              {landItems.map((a) => (
+                <AttractionCard key={a.id} attraction={a} showAddToRoute={showAddToRoute} />
               ))}
             </div>
           </div>
