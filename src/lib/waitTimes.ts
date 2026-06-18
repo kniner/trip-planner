@@ -49,7 +49,9 @@ async function fetchPark(queueTimesId: number, signal?: AbortSignal): Promise<Li
  */
 export async function fetchLiveWaits(signal?: AbortSignal): Promise<LiveWaits> {
   try {
-    const parks = Object.values(PARKS);
+    // Only parks with a real queue-times id have a live feed (water parks etc.
+    // are id 0 and skipped — they degrade to static avg/max waits).
+    const parks = Object.values(PARKS).filter((p) => p.queueTimesId > 0);
     const results = await Promise.all(
       parks.map((p) => fetchPark(p.queueTimesId, signal).catch(() => ({}) as LiveWaits)),
     );

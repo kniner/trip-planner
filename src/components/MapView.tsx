@@ -7,15 +7,19 @@ import { ParkMap } from './ParkMap';
 export function MapView() {
   const day = useActiveDay();
   const isOther = day.kind === 'other';
+  // Only MK/EPCOT have schematic map data.
+  const hasMap = !isOther && (day.park === 'mk' || day.park === 'epcot');
 
   return (
     <div className="space-y-4">
       <DayTabs />
-      {isOther ? (
+      {!hasMap ? (
         <div className="rounded-lg bg-white p-6 text-center shadow-sm">
-          <h2 className="text-lg font-bold">{day.name}</h2>
+          <h2 className="text-lg font-bold">{isOther ? day.name : PARKS[day.park].name}</h2>
           <p className="mt-1 text-sm text-slate-400">
-            This is an off-park day — no park map. Pick a park day to see its map.
+            {isOther
+              ? 'This is an off-park day — no park map. Pick a park day to see its map.'
+              : 'No map for this park yet. Use the Wishlist and Schedule tabs to plan this day.'}
           </p>
         </div>
       ) : (

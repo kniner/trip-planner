@@ -1,5 +1,6 @@
 import type { Attraction, EventType, ParkId } from '../lib/types';
 import { EPCOT } from './epcot';
+import { LEGOLAND_WATER_PARK } from './legolandWaterPark';
 import { MAGIC_KINGDOM } from './magicKingdom';
 
 export interface ParkMeta {
@@ -50,9 +51,22 @@ export const PARKS: Record<ParkId, ParkMeta> = {
       'Food & Wine Marketplaces',
     ],
   },
+  legoland: {
+    id: 'legoland',
+    name: 'LEGOLAND Water Park (Florida)',
+    shortName: 'LEGOLAND',
+    queueTimesId: 0, // no live wait feed for the water park; see waitTimes.ts
+    lands: [
+      'Pools & Rivers',
+      'Water Slides',
+      'Kids & Family',
+      'LEGO Legends of CHIMA',
+      'Dining',
+    ],
+  },
 };
 
-export const PARK_IDS: ParkId[] = ['mk', 'epcot'];
+export const PARK_IDS: ParkId[] = ['mk', 'epcot', 'legoland'];
 
 export const EVENT_LABELS: Record<EventType, string> = {
   regular: 'Regular day',
@@ -67,7 +81,7 @@ export const EVENT_SHORT: Record<EventType, string> = {
   'food-and-wine': 'Food & Wine',
 };
 
-export const ITEMS: Attraction[] = [...MAGIC_KINGDOM, ...EPCOT];
+export const ITEMS: Attraction[] = [...MAGIC_KINGDOM, ...EPCOT, ...LEGOLAND_WATER_PARK];
 
 export const ITEMS_BY_ID: Record<string, Attraction> = Object.fromEntries(
   ITEMS.map((a) => [a.id, a]),

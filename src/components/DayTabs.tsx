@@ -13,8 +13,16 @@ const EVENTS: { value: EventType; label: string }[] = [
 /** Which events make sense for which park. */
 function eventsForPark(park: ParkId): { value: EventType; label: string }[] {
   if (park === 'mk') return EVENTS.filter((e) => e.value !== 'food-and-wine');
-  return EVENTS.filter((e) => e.value !== 'mnsshp');
+  if (park === 'epcot') return EVENTS.filter((e) => e.value !== 'mnsshp');
+  return EVENTS.filter((e) => e.value === 'regular'); // legoland & others: regular only
 }
+
+/** Short badge label per park. */
+const PARK_BADGE: Record<ParkId, string> = {
+  mk: 'MK',
+  epcot: 'EPCOT',
+  legoland: 'LEGOLAND',
+};
 
 const EVENT_BADGE: Record<EventType, string> = {
   regular: 'bg-slate-100 text-slate-500',
@@ -99,7 +107,7 @@ export function DayTabs() {
               >
                 {day.kind === 'other'
                   ? 'Off-park'
-                  : `${PARKS[day.park].shortName === 'EPCOT' ? 'EPCOT' : 'MK'} · ${EVENT_SHORT[day.event]}`}
+                  : `${PARK_BADGE[day.park]} · ${EVENT_SHORT[day.event]}`}
               </span>
               {day.date && (
                 <span className={`text-[10px] ${active ? 'text-white/70' : 'text-slate-400'}`}>
