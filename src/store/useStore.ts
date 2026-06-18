@@ -148,6 +148,20 @@ function normalizeDay(d: Partial<Day> | undefined): Day {
 }
 
 /**
+ * Order days chronologically: dated days ascending (ISO strings compare
+ * correctly), undated days kept last in their existing relative order. Used
+ * everywhere days change so the persisted order always reflects the calendar.
+ */
+function sortDays(days: Day[]): Day[] {
+  return [...days].sort((a, b) => {
+    if (a.date && b.date) return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+    if (a.date) return -1;
+    if (b.date) return 1;
+    return 0;
+  });
+}
+
+/**
  * Bring older/partial persisted docs up to the current shape. Early versions
  * stored a single top-level `stops`/`settings`; wrap those into a default
  * Magic Kingdom day so existing plans aren't lost.
@@ -164,7 +178,7 @@ function migrate(raw: unknown): PlanDoc {
     if (doc.settings) legacy.settings = doc.settings;
     days = [legacy];
   }
-  days = days.map(normalizeDay);
+  days = sortDays(days.map(normalizeDay));
   const activeDayId = days.some((d) => d.id === doc.activeDayId)
     ? doc.activeDayId!
     : days[0].id;
@@ -416,13 +430,13 @@ export const useStore = create<StoreState>((set, get) => {
     addDay(park, event, name, date) {
       const doc = get().doc;
       const day = newDay(park, event, name, date);
-      commit({ ...doc, days: [...doc.days, day], activeDayId: day.id });
+      commit({ ...doc, days: sortDays([...doc.days, day]), activeDayId: day.id });
     },
 
     addOtherDay(name, date) {
       const doc = get().doc;
       const day = newOtherDay(name, date);
-      commit({ ...doc, days: [...doc.days, day], activeDayId: day.id });
+      commit({ ...doc, days: sortDays([...doc.days, day]), activeDayId: day.id });
     },
 
     removeDay(dayId) {
@@ -445,7 +459,7 @@ export const useStore = create<StoreState>((set, get) => {
     setDayDate(dayId, date) {
       const valid = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined;
       const doc = get().doc;
-      const days = doc.days.map((d) => (d.id === dayId ? { ...d, date: valid } : d));
+      const days = sortDays(doc.days.map((d) => (d.id === dayId ? { ...d, date: valid } : d)));
       commit({ ...doc, days });
     },
 
