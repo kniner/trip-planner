@@ -56,7 +56,15 @@ function AddRow({
             onChange={(e) => setIsPrivate(e.target.checked)}
             className="h-3.5 w-3.5 accent-indigo-600"
           />
-          Private — only I can see this item
+          {isPrivate ? (
+            <span className="font-medium text-indigo-600">
+              Private — only I can see this item
+            </span>
+          ) : (
+            <span>
+              Shared with everyone <span className="text-slate-400">(default) — check to keep private</span>
+            </span>
+          )}
         </label>
       )}
     </form>
