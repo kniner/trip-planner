@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { itemsForPark, landsForPark, PARK_IDS, PARKS } from '../data';
 import type { ParkId } from '../lib/types';
 import { ItemList } from './ItemList';
+import { RideKey } from './RideKey';
 
 /**
  * The tagging page: pick a park and tag its attractions as must / nice / avoid.
@@ -35,6 +36,8 @@ export function TagView() {
           Wine items are included too — schedule them onto specific days next.
         </p>
       </div>
+
+      <RideKey />
 
       <ItemList items={items} lands={lands} showAddToRoute={false} />
     </div>

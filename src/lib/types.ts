@@ -14,7 +14,8 @@ export type AttractionKind =
   | 'dining'
   | 'festival'
   | 'entertainment'
-  | 'experience';
+  | 'experience'
+  | 'food';
 
 /** Tag a collaborator can apply to an attraction. */
 export type Tag = 'must' | 'nice' | 'avoid';
@@ -53,6 +54,8 @@ export interface Attraction {
   onlyDuringEvent?: EventType;
   /** Short note shown on the card (e.g. characters at a dining location). */
   note?: string;
+  /** Gluten-free options available (food/dining locations). */
+  gf?: boolean;
 }
 
 /** A tag applied by a specific collaborator. */

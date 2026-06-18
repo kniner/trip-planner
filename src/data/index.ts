@@ -25,6 +25,7 @@ export const PARKS: Record<ParkId, ParkMeta> = {
       'Liberty Square',
       'Fantasyland',
       'Tomorrowland',
+      'Dining & Snacks',
       'Character Dining',
       'Experiences',
       'MNSSHP — Party Exclusive',
