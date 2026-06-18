@@ -42,6 +42,7 @@ export function EstimatorControls() {
   const setPace = useStore((s) => s.setPace);
   const setWaitMode = useStore((s) => s.setWaitMode);
   const setStartTime = useStore((s) => s.setStartTime);
+  const setBuffer = useStore((s) => s.setBuffer);
   const refreshLive = useStore((s) => s.refreshLive);
 
   return (
@@ -97,6 +98,25 @@ export function EstimatorControls() {
           onChange={(e) => setStartTime(e.target.value)}
           className="rounded border border-slate-300 px-3 py-1.5 text-sm"
         />
+      </div>
+
+      <div>
+        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+          Buffer per stop
+        </label>
+        <Segmented
+          value={String(settings.bufferPerStop ?? 0)}
+          onChange={(v) => setBuffer(Number(v))}
+          options={[
+            { value: '0', label: 'None' },
+            { value: '5', label: '5m' },
+            { value: '10', label: '10m' },
+            { value: '15', label: '15m' },
+          ]}
+        />
+        <p className="mt-1 text-[11px] text-slate-400">
+          Slack added to every attraction for bathroom breaks, snacks and dawdling.
+        </p>
       </div>
     </div>
   );

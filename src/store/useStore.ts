@@ -40,7 +40,7 @@ function newDay(park: ParkId, event: EventType, name?: string): Day {
     park,
     event,
     stops: [],
-    settings: { pace: 'average', waitMode: 'avg', startTime: '09:00' },
+    settings: { pace: 'average', waitMode: 'avg', startTime: '09:00', bufferPerStop: 0 },
   };
 }
 
@@ -107,6 +107,7 @@ interface StoreState {
   setPace: (pace: Pace) => void;
   setWaitMode: (mode: WaitMode) => void;
   setStartTime: (time: string) => void;
+  setBuffer: (minutes: number) => void;
 
   refreshLive: () => Promise<void>;
 }
@@ -294,6 +295,13 @@ export const useStore = create<StoreState>((set, get) => {
 
     setStartTime(startTime) {
       updateActiveDay((day) => ({ ...day, settings: { ...day.settings, startTime } }));
+    },
+
+    setBuffer(minutes) {
+      updateActiveDay((day) => ({
+        ...day,
+        settings: { ...day.settings, bufferPerStop: Math.max(0, minutes) },
+      }));
     },
 
     async refreshLive() {

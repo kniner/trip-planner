@@ -12,7 +12,7 @@ import { walkMinutes } from './walking';
 
 const dayWith = (input: Partial<EstimateInput>): EstimateInput => ({
   stops: [],
-  settings: { pace: 'average', waitMode: 'avg', startTime: '09:00' },
+  settings: { pace: 'average', waitMode: 'avg', startTime: '09:00', bufferPerStop: 0 },
   ...input,
 });
 
@@ -95,10 +95,32 @@ describe('estimatePlan', () => {
     ];
     const avg = estimatePlan(dayWith({ stops }), {});
     const max = estimatePlan(
-      dayWith({ stops, settings: { pace: 'average', waitMode: 'max', startTime: '09:00' } }),
+      dayWith({ stops, settings: { pace: 'average', waitMode: 'max', startTime: '09:00', bufferPerStop: 0 } }),
       {},
     );
     expect(max.totalWait).toBeGreaterThan(avg.totalWait);
+  });
+
+  it('adds a per-stop buffer to attraction stops only', () => {
+    const stops = [
+      { id: 'c', kind: 'custom' as const, custom: { name: 'Parking', durationMin: 20 } },
+      { id: '1', kind: 'item' as const, attractionId: 'space-mountain' },
+      { id: '2', kind: 'item' as const, attractionId: 'buzz' },
+    ];
+    const base = estimatePlan(dayWith({ stops }), {});
+    const buffered = estimatePlan(
+      dayWith({
+        stops,
+        settings: { pace: 'average', waitMode: 'avg', startTime: '09:00', bufferPerStop: 10 },
+      }),
+      {},
+    );
+    // Two attraction stops × 10m buffer; the custom block gets none.
+    expect(base.totalBuffer).toBe(0);
+    expect(buffered.totalBuffer).toBe(20);
+    expect(buffered.totalMinutes).toBe(base.totalMinutes + 20);
+    expect(buffered.stops[0].buffer).toBe(0); // custom block
+    expect(buffered.stops[1].buffer).toBe(10);
   });
 
   it('computes arrival delta against a target time', () => {

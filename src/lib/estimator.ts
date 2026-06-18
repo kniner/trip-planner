@@ -12,6 +12,8 @@ export interface EstimatedStop {
   wait: number;
   /** Ride/show/visit/block duration minutes. */
   duration: number;
+  /** Slack minutes added after this stop (0 for custom blocks). */
+  buffer: number;
   /** Clock time the group arrives at this stop ("HH:MM"). */
   arriveClock: string;
   /** Clock time the group leaves this stop ("HH:MM"). */
@@ -27,7 +29,8 @@ export interface PlanEstimate {
   totalWalk: number;
   totalWait: number;
   totalDuration: number;
-  /** Grand total minutes (walk + wait + duration). */
+  totalBuffer: number;
+  /** Grand total minutes (walk + wait + duration + buffer). */
   totalMinutes: number;
   endClock: string;
 }
@@ -84,6 +87,8 @@ export function estimatePlan(day: EstimateInput, live: LiveWaits): PlanEstimate 
   let totalWalk = 0;
   let totalWait = 0;
   let totalDuration = 0;
+  let totalBuffer = 0;
+  const bufferPerStop = settings.bufferPerStop ?? 0;
   // Coordinates of the previous *item* stop, for the next walk leg.
   let prevItemId: string | undefined;
 
@@ -94,6 +99,7 @@ export function estimatePlan(day: EstimateInput, live: LiveWaits): PlanEstimate 
     let walk = 0;
     let wait = 0;
     let duration = 0;
+    let buffer = 0;
 
     if (isCustom(stop)) {
       label = stop.custom?.name ?? 'Time block';
@@ -107,12 +113,13 @@ export function estimatePlan(day: EstimateInput, live: LiveWaits): PlanEstimate 
       walk = prev ? walkMinutes(prev, attraction, settings.pace) : 0;
       wait = waitFor(attraction.id, settings.waitMode, live);
       duration = attraction.duration;
+      buffer = bufferPerStop;
       prevItemId = attraction.id;
     }
 
     cursor += walk;
     const arriveOffset = cursor;
-    cursor += wait + duration;
+    cursor += wait + duration + buffer;
 
     const arriveAbs = startOffset + arriveOffset;
     const target = stop.arrival ? parseClock(stop.arrival) : undefined;
@@ -123,6 +130,7 @@ export function estimatePlan(day: EstimateInput, live: LiveWaits): PlanEstimate 
       walk,
       wait,
       duration,
+      buffer,
       arriveOffset,
       arriveClock: formatClock(arriveAbs),
       leaveClock: formatClock(startOffset + cursor),
@@ -132,6 +140,7 @@ export function estimatePlan(day: EstimateInput, live: LiveWaits): PlanEstimate 
     totalWalk += walk;
     totalWait += wait;
     totalDuration += duration;
+    totalBuffer += buffer;
   });
 
   return {
@@ -139,7 +148,8 @@ export function estimatePlan(day: EstimateInput, live: LiveWaits): PlanEstimate 
     totalWalk,
     totalWait,
     totalDuration,
-    totalMinutes: totalWalk + totalWait + totalDuration,
+    totalBuffer,
+    totalMinutes: totalWalk + totalWait + totalDuration + totalBuffer,
     endClock: formatClock(startOffset + cursor),
   };
 }

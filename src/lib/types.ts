@@ -87,6 +87,8 @@ export interface PlanSettings {
   waitMode: WaitMode;
   /** Day start time, "HH:MM" 24h, used as the route's clock origin. */
   startTime: string;
+  /** Slack minutes automatically added to every attraction stop. */
+  bufferPerStop: number;
 }
 
 /** One planned day: a park, an event mode, a route, and its settings. */

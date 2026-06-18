@@ -15,6 +15,8 @@ const BLOCK_PRESETS: { name: string; durationMin: number }[] = [
   { name: 'Security & bag check', durationMin: 15 },
   { name: 'Rope drop / entry', durationMin: 15 },
   { name: 'Meal break', durationMin: 60 },
+  { name: 'Buffer / free time', durationMin: 15 },
+  { name: 'Buffer / free time', durationMin: 30 },
 ];
 
 export function PlanBuilder() {
@@ -37,7 +39,12 @@ export function PlanBuilder() {
         <Stat label="Total" value={fmtDuration(estimate.totalMinutes)} />
         <Stat label="Walking" value={fmtDuration(estimate.totalWalk)} />
         <Stat label="In queues" value={fmtDuration(estimate.totalWait)} />
-        <Stat label="Done by" value={estimate.endClock} />
+        {estimate.totalBuffer > 0 ? (
+          <Stat label="Buffer" value={fmtDuration(estimate.totalBuffer)} />
+        ) : (
+          <Stat label="Done by" value={estimate.endClock} />
+        )}
+        {estimate.totalBuffer > 0 && <Stat label="Done by" value={estimate.endClock} />}
       </div>
 
       <div className="flex items-center justify-between">
@@ -111,7 +118,8 @@ export function PlanBuilder() {
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
                       <span>arrive ~{es.arriveClock}</span>
                       {!isCustom && <span>wait {es.wait}m</span>}
-                      <span>{isCustom ? 'takes' : 'takes'} {es.duration}m</span>
+                      <span>takes {es.duration}m</span>
+                      {es.buffer > 0 && <span className="text-emerald-600">+{es.buffer}m buffer</span>}
                       <span>leave ~{es.leaveClock}</span>
                     </div>
 
@@ -189,7 +197,7 @@ function AddTimeBlock({
       <div className="flex flex-wrap gap-1">
         {BLOCK_PRESETS.map((p) => (
           <button
-            key={p.name}
+            key={`${p.name}-${p.durationMin}`}
             onClick={() => submit(p.name, p.durationMin)}
             className="rounded-full border border-slate-200 px-2 py-1 text-[11px] text-slate-600 hover:bg-slate-50"
           >
