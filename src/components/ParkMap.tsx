@@ -2,10 +2,28 @@ import { useMemo, useState } from 'react';
 import { ITEMS_BY_ID, itemsForDay } from '../data';
 import { amenitiesForPark } from '../data/amenities';
 import { summarizeTags, TAG_META } from '../lib/tags';
-import type { Attraction } from '../lib/types';
+import type { Attraction, ParkId } from '../lib/types';
 import { useActiveDay, useStore } from '../store/useStore';
 
 const AMENITY_GLYPH = { restroom: '🚻', water: '🚰' } as const;
+
+/** Land zones drawn as translucent regions behind the dots, per park. */
+const ZONES: Record<ParkId, { label: string; color: string; match: (land: string) => boolean }[]> = {
+  mk: [
+    { label: 'Main Street', color: '#fde68a', match: (l) => l === 'Main Street, U.S.A.' },
+    { label: 'Adventureland', color: '#bbf7d0', match: (l) => l === 'Adventureland' },
+    { label: 'Frontierland', color: '#fed7aa', match: (l) => l === 'Frontierland' },
+    { label: 'Liberty Square', color: '#ddd6fe', match: (l) => l === 'Liberty Square' },
+    { label: 'Fantasyland', color: '#fbcfe8', match: (l) => l === 'Fantasyland' },
+    { label: 'Tomorrowland', color: '#bae6fd', match: (l) => l === 'Tomorrowland' },
+  ],
+  epcot: [
+    { label: 'World Celebration', color: '#fde68a', match: (l) => l === 'World Celebration' },
+    { label: 'World Discovery', color: '#bae6fd', match: (l) => l === 'World Discovery' },
+    { label: 'World Nature', color: '#bbf7d0', match: (l) => l === 'World Nature' },
+    { label: 'World Showcase', color: '#fbcfe8', match: (l) => l.startsWith('World Showcase') },
+  ],
+};
 
 const UNTAGGED = '#cbd5e1';
 const PAD = 40;
@@ -50,6 +68,28 @@ export function ParkMap() {
 
   const items = useMemo(() => itemsForDay(day.park, day.event), [day.park, day.event]);
   const amenities = useMemo(() => amenitiesForPark(day.park), [day.park]);
+
+  const zones = useMemo(() => {
+    const P = 24;
+    return (ZONES[day.park] ?? [])
+      .map((z) => {
+        const pts = items.filter((i) => z.match(i.land));
+        if (pts.length === 0) return null;
+        const xs = pts.map((p) => p.coords.x);
+        const ys = pts.map((p) => p.coords.y);
+        const minX = Math.min(...xs);
+        const minY = Math.min(...ys);
+        return {
+          label: z.label,
+          color: z.color,
+          x: minX - P,
+          y: minY - P,
+          w: Math.max(...xs) - minX + P * 2,
+          h: Math.max(...ys) - minY + P * 2,
+        };
+      })
+      .filter((z): z is NonNullable<typeof z> => z !== null);
+  }, [day.park, items]);
 
   const view = useMemo(() => {
     const xs = items.map((i) => i.coords.x);
@@ -122,6 +162,24 @@ export function ParkMap() {
         role="img"
         aria-label={`Map of ${day.park === 'mk' ? 'Magic Kingdom' : 'EPCOT'} attractions and your route`}
       >
+        {/* Land zones (background) */}
+        {zones.map((z) => (
+          <g key={z.label} pointerEvents="none">
+            <rect x={z.x} y={z.y} width={z.w} height={z.h} rx={16} fill={z.color} opacity={0.4} />
+            <text
+              x={z.x + z.w / 2}
+              y={z.y + 15}
+              textAnchor="middle"
+              fontSize={13}
+              fontWeight={700}
+              fill="#334155"
+              opacity={0.75}
+            >
+              {z.label}
+            </text>
+          </g>
+        ))}
+
         {routePoints.length > 1 && (
           <polyline
             points={routePoints.map((p) => `${p.x},${p.y}`).join(' ')}
