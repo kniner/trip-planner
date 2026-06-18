@@ -145,10 +145,23 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     join(name) {
-      const id = uid();
+      const clean = name.trim() || 'Guest';
       const doc = get().doc;
+
+      // Returning user: same name (case-insensitive) resumes as the same person,
+      // keeping all their existing tags — no duplicate collaborator.
+      const existing = doc.collaborators.find(
+        (c) => c.name.toLowerCase() === clean.toLowerCase(),
+      );
+      if (existing) {
+        localStorage.setItem(ME_KEY, existing.id);
+        set({ meId: existing.id });
+        return;
+      }
+
+      const id = uid();
       const color = COLORS[doc.collaborators.length % COLORS.length];
-      const collaborator: Collaborator = { id, name: name.trim() || 'Guest', color };
+      const collaborator: Collaborator = { id, name: clean, color };
       localStorage.setItem(ME_KEY, id);
       set({ meId: id });
       commit({ ...doc, collaborators: [...doc.collaborators, collaborator] });
