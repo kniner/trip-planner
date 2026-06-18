@@ -266,6 +266,25 @@ function CustomRecipeBuilder() {
   const [importUrl, setImportUrl] = useState('');
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState('');
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteName, setPasteName] = useState('');
+  const [pasteServings, setPasteServings] = useState('4');
+  const [pasteText, setPasteText] = useState('');
+
+  const runPaste = () => {
+    const lines = pasteText.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (lines.length === 0) return;
+    const name = pasteName.trim() || 'Pasted recipe';
+    setName(name);
+    setRows(toEditorRows({ name, servings: Number(pasteServings) || 0, ingredients: lines }));
+    setOpen(true);
+    setPasteOpen(false);
+    setPasteText('');
+    setPasteName('');
+    setImportMsg(
+      `Parsed ${lines.length} ingredients from a recipe of ${Number(pasteServings) || 4}. Review & adjust below.`,
+    );
+  };
 
   const setRow = (i: number, patch: Partial<(typeof rows)[number]>) =>
     setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)));
@@ -328,25 +347,76 @@ function CustomRecipeBuilder() {
       )}
 
       {CAN_IMPORT && (
-        <div className="mb-2">
-          <div className="flex gap-2">
-            <input
-              value={importUrl}
-              onChange={(e) => setImportUrl(e.target.value)}
-              placeholder="Paste a recipe link to import & scale…"
-              className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm"
-            />
-            <button
-              onClick={runImport}
-              disabled={importing || !importUrl.trim()}
-              className="rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
-            >
-              {importing ? 'Importing…' : 'Import'}
-            </button>
-          </div>
-          {importMsg && <p className="mt-1 text-[11px] text-slate-500">{importMsg}</p>}
+        <div className="mb-2 flex gap-2">
+          <input
+            value={importUrl}
+            onChange={(e) => setImportUrl(e.target.value)}
+            placeholder="Paste a recipe link to import & scale…"
+            className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm"
+          />
+          <button
+            onClick={runImport}
+            disabled={importing || !importUrl.trim()}
+            className="rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+          >
+            {importing ? 'Importing…' : 'Import'}
+          </button>
         </div>
       )}
+
+      {!pasteOpen ? (
+        <button
+          onClick={() => setPasteOpen(true)}
+          className="mb-2 block text-sm font-medium text-emerald-700 hover:text-emerald-900"
+        >
+          📋 Paste a recipe's ingredients (works for any site)
+        </button>
+      ) : (
+        <div className="mb-2 space-y-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2">
+          <div className="flex flex-wrap gap-2">
+            <input
+              value={pasteName}
+              onChange={(e) => setPasteName(e.target.value)}
+              placeholder="Recipe name (optional)"
+              className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm"
+            />
+            <label className="flex items-center gap-1 text-xs text-slate-500">
+              Serves
+              <input
+                type="number"
+                min={1}
+                value={pasteServings}
+                onChange={(e) => setPasteServings(e.target.value)}
+                className="w-16 rounded border border-slate-300 px-2 py-1.5 text-sm"
+              />
+            </label>
+          </div>
+          <textarea
+            value={pasteText}
+            onChange={(e) => setPasteText(e.target.value)}
+            rows={6}
+            placeholder={'Paste the ingredient list, one per line:\n2 cups flour\n1 tsp salt\n3 eggs'}
+            className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
+          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={runPaste}
+              disabled={!pasteText.trim()}
+              className="rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+            >
+              Parse & scale
+            </button>
+            <button onClick={() => setPasteOpen(false)} className="text-sm text-slate-400">
+              Cancel
+            </button>
+            <span className="text-[11px] text-slate-400">
+              Scales to your group; review before saving.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {importMsg && <p className="mb-2 text-[11px] text-slate-500">{importMsg}</p>}
 
       {!open ? (
         <button onClick={() => setOpen(true)} className="text-sm font-medium text-slate-600 hover:text-slate-900">
