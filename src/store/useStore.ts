@@ -136,6 +136,7 @@ interface StoreState {
   removeBranch: (splitId: string, branchId: string) => void;
   renameBranch: (splitId: string, branchId: string, name: string) => void;
   addToBranch: (splitId: string, branchId: string, attractionId: string) => void;
+  addCustomToBranch: (splitId: string, branchId: string, entry: CustomEntry) => void;
   removeFromBranch: (splitId: string, branchId: string, stopId: string) => void;
   moveWithinBranch: (splitId: string, branchId: string, stopId: string, dir: -1 | 1) => void;
 
@@ -393,6 +394,16 @@ export const useStore = create<StoreState>((set, get) => {
           if (b.stops.some((s) => s.attractionId === attractionId)) return b;
           return { ...b, stops: [...b.stops, { id: uid(), kind: 'item', attractionId }] };
         }),
+      );
+    },
+
+    addCustomToBranch(splitId, branchId, entry) {
+      updateBranches(splitId, (branches) =>
+        branches.map((b) =>
+          b.id === branchId
+            ? { ...b, stops: [...b.stops, { id: uid(), kind: 'custom', custom: entry }] }
+            : b,
+        ),
       );
     },
 

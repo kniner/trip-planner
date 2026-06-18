@@ -10,18 +10,27 @@ export function TodoList() {
   const meId = useStore((s) => s.meId);
   const addStop = useStore((s) => s.addStop);
   const removeStop = useStore((s) => s.removeStop);
+  const removeFromBranch = useStore((s) => s.removeFromBranch);
   const day = useActiveDay();
   const [scope, setScope] = useState<Scope>('wishlist');
 
-  // Which day names each item is currently scheduled on (across the trip).
+  // Which day names each item is scheduled on (across the trip), counting both
+  // the main route and any split-group sub-routes.
   const scheduledOn = useMemo(() => {
-    const map = new Map<string, string[]>();
+    const map = new Map<string, Set<string>>();
+    const mark = (id: string | undefined, dayName: string) => {
+      if (!id) return;
+      const set = map.get(id) ?? new Set<string>();
+      set.add(dayName);
+      map.set(id, set);
+    };
     for (const d of doc.days) {
       for (const s of d.stops) {
-        if (!s.attractionId) continue;
-        const list = map.get(s.attractionId) ?? [];
-        list.push(d.name);
-        map.set(s.attractionId, list);
+        if (s.kind === 'split' && s.branches) {
+          for (const b of s.branches) for (const bs of b.stops) mark(bs.attractionId, d.name);
+        } else {
+          mark(s.attractionId, d.name);
+        }
       }
     }
     return map;
@@ -46,7 +55,27 @@ export function TodoList() {
       );
   }, [day.park, day.event, doc.tags, doc.collaborators, meId, scope]);
 
-  const inThisDay = (id: string) => day.stops.find((s) => s.attractionId === id);
+  // Find where an item sits in the active day: the main route, a split group,
+  // or nowhere. Used so adding to a group also marks the to-do item as added.
+  type Located =
+    | { kind: 'stop'; stopId: string }
+    | { kind: 'branch'; splitId: string; branchId: string; stopId: string; branchName: string }
+    | null;
+  const locate = (id: string): Located => {
+    for (const s of day.stops) {
+      if (s.kind === 'split' && s.branches) {
+        for (const b of s.branches) {
+          const bs = b.stops.find((st) => st.attractionId === id);
+          if (bs) {
+            return { kind: 'branch', splitId: s.id, branchId: b.id, stopId: bs.id, branchName: b.name };
+          }
+        }
+      } else if (s.attractionId === id) {
+        return { kind: 'stop', stopId: s.id };
+      }
+    }
+    return null;
+  };
 
   return (
     <section className="space-y-3">
@@ -86,8 +115,8 @@ export function TodoList() {
       ) : (
         <ul className="space-y-2">
           {rows.map(({ item, summary, score }) => {
-            const stop = inThisDay(item.id);
-            const elsewhere = (scheduledOn.get(item.id) ?? []).filter(
+            const located = locate(item.id);
+            const elsewhere = [...(scheduledOn.get(item.id) ?? [])].filter(
               (n) => n !== day.name,
             );
             return (
@@ -108,8 +137,11 @@ export function TodoList() {
                     <p className="truncate text-sm font-semibold">{item.name}</p>
                     <p className="truncate text-[11px] text-slate-400">
                       {item.land}
+                      {located?.kind === 'branch' && (
+                        <span className="text-indigo-600"> · in {located.branchName}</span>
+                      )}
                       {elsewhere.length > 0 && (
-                        <span className="text-amber-600"> · already on {elsewhere.join(', ')}</span>
+                        <span className="text-amber-600"> · also on {elsewhere.join(', ')}</span>
                       )}
                     </p>
 
@@ -136,14 +168,18 @@ export function TodoList() {
                   </div>
 
                   <button
-                    onClick={() => (stop ? removeStop(stop.id) : addStop(item.id))}
+                    onClick={() => {
+                      if (!located) addStop(item.id);
+                      else if (located.kind === 'stop') removeStop(located.stopId);
+                      else removeFromBranch(located.splitId, located.branchId, located.stopId);
+                    }}
                     className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-medium ${
-                      stop
+                      located
                         ? 'bg-slate-900 text-white'
                         : 'border border-slate-300 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    {stop ? '✓ Added' : '+ Add'}
+                    {located ? '✓ Added' : '+ Add'}
                   </button>
                 </div>
               </li>

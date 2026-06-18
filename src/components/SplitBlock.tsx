@@ -14,6 +14,7 @@ export function SplitBlock({ es }: Props) {
   const removeBranch = useStore((s) => s.removeBranch);
   const renameBranch = useStore((s) => s.renameBranch);
   const addToBranch = useStore((s) => s.addToBranch);
+  const addCustomToBranch = useStore((s) => s.addCustomToBranch);
   const removeFromBranch = useStore((s) => s.removeFromBranch);
   const moveWithinBranch = useStore((s) => s.moveWithinBranch);
   const setArrival = useStore((s) => s.setArrival);
@@ -163,6 +164,24 @@ export function SplitBlock({ es }: Props) {
                 );
               })}
             </select>
+
+            <div className="mt-1 flex flex-wrap items-center gap-1">
+              <span className="text-[10px] text-slate-400">Buffer:</span>
+              {[10, 15, 30].map((min) => (
+                <button
+                  key={min}
+                  onClick={() =>
+                    addCustomToBranch(splitId, branch.id, {
+                      name: 'Buffer / free time',
+                      durationMin: min,
+                    })
+                  }
+                  className="rounded border border-slate-200 px-1.5 py-0.5 text-[10px] text-slate-600 hover:bg-white"
+                >
+                  +{min}m
+                </button>
+              ))}
+            </div>
           </div>
           );
         })}
