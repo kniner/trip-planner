@@ -47,4 +47,27 @@ describe('parseIngredient', () => {
       name: 'onion',
     });
   });
+
+  it('strips parenthetical can sizes and finds the real unit', () => {
+    expect(parseIngredient('2 (10 1/2 ounce) cans cream of chicken soup')).toEqual({
+      qty: 2,
+      unit: 'can',
+      name: 'cream of chicken soup',
+    });
+  });
+
+  it('handles sleeves and brand names', () => {
+    expect(parseIngredient('1 sleeve Ritz crackers')).toEqual({
+      qty: 1,
+      unit: 'sleeve',
+      name: 'Ritz crackers',
+    });
+  });
+
+  it('averages a spaced range', () => {
+    const r = parseIngredient('10 -12 buns');
+    expect(r.qty).toBeCloseTo(11);
+    expect(r.unit).toBe('');
+    expect(r.name).toBe('buns');
+  });
 });

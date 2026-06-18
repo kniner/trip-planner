@@ -18,7 +18,7 @@ const UNICODE_FRACTIONS: Record<string, string> = {
 
 // Known measurement units → normalized singular form.
 const UNIT_MAP: Record<string, string> = {
-  cup: 'cup', cups: 'cup',
+  cup: 'cup', cups: 'cup', c: 'cup',
   tbsp: 'tbsp', tablespoon: 'tbsp', tablespoons: 'tbsp',
   tsp: 'tsp', teaspoon: 'tsp', teaspoons: 'tsp',
   oz: 'oz', ounce: 'oz', ounces: 'oz',
@@ -26,9 +26,23 @@ const UNIT_MAP: Record<string, string> = {
   g: 'g', gram: 'g', grams: 'g',
   kg: 'kg',
   ml: 'ml', l: 'l',
+  quart: 'quart', quarts: 'quart', qt: 'quart',
+  pint: 'pint', pints: 'pint',
+  gallon: 'gallon', gallons: 'gallon',
   clove: 'clove', cloves: 'clove',
   can: 'can', cans: 'can',
-  package: 'package', packages: 'package', pkg: 'package',
+  package: 'package', packages: 'package', pkg: 'package', pkgs: 'package',
+  bag: 'bag', bags: 'bag',
+  box: 'box', boxes: 'box',
+  jar: 'jar', jars: 'jar',
+  bottle: 'bottle', bottles: 'bottle',
+  container: 'container', containers: 'container',
+  sleeve: 'sleeve', sleeves: 'sleeve',
+  bunch: 'bunch', bunches: 'bunch',
+  stalk: 'stalk', stalks: 'stalk',
+  ear: 'ear', ears: 'ear',
+  loaf: 'loaf', loaves: 'loaf',
+  dozen: 'dozen',
   slice: 'slice', slices: 'slice',
   stick: 'stick', sticks: 'stick',
   head: 'head', heads: 'head',
@@ -75,6 +89,9 @@ export function parseIngredient(raw: string): ParsedIngredient {
     qty = b != null ? (a + b) / 2 : a; // ranges → midpoint
     str = str.slice(m[0].length).trim();
   }
+
+  // Drop parenthetical size notes like "(10 1/2 ounce)" that confuse parsing.
+  str = str.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
 
   // Optional unit as the next word.
   let unit = '';
