@@ -30,6 +30,10 @@ The app has two pages:
 - **Character dining** at both parks (Cinderella's Royal Table, The Crystal
   Palace, Garden Grill, Akershus) as bookable stops — modeled at a **90-minute**
   seating.
+- **Split the party.** Divide a day into parallel groups (e.g. a Bibbidi Bobbidi
+  Boutique crew and a rides crew) that run at the same time and rejoin for lunch.
+  The estimate counts the overlapping time once (the longest group sets the
+  rejoin clock), not the sum.
 - **Custom timeline blocks.** Add non-attraction time to the route — *drive to
   park, parking & tram, security & bag check, rope drop, meal breaks* — with a
   name, address, and duration, so travel/logistics are part of your day's clock.

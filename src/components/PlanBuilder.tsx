@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { estimatePlan } from '../lib/estimator';
 import { useActiveDay, useStore } from '../store/useStore';
+import { SplitBlock } from './SplitBlock';
 
 function fmtDuration(min: number): string {
   const h = Math.floor(min / 60);
@@ -26,6 +27,7 @@ export function PlanBuilder() {
   const setArrival = useStore((s) => s.setArrival);
   const reorder = useStore((s) => s.reorderToLandRoute);
   const addCustomStop = useStore((s) => s.addCustomStop);
+  const addSplit = useStore((s) => s.addSplit);
   const day = useActiveDay();
 
   const estimate = useMemo(() => estimatePlan(day, live), [day, live]);
@@ -51,15 +53,24 @@ export function PlanBuilder() {
         <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
           {day.name} · {day.stops.length} stops
         </h2>
-        {canOptimize && (
+        <div className="flex gap-1">
           <button
-            onClick={reorder}
+            onClick={addSplit}
             className="rounded border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
-            title="Reorder stops to minimize walking (nearest-neighbour)"
+            title="Split the group into parallel sub-routes that rejoin"
           >
-            Optimize walking
+            ↔ Split group
           </button>
-        )}
+          {canOptimize && (
+            <button
+              onClick={reorder}
+              className="rounded border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+              title="Reorder stops to minimize walking (nearest-neighbour)"
+            >
+              Optimize walking
+            </button>
+          )}
+        </div>
       </div>
 
       {day.stops.length === 0 ? (
@@ -70,6 +81,38 @@ export function PlanBuilder() {
       ) : (
         <ol className="space-y-2">
           {estimate.stops.map((es, i) => {
+            if (es.stop.kind === 'split') {
+              return (
+                <li
+                  key={es.stop.id}
+                  className="rounded-lg bg-indigo-50 p-3 shadow-sm ring-1 ring-indigo-200"
+                >
+                  <div className="mb-2 flex items-start gap-2">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">
+                      ↔
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold">Split — parallel groups</p>
+                      <p className="text-[11px] text-slate-500">starts ~{es.arriveClock}</p>
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      <IconBtn onClick={() => moveStop(es.stop.id, -1)} disabled={i === 0}>
+                        ↑
+                      </IconBtn>
+                      <IconBtn
+                        onClick={() => moveStop(es.stop.id, 1)}
+                        disabled={i === estimate.stops.length - 1}
+                      >
+                        ↓
+                      </IconBtn>
+                      <IconBtn onClick={() => removeStop(es.stop.id)}>✕</IconBtn>
+                    </div>
+                  </div>
+                  <SplitBlock es={es} />
+                </li>
+              );
+            }
+
             const isCustom = es.stop.kind === 'custom';
             return (
               <li

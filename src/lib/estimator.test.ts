@@ -123,6 +123,39 @@ describe('estimatePlan', () => {
     expect(buffered.stops[1].buffer).toBe(10);
   });
 
+  it('runs split groups in parallel and advances by the longest group', () => {
+    const day = dayWith({
+      stops: [
+        {
+          id: 'sp',
+          kind: 'split',
+          branches: [
+            {
+              id: 'a',
+              name: 'Boutique',
+              stops: [{ id: 'a1', kind: 'item', attractionId: 'mk-bibbidi-bobbidi-boutique' }],
+            },
+            {
+              id: 'b',
+              name: 'Rides',
+              stops: [{ id: 'b1', kind: 'item', attractionId: 'space-mountain' }],
+            },
+          ],
+        },
+      ],
+    });
+    const est = estimatePlan(day, {});
+    const split = est.stops[0];
+
+    expect(split.branches).toHaveLength(2);
+    // Boutique (60m) is the long pole vs Space Mountain (45m avg wait + 3m).
+    expect(split.duration).toBe(60);
+    expect(split.branches!.find((b) => b.name === 'Boutique')!.isLongest).toBe(true);
+    expect(est.endClock).toBe('10:00');
+    // Parallel: total counts the longest group once, not the sum of both.
+    expect(est.totalMinutes).toBe(60);
+  });
+
   it('computes arrival delta against a target time', () => {
     const day = dayWith({
       stops: [{ id: '1', kind: 'item', attractionId: 'space-mountain', arrival: '09:30' }],

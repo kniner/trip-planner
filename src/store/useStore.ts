@@ -10,6 +10,7 @@ import type {
   Pace,
   ParkId,
   PlanDoc,
+  SplitBranch,
   Tag,
   WaitMode,
 } from '../lib/types';
@@ -104,6 +105,15 @@ interface StoreState {
   setArrival: (stopId: string, arrival: string | undefined) => void;
   reorderToLandRoute: () => void;
 
+  // Parallel split groups (operate on the active day)
+  addSplit: () => void;
+  addBranch: (splitId: string) => void;
+  removeBranch: (splitId: string, branchId: string) => void;
+  renameBranch: (splitId: string, branchId: string, name: string) => void;
+  addToBranch: (splitId: string, branchId: string, attractionId: string) => void;
+  removeFromBranch: (splitId: string, branchId: string, stopId: string) => void;
+  moveWithinBranch: (splitId: string, branchId: string, stopId: string, dir: -1 | 1) => void;
+
   setPace: (pace: Pace) => void;
   setWaitMode: (mode: WaitMode) => void;
   setStartTime: (time: string) => void;
@@ -125,6 +135,21 @@ export const useStore = create<StoreState>((set, get) => {
     const doc = get().doc;
     const days = doc.days.map((d) => (d.id === doc.activeDayId ? fn(d) : d));
     commit({ ...doc, days });
+  };
+
+  /** Apply a transform to a split stop's branches in the active day. */
+  const updateBranches = (
+    splitId: string,
+    fn: (branches: SplitBranch[]) => SplitBranch[],
+  ) => {
+    updateActiveDay((day) => ({
+      ...day,
+      stops: day.stops.map((s) =>
+        s.id === splitId && s.kind === 'split'
+          ? { ...s, branches: fn(s.branches ?? []) }
+          : s,
+      ),
+    }));
   };
 
   const me = () => get().meId;
@@ -283,6 +308,68 @@ export const useStore = create<StoreState>((set, get) => {
         }
         return { ...day, stops: ordered };
       });
+    },
+
+    addSplit() {
+      const branch = (name: string): SplitBranch => ({ id: uid(), name, stops: [] });
+      updateActiveDay((day) => ({
+        ...day,
+        stops: [
+          ...day.stops,
+          { id: uid(), kind: 'split', branches: [branch('Group A'), branch('Group B')] },
+        ],
+      }));
+    },
+
+    addBranch(splitId) {
+      updateBranches(splitId, (branches) => [
+        ...branches,
+        { id: uid(), name: `Group ${String.fromCharCode(65 + branches.length)}`, stops: [] },
+      ]);
+    },
+
+    removeBranch(splitId, branchId) {
+      updateBranches(splitId, (branches) =>
+        branches.length <= 1 ? branches : branches.filter((b) => b.id !== branchId),
+      );
+    },
+
+    renameBranch(splitId, branchId, name) {
+      updateBranches(splitId, (branches) =>
+        branches.map((b) => (b.id === branchId ? { ...b, name: name.trim() || b.name } : b)),
+      );
+    },
+
+    addToBranch(splitId, branchId, attractionId) {
+      updateBranches(splitId, (branches) =>
+        branches.map((b) => {
+          if (b.id !== branchId) return b;
+          if (b.stops.some((s) => s.attractionId === attractionId)) return b;
+          return { ...b, stops: [...b.stops, { id: uid(), kind: 'item', attractionId }] };
+        }),
+      );
+    },
+
+    removeFromBranch(splitId, branchId, stopId) {
+      updateBranches(splitId, (branches) =>
+        branches.map((b) =>
+          b.id === branchId ? { ...b, stops: b.stops.filter((s) => s.id !== stopId) } : b,
+        ),
+      );
+    },
+
+    moveWithinBranch(splitId, branchId, stopId, dir) {
+      updateBranches(splitId, (branches) =>
+        branches.map((b) => {
+          if (b.id !== branchId) return b;
+          const stops = [...b.stops];
+          const i = stops.findIndex((s) => s.id === stopId);
+          const j = i + dir;
+          if (i < 0 || j < 0 || j >= stops.length) return b;
+          [stops[i], stops[j]] = [stops[j], stops[i]];
+          return { ...b, stops };
+        }),
+      );
     },
 
     setPace(pace) {

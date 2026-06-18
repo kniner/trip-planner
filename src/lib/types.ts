@@ -69,15 +69,29 @@ export interface CustomEntry {
   address?: string;
 }
 
-/** A single stop in a day's route — either a park item or a custom block. */
+/** One parallel group within a split (e.g. "Boutique crew" vs "Rides crew"). */
+export interface SplitBranch {
+  id: string;
+  name: string;
+  /** This group's mini-route (item/custom stops only). */
+  stops: PlanStop[];
+}
+
+/**
+ * A single stop in a day's route:
+ *  - 'item'   references an attraction/dining/experience,
+ *  - 'custom' is a free time block,
+ *  - 'split'  divides the party into parallel groups that rejoin afterward.
+ */
 export interface PlanStop {
   id: string;
-  /** 'item' references an attraction/dining/etc.; 'custom' is a free block. */
-  kind?: 'item' | 'custom';
+  kind?: 'item' | 'custom' | 'split';
   /** Set when kind === 'item'. */
   attractionId?: string;
   /** Set when kind === 'custom'. */
   custom?: CustomEntry;
+  /** Set when kind === 'split'. */
+  branches?: SplitBranch[];
   /** Optional target arrival time, "HH:MM" 24h. */
   arrival?: string;
 }
