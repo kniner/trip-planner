@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Collaborator, GroupItem } from '../lib/types';
+import type { ChecklistItem, Collaborator, GroupItem } from '../lib/types';
 import { useStore } from '../store/useStore';
 
 /** Two collaborative lists: a personal checklist and a group sign-up sheet. */
@@ -68,15 +68,43 @@ function addedByName(id: string | undefined, collaborators: Collaborator[]): str
   return collaborators.find((c) => c.id === id)?.name ?? null;
 }
 
-/** Inline note display + editor for a checklist or group item. */
-function NoteEditor({ note, onSave }: { note?: string; onSave: (n: string) => void }) {
-  const [editing, setEditing] = useState(false);
+/**
+ * A small inline "+ note" trigger, meant to live in an item's main row so a
+ * blank note never takes up its own line. Editing state lives in the parent.
+ */
+function NoteAddButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="shrink-0 text-[11px] text-slate-400 active:text-slate-600"
+    >
+      + note
+    </button>
+  );
+}
+
+/**
+ * The below-row note area: the editor while editing, otherwise the note
+ * preview. Renders nothing when there's no note and we're not editing — so a
+ * blank note adds no extra line.
+ */
+function NoteBody({
+  note,
+  editing,
+  setEditing,
+  onSave,
+}: {
+  note?: string;
+  editing: boolean;
+  setEditing: (v: boolean) => void;
+  onSave: (n: string) => void;
+}) {
   const [draft, setDraft] = useState(note ?? '');
 
   if (editing) {
     return (
       <form
-        className="flex gap-1"
+        className="flex gap-1 pl-6"
         onSubmit={(e) => {
           e.preventDefault();
           onSave(draft);
@@ -104,7 +132,7 @@ function NoteEditor({ note, onSave }: { note?: string; onSave: (n: string) => vo
           setDraft(note);
           setEditing(true);
         }}
-        className="block w-full whitespace-pre-wrap text-left text-[11px] italic leading-snug text-slate-500 active:text-slate-700"
+        className="block w-full whitespace-pre-wrap pl-6 text-left text-[11px] italic leading-snug text-slate-500 active:text-slate-700"
         title="Edit note"
       >
         {note}
@@ -112,17 +140,7 @@ function NoteEditor({ note, onSave }: { note?: string; onSave: (n: string) => vo
     );
   }
 
-  return (
-    <button
-      onClick={() => {
-        setDraft('');
-        setEditing(true);
-      }}
-      className="text-[11px] text-slate-400 active:text-slate-600"
-    >
-      + note
-    </button>
-  );
+  return null;
 }
 
 function PersonalList() {
@@ -153,46 +171,17 @@ function PersonalList() {
       </div>
 
       <ul className="space-y-1.5">
-        {items.map((item) => {
-          const isChecked = checked.has(item.id);
-          const who = addedByName(item.addedBy, collaborators);
-          return (
-            <li
-              key={item.id}
-              className="space-y-1 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100"
-            >
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => toggleChecked(item.id)}
-                  className="h-4 w-4 shrink-0 accent-emerald-600"
-                />
-                <span className={`min-w-0 flex-1 text-sm ${isChecked ? 'text-slate-400 line-through' : ''}`}>
-                  {item.text}
-                  {item.private && (
-                    <span className="ml-1 rounded bg-indigo-50 px-1 text-[10px] font-medium text-indigo-500">
-                      private
-                    </span>
-                  )}
-                  {!item.private && who && (
-                    <span className="ml-1 text-[11px] text-slate-300">Added by: {who}</span>
-                  )}
-                </span>
-                <button
-                  onClick={() => removePersonalItem(item.id)}
-                  className="shrink-0 text-xs text-slate-300 hover:text-red-500"
-                  title={item.private ? 'Remove' : 'Remove for everyone'}
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="pl-6">
-                <NoteEditor note={item.note} onSave={(n) => setPersonalItemNote(item.id, n)} />
-              </div>
-            </li>
-          );
-        })}
+        {items.map((item) => (
+          <PersonalRow
+            key={item.id}
+            item={item}
+            isChecked={checked.has(item.id)}
+            who={addedByName(item.addedBy, collaborators)}
+            onToggle={() => toggleChecked(item.id)}
+            onRemove={() => removePersonalItem(item.id)}
+            onSaveNote={(n) => setPersonalItemNote(item.id, n)}
+          />
+        ))}
         {items.length === 0 && <Empty>No items yet — add your first.</Empty>}
       </ul>
 
@@ -202,6 +191,61 @@ function PersonalList() {
         placeholder="Add a packing item…"
       />
     </section>
+  );
+}
+
+function PersonalRow({
+  item,
+  isChecked,
+  who,
+  onToggle,
+  onRemove,
+  onSaveNote,
+}: {
+  item: ChecklistItem;
+  isChecked: boolean;
+  who: string | null;
+  onToggle: () => void;
+  onRemove: () => void;
+  onSaveNote: (n: string) => void;
+}) {
+  const [noteEditing, setNoteEditing] = useState(false);
+  return (
+    <li className="space-y-1 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100">
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={isChecked}
+          onChange={onToggle}
+          className="h-4 w-4 shrink-0 accent-emerald-600"
+        />
+        <span className={`min-w-0 flex-1 text-sm ${isChecked ? 'text-slate-400 line-through' : ''}`}>
+          {item.text}
+          {item.private && (
+            <span className="ml-1 rounded bg-indigo-50 px-1 text-[10px] font-medium text-indigo-500">
+              private
+            </span>
+          )}
+          {!item.private && who && (
+            <span className="ml-1 text-[11px] text-slate-300">Added by: {who}</span>
+          )}
+        </span>
+        {!item.note && !noteEditing && <NoteAddButton onClick={() => setNoteEditing(true)} />}
+        <button
+          onClick={onRemove}
+          className="shrink-0 text-xs text-slate-300 hover:text-red-500"
+          title={item.private ? 'Remove' : 'Remove for everyone'}
+        >
+          ✕
+        </button>
+      </div>
+      <NoteBody
+        note={item.note}
+        editing={noteEditing}
+        setEditing={setNoteEditing}
+        onSave={onSaveNote}
+      />
+    </li>
   );
 }
 
@@ -241,6 +285,7 @@ function GroupRow({ item }: { item: GroupItem }) {
   const addManualSignup = useStore((s) => s.addManualSignup);
   const removeManualSignup = useStore((s) => s.removeManualSignup);
   const [name, setName] = useState('');
+  const [noteEditing, setNoteEditing] = useState(false);
 
   const signed = meId ? item.signups.includes(meId) : false;
   const who = addedByName(item.addedBy, collaborators);
@@ -263,6 +308,7 @@ function GroupRow({ item }: { item: GroupItem }) {
           {item.text}
           {who && <span className="ml-1 text-[11px] text-slate-300">Added by: {who}</span>}
         </span>
+        {!item.note && !noteEditing && <NoteAddButton onClick={() => setNoteEditing(true)} />}
         <button
           onClick={() => toggleSignup(item.id)}
           className={`shrink-0 rounded-md px-2 py-1 text-xs font-medium ${
@@ -282,9 +328,12 @@ function GroupRow({ item }: { item: GroupItem }) {
         </button>
       </div>
 
-      <div className="pl-6">
-        <NoteEditor note={item.note} onSave={(n) => setGroupItemNote(item.id, n)} />
-      </div>
+      <NoteBody
+        note={item.note}
+        editing={noteEditing}
+        setEditing={setNoteEditing}
+        onSave={(n) => setGroupItemNote(item.id, n)}
+      />
 
       {(signups.length > 0 || manual.length > 0) && (
         <div className="flex flex-wrap gap-1">
