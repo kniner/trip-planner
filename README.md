@@ -43,6 +43,24 @@ together.
 - **Day summary:** total time, time spent walking, time spent in queues, and your
   projected finish time.
 
+## Run it on your phone (installable PWA)
+
+This is a Progressive Web App: deployed to GitHub Pages over HTTPS, you can add
+it to your phone's home screen and it launches full-screen like a native app,
+and works offline.
+
+**Live URL:** `https://kniner.github.io/shit/`
+
+- **iPhone (Safari):** open the URL → tap the **Share** button → **Add to Home
+  Screen** → **Add**.
+- **Android (Chrome):** open the URL → tap the **⋮** menu → **Add to Home
+  screen** / **Install app**.
+
+Deployment is automatic: pushing to the working branch runs
+`.github/workflows/deploy.yml`, which builds the app and publishes `dist/` to the
+`gh-pages` branch. (Enable it once under **Repo → Settings → Pages →
+Deploy from a branch → `gh-pages` / root**.)
+
 ## Stack
 
 - React 18 + TypeScript + Vite
