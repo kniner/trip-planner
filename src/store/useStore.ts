@@ -656,17 +656,31 @@ export const useStore = create<StoreState>((set, get) => {
       const meId = me();
       if (!meId) return;
       const doc = get().doc;
-      commit({
-        ...doc,
-        groupItems: doc.groupItems.map((i) => {
-          if (i.id !== id) return i;
-          const signed = i.signups.includes(meId);
-          return {
-            ...i,
-            signups: signed ? i.signups.filter((u) => u !== meId) : [...i.signups, meId],
-          };
-        }),
+      const item = doc.groupItems.find((i) => i.id === id);
+      const signingUp = !!item && !item.signups.includes(meId);
+
+      const groupItems = doc.groupItems.map((i) => {
+        if (i.id !== id) return i;
+        const signed = i.signups.includes(meId);
+        return {
+          ...i,
+          signups: signed ? i.signups.filter((u) => u !== meId) : [...i.signups, meId],
+        };
       });
+
+      // Signing up for a task adds it to the shared packing checklist (if not
+      // already there) so whoever's responsible remembers it.
+      let personalItems = doc.personalItems;
+      if (signingUp && item) {
+        const exists = personalItems.some(
+          (p) => p.text.trim().toLowerCase() === item.text.trim().toLowerCase(),
+        );
+        if (!exists) {
+          personalItems = [...personalItems, { id: uid(), text: item.text, addedBy: meId }];
+        }
+      }
+
+      commit({ ...doc, groupItems, personalItems });
     },
 
     addManualSignup(id, name) {
