@@ -19,17 +19,18 @@ function AddRow({
 }: {
   onAdd: (t: string, isPrivate?: boolean) => void;
   placeholder: string;
-  /** When set, shows a "Private (just me)" toggle and passes it to onAdd. */
+  /** When set, shows a "Share with everyone" toggle (items are private by default). */
   withPrivacy?: boolean;
 }) {
   const [text, setText] = useState('');
-  const [isPrivate, setIsPrivate] = useState(false);
+  // Items are private to the adder by default; checking shares with everyone.
+  const [isShared, setIsShared] = useState(false);
   return (
     <form
       className="space-y-1.5"
       onSubmit={(e) => {
         e.preventDefault();
-        onAdd(text, withPrivacy ? isPrivate : undefined);
+        onAdd(text, withPrivacy ? !isShared : undefined);
         setText('');
       }}
     >
@@ -52,17 +53,17 @@ function AddRow({
         <label className="flex items-center gap-1.5 text-[11px] text-slate-500">
           <input
             type="checkbox"
-            checked={isPrivate}
-            onChange={(e) => setIsPrivate(e.target.checked)}
-            className="h-3.5 w-3.5 accent-indigo-600"
+            checked={isShared}
+            onChange={(e) => setIsShared(e.target.checked)}
+            className="h-3.5 w-3.5 accent-emerald-600"
           />
-          {isPrivate ? (
-            <span className="font-medium text-indigo-600">
-              Private — only I can see this item
+          {isShared ? (
+            <span className="font-medium text-emerald-600">
+              Share with everyone
             </span>
           ) : (
             <span>
-              Shared with everyone <span className="text-slate-400">(default) — check to keep private</span>
+              Private <span className="text-slate-400">(default) — check to share with everyone</span>
             </span>
           )}
         </label>
