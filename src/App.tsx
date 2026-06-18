@@ -11,7 +11,13 @@ export default function App() {
   const init = useStore((s) => s.init);
   const ready = useStore((s) => s.ready);
   const meId = useStore((s) => s.meId);
+  const collaborators = useStore((s) => s.doc.collaborators);
   const [view, setView] = useState<View>('tag');
+
+  // "Joined" requires an identity that still exists in the shared plan. If the
+  // plan was reset/cleared, a stale stored id no longer matches anyone, so the
+  // device falls back to the join screen rather than acting as a ghost user.
+  const joined = meId != null && collaborators.some((c) => c.id === meId);
 
   useEffect(() => {
     void init();
@@ -26,7 +32,7 @@ export default function App() {
   }
 
   // Hard gate: no name, no app.
-  if (!meId) return <JoinGate />;
+  if (!joined) return <JoinGate />;
 
   return (
     <div className="mx-auto max-w-7xl p-4">
