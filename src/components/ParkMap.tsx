@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ITEMS_BY_ID, itemsForDay } from '../data';
 import { amenitiesForPark, type AmenityType } from '../data/amenities';
 import { PARK_PATHS } from '../data/mapPaths';
+import { TOT_PATH, TOT_STATIONS } from '../data/trickOrTreat';
 import { summarizeTags, TAG_META } from '../lib/tags';
 import type { Attraction, ParkId } from '../lib/types';
 import { useActiveDay, useStore } from '../store/useStore';
@@ -101,6 +102,8 @@ export function ParkMap() {
   const items = useMemo(() => itemsForDay(day.park, day.event), [day.park, day.event]);
   const amenities = useMemo(() => amenitiesForPark(day.park), [day.park]);
   const paths = PARK_PATHS[day.park] ?? [];
+  const isHalloween = day.park === 'mk' && day.event === 'mnsshp';
+  const [showTot, setShowTot] = useState(true);
 
   const base = useMemo(() => {
     const xs = items.map((i) => i.coords.x);
@@ -249,6 +252,17 @@ export function ParkMap() {
               {t.label}
             </label>
           ))}
+          {isHalloween && (
+            <label className="flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={showTot}
+                onChange={(e) => setShowTot(e.target.checked)}
+                className="h-3 w-3 accent-orange-500"
+              />
+              🍬 Trick-or-treat
+            </label>
+          )}
         </span>
       </div>
 
@@ -290,6 +304,39 @@ export function ParkMap() {
               pointerEvents="none"
             />
           ))}
+
+          {/* Trick-or-treat trail (MNSSHP) */}
+          {isHalloween && showTot && (
+            <>
+              <polyline
+                points={TOT_PATH.map((p) => `${p.x},${p.y}`).join(' ')}
+                fill="none"
+                stroke="#f97316"
+                strokeWidth={4 * s}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray={`${2 * s} ${6 * s}`}
+                opacity={0.8}
+                pointerEvents="none"
+              />
+              {TOT_STATIONS.map((st) => (
+                <g
+                  key={st.id}
+                  onClick={() => {
+                    setAmenityInfo(`Trick-or-treat station · ${st.land}`);
+                    setSelectedId(null);
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <circle cx={st.coords.x} cy={st.coords.y} r={11 * s} fill="transparent" />
+                  <text x={st.coords.x} y={st.coords.y} dy="0.35em" textAnchor="middle" fontSize={14 * s}>
+                    🍬
+                    <title>Trick-or-treat station · {st.land}</title>
+                  </text>
+                </g>
+              ))}
+            </>
+          )}
 
           {/* Route */}
           {routePoints.length > 1 && (
