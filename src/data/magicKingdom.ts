@@ -210,6 +210,8 @@ export const MAGIC_KINGDOM: Attraction[] = [
     duration: 30,
     coords: { x: 300, y: 450 },
     gf: true,
+    service: 'quick',
+    mobileOrder: true,
     note: 'Main Street • hot dogs & fries • GF buns available',
   },
   {
@@ -223,7 +225,9 @@ export const MAGIC_KINGDOM: Attraction[] = [
     duration: 60,
     coords: { x: 310, y: 460 },
     gf: true,
-    note: 'Main Street • Italian, table service • GF pasta/menu available',
+    service: 'table',
+    mobileOrder: false,
+    note: 'Main Street • Italian, table service • reservation recommended • GF pasta available',
   },
   {
     id: 'food-aloha-isle',
@@ -236,6 +240,8 @@ export const MAGIC_KINGDOM: Attraction[] = [
     duration: 15,
     coords: { x: 175, y: 365 },
     gf: true,
+    service: 'quick',
+    mobileOrder: true,
     note: 'Adventureland • Dole Whip & floats • naturally gluten-free',
   },
   {
@@ -249,7 +255,9 @@ export const MAGIC_KINGDOM: Attraction[] = [
     duration: 60,
     coords: { x: 160, y: 350 },
     gf: true,
-    note: 'Adventureland • table service • allergy/GF menu available',
+    service: 'table',
+    mobileOrder: false,
+    note: 'Adventureland • table service • reservation recommended • allergy/GF menu available',
   },
   {
     id: 'food-pecos-bill',
@@ -262,6 +270,8 @@ export const MAGIC_KINGDOM: Attraction[] = [
     duration: 30,
     coords: { x: 150, y: 270 },
     gf: true,
+    service: 'quick',
+    mobileOrder: true,
     note: 'Frontierland • Tex-Mex quick service • GF options available',
   },
   {
@@ -275,6 +285,8 @@ export const MAGIC_KINGDOM: Attraction[] = [
     duration: 30,
     coords: { x: 215, y: 195 },
     gf: true,
+    service: 'quick',
+    mobileOrder: true,
     note: 'Liberty Square • seafood/chicken quick service • GF menu available',
   },
   {
@@ -288,7 +300,9 @@ export const MAGIC_KINGDOM: Attraction[] = [
     duration: 60,
     coords: { x: 205, y: 205 },
     gf: true,
-    note: 'Liberty Square • table service Thanksgiving-style feast • GF menu available',
+    service: 'table',
+    mobileOrder: false,
+    note: 'Liberty Square • table service Thanksgiving-style feast • reservation recommended • GF menu available',
   },
   {
     id: 'food-be-our-guest',
@@ -301,7 +315,9 @@ export const MAGIC_KINGDOM: Attraction[] = [
     duration: 75,
     coords: { x: 330, y: 150 },
     gf: true,
-    note: 'Fantasyland • French table service in the Beast’s castle • GF menu available',
+    service: 'table',
+    mobileOrder: false,
+    note: 'Fantasyland • French table service in the Beast’s castle • reservation required • GF menu available',
   },
   {
     id: 'food-pinocchio',
@@ -314,6 +330,8 @@ export const MAGIC_KINGDOM: Attraction[] = [
     duration: 30,
     coords: { x: 285, y: 175 },
     gf: true,
+    service: 'quick',
+    mobileOrder: true,
     note: 'Fantasyland • flatbreads & pasta quick service • GF options available',
   },
   {
@@ -327,6 +345,8 @@ export const MAGIC_KINGDOM: Attraction[] = [
     duration: 15,
     coords: { x: 345, y: 150 },
     gf: false,
+    service: 'quick',
+    mobileOrder: false,
     note: 'Fantasyland • LeFou’s Brew & cinnamon rolls (rolls are not GF)',
   },
   {
@@ -340,6 +360,8 @@ export const MAGIC_KINGDOM: Attraction[] = [
     duration: 30,
     coords: { x: 420, y: 270 },
     gf: true,
+    service: 'quick',
+    mobileOrder: true,
     note: 'Tomorrowland • burgers/chicken quick service • GF buns & menu available',
   },
   {
@@ -353,6 +375,8 @@ export const MAGIC_KINGDOM: Attraction[] = [
     duration: 15,
     coords: { x: 435, y: 285 },
     gf: true,
+    service: 'quick',
+    mobileOrder: true,
     note: 'Tomorrowland • hot dogs & snacks • GF options available',
   },
 ];

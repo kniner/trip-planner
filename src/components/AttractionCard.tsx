@@ -98,9 +98,28 @@ export function AttractionCard({ attraction, showAddToRoute = true }: Props) {
             )}
           </>
         ) : isFood ? (
-          <span>
-            Food stop · <strong className="text-slate-700">~{attraction.duration}m</strong>
-          </span>
+          <>
+            <span
+              className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${
+                attraction.service === 'table'
+                  ? 'bg-violet-100 text-violet-700'
+                  : 'bg-sky-100 text-sky-700'
+              }`}
+            >
+              {attraction.service === 'table' ? '🍽️ Sit-down' : '🥡 Quick service'}
+            </span>
+            {attraction.mobileOrder && (
+              <span
+                className="rounded bg-blue-100 px-1.5 py-0.5 text-[11px] font-semibold text-blue-700"
+                title="Mobile Order ahead in the Disney app"
+              >
+                📱 Order ahead
+              </span>
+            )}
+            <span>
+              ~<strong className="text-slate-700">{attraction.duration}m</strong>
+            </span>
+          </>
         ) : (
           <span>
             Reservation · <strong className="text-slate-700">{attraction.duration}m</strong>

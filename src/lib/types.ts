@@ -56,6 +56,10 @@ export interface Attraction {
   note?: string;
   /** Gluten-free options available (food/dining locations). */
   gf?: boolean;
+  /** Service style for food locations. */
+  service?: 'table' | 'quick';
+  /** Mobile Order ahead available (food locations). */
+  mobileOrder?: boolean;
 }
 
 /** A tag applied by a specific collaborator. */

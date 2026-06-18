@@ -1,21 +1,46 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ITEMS_BY_ID, itemsForDay } from '../data';
 import { summarizeTags, TAG_META } from '../lib/tags';
+import type { Attraction } from '../lib/types';
 import { useActiveDay, useStore } from '../store/useStore';
 
 const UNTAGGED = '#cbd5e1';
 const PAD = 40;
 
+type TypeCat = 'ride' | 'show' | 'attraction' | 'food';
+
+/** Outline color encodes the kind of place; dot fill encodes the group's tag. */
+const OUTLINE: Record<TypeCat, string> = {
+  ride: '#0f172a',
+  show: '#7c3aed',
+  attraction: '#0891b2',
+  food: '#16a34a',
+};
+const TYPE_LABEL: Record<TypeCat, string> = {
+  ride: 'Ride',
+  show: 'Show',
+  attraction: 'Attraction',
+  food: 'Food',
+};
+
+function typeCat(kind: Attraction['kind']): TypeCat {
+  if (kind === 'ride') return 'ride';
+  if (kind === 'show' || kind === 'entertainment') return 'show';
+  if (kind === 'food' || kind === 'dining' || kind === 'festival') return 'food';
+  return 'attraction'; // attraction, experience
+}
+
 /**
  * Lightweight schematic map: plots the day's attractions by their grid
- * coordinates, colors them by group tag, and draws the planned route through
- * the scheduled stops in order. Approximate layout, not a real Disney map.
+ * coordinates (fill = group tag, outline = type), draws the route through the
+ * scheduled stops, and lets you tap a dot to see what it is. Approximate layout.
  */
 export function ParkMap() {
   const day = useActiveDay();
   const tags = useStore((s) => s.doc.tags);
   const collaborators = useStore((s) => s.doc.collaborators);
   const meId = useStore((s) => s.meId);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const items = useMemo(() => itemsForDay(day.park, day.event), [day.park, day.event]);
 
@@ -29,7 +54,6 @@ export function ParkMap() {
     return { x: minX - PAD, y: minY - PAD, w: w + PAD * 2, h: h + PAD * 2 };
   }, [items]);
 
-  // Route = scheduled main-route item stops, in order (splits/custom skipped).
   const routePoints = useMemo(() => {
     const pts: { x: number; y: number; n: number }[] = [];
     let n = 0;
@@ -45,16 +69,24 @@ export function ParkMap() {
 
   if (items.length === 0) return null;
 
+  const selected = selectedId ? ITEMS_BY_ID[selectedId] : undefined;
+
   return (
     <section className="space-y-2 rounded-lg bg-white p-3 shadow-sm">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Map</h2>
         <div className="flex flex-wrap gap-2 text-[10px] text-slate-500">
-          <Legend color={TAG_META.must.color} label="Must" />
-          <Legend color={TAG_META.nice.color} label="Nice" />
-          <Legend color={TAG_META.avoid.color} label="Avoid" />
-          <Legend color={UNTAGGED} label="Untagged" />
+          <Legend swatch={<Dot fill={TAG_META.must.color} />} label="Must" />
+          <Legend swatch={<Dot fill={TAG_META.nice.color} />} label="Nice" />
+          <Legend swatch={<Dot fill={UNTAGGED} />} label="Untagged" />
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2 text-[10px] text-slate-500">
+        <span className="text-slate-400">Outline:</span>
+        {(Object.keys(OUTLINE) as TypeCat[]).map((t) => (
+          <Legend key={t} swatch={<Dot fill="#fff" stroke={OUTLINE[t]} />} label={TYPE_LABEL[t]} />
+        ))}
       </div>
 
       <svg
@@ -63,7 +95,6 @@ export function ParkMap() {
         role="img"
         aria-label={`Map of ${day.park === 'mk' ? 'Magic Kingdom' : 'EPCOT'} attractions and your route`}
       >
-        {/* Route path */}
         {routePoints.length > 1 && (
           <polyline
             points={routePoints.map((p) => `${p.x},${p.y}`).join(' ')}
@@ -72,50 +103,70 @@ export function ParkMap() {
             strokeWidth={3}
             strokeLinejoin="round"
             strokeDasharray="6 5"
-            opacity={0.7}
+            opacity={0.5}
           />
         )}
 
-        {/* Attraction dots */}
         {items.map((it) => {
           const consensus = summarizeTags(it.id, tags, collaborators, meId).consensus;
-          const color = consensus ? TAG_META[consensus].color : UNTAGGED;
+          const fill = consensus ? TAG_META[consensus].color : UNTAGGED;
+          const isSel = it.id === selectedId;
           return (
-            <circle key={it.id} cx={it.coords.x} cy={it.coords.y} r={7} fill={color} opacity={0.9}>
-              <title>{it.name}</title>
-            </circle>
+            <g key={it.id} onClick={() => setSelectedId(isSel ? null : it.id)} style={{ cursor: 'pointer' }}>
+              {/* larger transparent hit target for easy tapping */}
+              <circle cx={it.coords.x} cy={it.coords.y} r={13} fill="transparent" />
+              <circle
+                cx={it.coords.x}
+                cy={it.coords.y}
+                r={isSel ? 9 : 7}
+                fill={fill}
+                stroke={OUTLINE[typeCat(it.kind)]}
+                strokeWidth={isSel ? 4 : 2}
+              >
+                <title>{it.name}</title>
+              </circle>
+            </g>
           );
         })}
 
-        {/* Route order numbers */}
         {routePoints.map((p) => (
-          <g key={`r-${p.n}`}>
+          <g key={`r-${p.n}`} pointerEvents="none">
             <circle cx={p.x} cy={p.y} r={10} fill="#0f172a" />
-            <text
-              x={p.x}
-              y={p.y}
-              dy="0.35em"
-              textAnchor="middle"
-              fontSize={11}
-              fontWeight="bold"
-              fill="white"
-            >
+            <text x={p.x} y={p.y} dy="0.35em" textAnchor="middle" fontSize={11} fontWeight="bold" fill="white">
               {p.n}
             </text>
           </g>
         ))}
       </svg>
-      <p className="text-[10px] text-slate-400">
-        Schematic layout (approximate positions); the dashed line is your route order.
-      </p>
+
+      {selected ? (
+        <p className="text-[11px] text-slate-600">
+          <strong>{selected.name}</strong> · {selected.land} ·{' '}
+          {TYPE_LABEL[typeCat(selected.kind)]}
+        </p>
+      ) : (
+        <p className="text-[10px] text-slate-400">
+          Tap a dot to see what it is. Schematic layout; dashed line is your route.
+          (Restrooms aren’t mapped.)
+        </p>
+      )}
     </section>
   );
 }
 
-function Legend({ color, label }: { color: string; label: string }) {
+function Dot({ fill, stroke }: { fill: string; stroke?: string }) {
+  return (
+    <span
+      className="inline-block h-2.5 w-2.5 rounded-full"
+      style={{ background: fill, border: stroke ? `2px solid ${stroke}` : undefined }}
+    />
+  );
+}
+
+function Legend({ swatch, label }: { swatch: React.ReactNode; label: string }) {
   return (
     <span className="inline-flex items-center gap-1">
-      <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+      {swatch}
       {label}
     </span>
   );
