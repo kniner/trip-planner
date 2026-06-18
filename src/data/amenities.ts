@@ -4,13 +4,17 @@ import type { ParkId } from '../lib/types';
  * Park amenities shown as an optional map layer (not taggable/schedulable).
  * Positions are approximate, on the same per-park grid as attractions.
  */
+export type AmenityType = 'restroom' | 'water' | 'photopass' | 'photospot';
+
 export interface Amenity {
   id: string;
   park: ParkId;
-  type: 'restroom' | 'water';
+  type: AmenityType;
   /** Area label for the tap caption. */
   land: string;
   coords: { x: number; y: number };
+  /** Extra description (e.g. why a personal photo spot is good). */
+  note?: string;
 }
 
 export const AMENITIES: Amenity[] = [
@@ -39,6 +43,31 @@ export const AMENITIES: Amenity[] = [
   { id: 'ep-h2o-cel', park: 'epcot', type: 'water', land: 'World Celebration', coords: { x: 312, y: 122 } },
   { id: 'ep-h2o-nat', park: 'epcot', type: 'water', land: 'World Nature', coords: { x: 168, y: 218 } },
   { id: 'ep-h2o-ws', park: 'epcot', type: 'water', land: 'World Showcase (American Adventure)', coords: { x: 255, y: 583 } },
+
+  // Magic Kingdom — PhotoPass photographer locations
+  { id: 'mk-pp-castle', park: 'mk', type: 'photopass', land: 'Cinderella Castle forecourt', coords: { x: 300, y: 320 }, note: 'Classic castle photographers (magic shots)' },
+  { id: 'mk-pp-partners', park: 'mk', type: 'photopass', land: 'Hub / Partners statue', coords: { x: 300, y: 360 }, note: 'Walt & Mickey with the castle behind' },
+  { id: 'mk-pp-entrance', park: 'mk', type: 'photopass', land: 'Main Street entrance', coords: { x: 300, y: 478 }, note: 'Floral Mickey & train station' },
+  { id: 'mk-pp-tom', park: 'mk', type: 'photopass', land: 'Tomorrowland', coords: { x: 415, y: 285 }, note: 'Tomorrowland entrance photographer' },
+
+  // Magic Kingdom — great personal photo spots (blog-sourced; good views, fewer crowds)
+  { id: 'mk-ps-wishingwell', park: 'mk', type: 'photospot', land: 'Cinderella Wishing Well', coords: { x: 325, y: 305 }, note: 'Right of the castle — charming, much quieter castle backdrop' },
+  { id: 'mk-ps-castle-back', park: 'mk', type: 'photospot', land: 'Fantasyland side of the castle', coords: { x: 300, y: 205 }, note: 'Castle from the back — just as pretty, far less crowded' },
+  { id: 'mk-ps-town-square', park: 'mk', type: 'photospot', land: 'Town Square Theater garden', coords: { x: 330, y: 470 }, note: 'SE corner by the entrance — shaded, flowery, almost no traffic' },
+  { id: 'mk-ps-tl-purplewall', park: 'mk', type: 'photospot', land: 'Tomorrowland purple wall', coords: { x: 400, y: 300 }, note: 'Past the bridge near Tomorrowland Terrace — colorful & uncrowded' },
+  { id: 'mk-ps-peachwalls', park: 'mk', type: 'photospot', land: 'Fantasyland peach walls', coords: { x: 330, y: 190 }, note: 'By Castle Couture / Sir Mickey’s — pretty windows & architecture' },
+  { id: 'mk-ps-haunted', park: 'mk', type: 'photospot', land: 'Haunted Mansion grounds', coords: { x: 205, y: 178 }, note: 'In front of the mansion and the family tombs' },
+
+  // EPCOT — PhotoPass locations
+  { id: 'ep-pp-ssE', park: 'epcot', type: 'photopass', land: 'Spaceship Earth', coords: { x: 300, y: 100 }, note: 'The icon shot at the entrance' },
+  { id: 'ep-pp-ws-fountain', park: 'epcot', type: 'photopass', land: 'World Showcase Lagoon', coords: { x: 300, y: 400 }, note: 'Lagoon-side photographers' },
+
+  // EPCOT — great personal photo spots (blog-sourced)
+  { id: 'ep-ps-morocco', park: 'epcot', type: 'photospot', land: 'Morocco fountain', coords: { x: 182, y: 515 }, note: 'The fountain here is the least crowded in World Showcase' },
+  { id: 'ep-ps-norway-church', park: 'epcot', type: 'photospot', land: 'Norway Stave Church', coords: { x: 448, y: 448 }, note: 'Step to the rock past the main area for the best church view' },
+  { id: 'ep-ps-mexico-aztec', park: 'epcot', type: 'photospot', land: 'Mexico Aztec wall', coords: { x: 432, y: 388 }, note: 'Just past the main building — often empty when Donald isn’t meeting' },
+  { id: 'ep-ps-germany', park: 'epcot', type: 'photospot', land: 'Germany courtyard', coords: { x: 372, y: 562 }, note: 'Charming courtyard — go early before it fills up' },
+  { id: 'ep-ps-japan', park: 'epcot', type: 'photospot', land: 'Japan pagoda garden', coords: { x: 210, y: 545 }, note: 'Pagoda & koi garden — serene and scenic' },
 ];
 
 export function amenitiesForPark(park: ParkId): Amenity[] {

@@ -1,11 +1,28 @@
 import { useMemo, useState } from 'react';
 import { ITEMS_BY_ID, itemsForDay } from '../data';
-import { amenitiesForPark } from '../data/amenities';
+import { amenitiesForPark, type AmenityType } from '../data/amenities';
 import { summarizeTags, TAG_META } from '../lib/tags';
 import type { Attraction, ParkId } from '../lib/types';
 import { useActiveDay, useStore } from '../store/useStore';
 
-const AMENITY_GLYPH = { restroom: '🚻', water: '🚰' } as const;
+const AMENITY_GLYPH: Record<AmenityType, string> = {
+  restroom: '🚻',
+  water: '🚰',
+  photopass: '📷',
+  photospot: '✨',
+};
+const AMENITY_LABEL: Record<AmenityType, string> = {
+  restroom: 'Restroom',
+  water: 'Water fountain',
+  photopass: 'PhotoPass',
+  photospot: 'Photo spot',
+};
+const AMENITY_TOGGLES: { type: AmenityType; label: string }[] = [
+  { type: 'restroom', label: '🚻 Restrooms' },
+  { type: 'water', label: '🚰 Water' },
+  { type: 'photopass', label: '📷 PhotoPass' },
+  { type: 'photospot', label: '✨ Photo spots' },
+];
 
 /** Land zones drawn as translucent regions behind the dots, per park. */
 const ZONES: Record<ParkId, { label: string; color: string; match: (land: string) => boolean }[]> = {
@@ -63,8 +80,12 @@ export function ParkMap() {
   const meId = useStore((s) => s.meId);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [amenityInfo, setAmenityInfo] = useState<string | null>(null);
-  const [showRestrooms, setShowRestrooms] = useState(false);
-  const [showWater, setShowWater] = useState(false);
+  const [layers, setLayers] = useState<Record<AmenityType, boolean>>({
+    restroom: false,
+    water: false,
+    photopass: false,
+    photospot: false,
+  });
 
   const items = useMemo(() => itemsForDay(day.park, day.event), [day.park, day.event]);
   const amenities = useMemo(() => amenitiesForPark(day.park), [day.park]);
@@ -134,25 +155,18 @@ export function ParkMap() {
         {(Object.keys(OUTLINE) as TypeCat[]).map((t) => (
           <Legend key={t} swatch={<Dot fill="#fff" stroke={OUTLINE[t]} />} label={TYPE_LABEL[t]} />
         ))}
-        <span className="ml-1 flex items-center gap-2">
-          <label className="flex items-center gap-1">
-            <input
-              type="checkbox"
-              checked={showRestrooms}
-              onChange={(e) => setShowRestrooms(e.target.checked)}
-              className="h-3 w-3 accent-slate-700"
-            />
-            🚻 Restrooms
-          </label>
-          <label className="flex items-center gap-1">
-            <input
-              type="checkbox"
-              checked={showWater}
-              onChange={(e) => setShowWater(e.target.checked)}
-              className="h-3 w-3 accent-slate-700"
-            />
-            🚰 Water
-          </label>
+        <span className="ml-1 flex flex-wrap items-center gap-2">
+          {AMENITY_TOGGLES.map((t) => (
+            <label key={t.type} className="flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={layers[t.type]}
+                onChange={(e) => setLayers((p) => ({ ...p, [t.type]: e.target.checked }))}
+                className="h-3 w-3 accent-slate-700"
+              />
+              {t.label}
+            </label>
+          ))}
         </span>
       </div>
 
@@ -222,23 +236,26 @@ export function ParkMap() {
         })}
 
         {amenities
-          .filter((a) => (a.type === 'restroom' ? showRestrooms : showWater))
-          .map((a) => (
-            <g
-              key={a.id}
-              onClick={() => {
-                setAmenityInfo(`${a.type === 'restroom' ? 'Restroom' : 'Water fountain'} · ${a.land}`);
-                setSelectedId(null);
-              }}
-              style={{ cursor: 'pointer' }}
-            >
-              <circle cx={a.coords.x} cy={a.coords.y} r={11} fill="transparent" />
-              <text x={a.coords.x} y={a.coords.y} dy="0.35em" textAnchor="middle" fontSize={15}>
-                {AMENITY_GLYPH[a.type]}
-                <title>{a.type === 'restroom' ? 'Restroom' : 'Water fountain'} · {a.land}</title>
-              </text>
-            </g>
-          ))}
+          .filter((a) => layers[a.type])
+          .map((a) => {
+            const caption = `${AMENITY_LABEL[a.type]} · ${a.land}${a.note ? ` — ${a.note}` : ''}`;
+            return (
+              <g
+                key={a.id}
+                onClick={() => {
+                  setAmenityInfo(caption);
+                  setSelectedId(null);
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                <circle cx={a.coords.x} cy={a.coords.y} r={11} fill="transparent" />
+                <text x={a.coords.x} y={a.coords.y} dy="0.35em" textAnchor="middle" fontSize={15}>
+                  {AMENITY_GLYPH[a.type]}
+                  <title>{caption}</title>
+                </text>
+              </g>
+            );
+          })}
 
         {routePoints.map((p) => (
           <g key={`r-${p.n}`} pointerEvents="none">
