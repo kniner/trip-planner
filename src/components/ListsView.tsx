@@ -77,6 +77,13 @@ function addedByName(id: string | undefined, collaborators: Collaborator[]): str
   return collaborators.find((c) => c.id === id)?.name ?? null;
 }
 
+/** Sort rank for group tasks: open (0) → signed up (1) → done (2, very bottom). */
+function groupRank(item: GroupItem): number {
+  if (item.done) return 2;
+  const hasSignup = item.signups.length > 0 || (item.manualSignups?.length ?? 0) > 0;
+  return hasSignup ? 1 : 0;
+}
+
 /**
  * A small inline "+ note" trigger, meant to live in an item's main row so a
  * blank note never takes up its own line. Editing state lives in the parent.
@@ -262,18 +269,24 @@ function GroupList() {
   const items = useStore((s) => s.doc.groupItems);
   const addGroupItem = useStore((s) => s.addGroupItem);
 
+  // Keep tasks that still need a volunteer up top: open items first, then ones
+  // someone's signed up for, then done items at the very bottom. Stable sort
+  // preserves the existing order within each group.
+  const sorted = [...items].sort((a, b) => groupRank(a) - groupRank(b));
+
   return (
     <section className="space-y-3">
       <div>
         <h2 className="text-lg font-bold">Group sign-up</h2>
         <p className="text-xs text-slate-500">
           Shared tasks — sign up for what you'll handle, or add anyone by name
-          (handy for people not using the app). Anyone can add items.
+          (handy for people not using the app). Anyone can add items. Items with
+          someone signed up drop to the bottom.
         </p>
       </div>
 
       <ul className="space-y-1.5">
-        {items.map((item) => (
+        {sorted.map((item) => (
           <GroupRow key={item.id} item={item} />
         ))}
         {items.length === 0 && <Empty>No group tasks yet — add one.</Empty>}
