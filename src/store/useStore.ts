@@ -11,6 +11,7 @@ import type {
   Pace,
   ParkId,
   PlanDoc,
+  Recipe,
   SplitBranch,
   Tag,
   WaitMode,
@@ -65,7 +66,16 @@ function newDay(park: ParkId, event: EventType, name?: string): Day {
 }
 
 function emptyMealPlan(): PlanDoc['meals'] {
-  return { adults: 8, kids: 3, entries: [], groceryChecked: [], extras: [], groceryOverrides: {} };
+  return {
+    adults: 8,
+    kids: 3,
+    glutenFree: 1,
+    entries: [],
+    customRecipes: [],
+    groceryChecked: [],
+    extras: [],
+    groceryOverrides: {},
+  };
 }
 
 function emptyDoc(): PlanDoc {
@@ -172,9 +182,12 @@ interface StoreState {
 
   // Meal planner
   setMealHeadcount: (adults: number, kids: number) => void;
-  addMealEntry: (label: string, recipeId: string) => void;
-  updateMealEntry: (id: string, patch: Partial<{ label: string; recipeId: string }>) => void;
+  setGlutenFree: (count: number) => void;
+  addMealEntry: (date: string, recipeId: string) => void;
+  updateMealEntry: (id: string, patch: Partial<{ date: string; recipeId: string }>) => void;
   removeMealEntry: (id: string) => void;
+  addCustomRecipe: (recipe: Recipe) => void;
+  removeCustomRecipe: (id: string) => void;
   toggleGrocery: (key: string) => void;
   addGroceryExtra: (text: string) => void;
   removeGroceryExtra: (id: string) => void;
@@ -638,14 +651,39 @@ export const useStore = create<StoreState>((set, get) => {
       });
     },
 
-    addMealEntry(label, recipeId) {
+    setGlutenFree(count) {
+      const doc = get().doc;
+      commit({ ...doc, meals: { ...doc.meals, glutenFree: Math.max(0, count) } });
+    },
+
+    addMealEntry(date, recipeId) {
       if (!recipeId) return;
       const doc = get().doc;
       commit({
         ...doc,
         meals: {
           ...doc.meals,
-          entries: [...doc.meals.entries, { id: uid(), label: label.trim() || 'Meal', recipeId }],
+          entries: [...doc.meals.entries, { id: uid(), date, recipeId }],
+        },
+      });
+    },
+
+    addCustomRecipe(recipe) {
+      const doc = get().doc;
+      commit({
+        ...doc,
+        meals: { ...doc.meals, customRecipes: [...doc.meals.customRecipes, recipe] },
+      });
+    },
+
+    removeCustomRecipe(id) {
+      const doc = get().doc;
+      commit({
+        ...doc,
+        meals: {
+          ...doc.meals,
+          customRecipes: doc.meals.customRecipes.filter((r) => r.id !== id),
+          entries: doc.meals.entries.filter((e) => e.recipeId !== id),
         },
       });
     },

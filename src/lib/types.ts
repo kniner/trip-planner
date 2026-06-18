@@ -171,19 +171,27 @@ export interface Ingredient {
   unit: string;
   /** Quantity needed per adult-equivalent serving. */
   perPerson: number;
+  /** If this ingredient contains gluten, the gluten-free substitute to buy. */
+  gfSub?: string;
 }
+
+export type MealCategory = 'breakfast' | 'lunch' | 'dinner';
 
 /** A known meal/recipe with its ingredient list. */
 export interface Recipe {
   id: string;
   name: string;
+  category: MealCategory;
   ingredients: Ingredient[];
+  /** True for user-created recipes (stored in the plan, removable). */
+  custom?: boolean;
 }
 
-/** A planned meal slot (e.g. "Monday dinner" → Tacos). */
+/** A planned meal slot tied to a date (e.g. 2026-07-04 dinner → Tacos). */
 export interface MealEntry {
   id: string;
-  label: string;
+  /** ISO date "YYYY-MM-DD" (empty string if unscheduled). */
+  date: string;
   recipeId: string;
 }
 
@@ -196,7 +204,11 @@ export interface GroceryExtra {
 export interface MealPlan {
   adults: number;
   kids: number;
+  /** Number of gluten-free eaters; their portions use GF substitutes. */
+  glutenFree: number;
   entries: MealEntry[];
+  /** User-created recipes, available alongside the seeded catalog. */
+  customRecipes: Recipe[];
   /** Checked-off grocery keys/ids (shared, so shoppers don't double-buy). */
   groceryChecked: string[];
   /** Manually-added grocery items. */
