@@ -10,7 +10,10 @@ export function UserBar() {
   const meId = useStore((s) => s.meId);
   const join = useStore((s) => s.join);
   const leave = useStore((s) => s.leave);
+  const removeCollaborator = useStore((s) => s.removeCollaborator);
   const [name, setName] = useState('');
+  const [managing, setManaging] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const me = collaborators.find((c) => c.id === meId);
 
@@ -86,7 +89,63 @@ export function UserBar() {
             {c.name.slice(0, 1).toUpperCase()}
           </span>
         ))}
+        {collaborators.length > 0 && (
+          <button
+            onClick={() => {
+              setManaging((v) => !v);
+              setConfirmId(null);
+            }}
+            className="ml-1 text-xs text-slate-400 underline hover:text-slate-600"
+          >
+            {managing ? 'done' : 'manage'}
+          </button>
+        )}
       </div>
+
+      {managing && (
+        <div className="w-full space-y-1 border-t border-slate-100 pt-2">
+          <p className="text-[11px] text-slate-400">
+            Remove a person (also clears their tags, sign-ups and group assignments).
+          </p>
+          {collaborators.map((c) => (
+            <div key={c.id} className="flex items-center gap-2 text-sm">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: c.color }} />
+              <span className="flex-1">
+                {c.name}
+                {c.id === meId && <span className="ml-1 text-[11px] text-slate-400">(you)</span>}
+              </span>
+              {confirmId === c.id ? (
+                <>
+                  <span className="text-[11px] text-slate-500">Remove?</span>
+                  <button
+                    onClick={() => {
+                      removeCollaborator(c.id);
+                      setConfirmId(null);
+                    }}
+                    className="rounded bg-red-600 px-2 py-0.5 text-[11px] font-medium text-white"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => setConfirmId(null)}
+                    className="text-[11px] text-slate-400"
+                  >
+                    No
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setConfirmId(c.id)}
+                  className="text-xs text-slate-300 hover:text-red-500"
+                  title="Remove person"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -113,6 +113,7 @@ interface StoreState {
   init: () => Promise<void>;
   join: (name: string) => void;
   leave: () => void;
+  removeCollaborator: (userId: string) => void;
 
   // Days
   setActiveDay: (dayId: string) => void;
@@ -246,6 +247,40 @@ export const useStore = create<StoreState>((set, get) => {
     leave() {
       localStorage.removeItem(ME_KEY);
       set({ meId: null });
+    },
+
+    removeCollaborator(userId) {
+      const doc = get().doc;
+      const { [userId]: _removed, ...personalChecks } = doc.personalChecks;
+      void _removed;
+      commit({
+        ...doc,
+        collaborators: doc.collaborators.filter((c) => c.id !== userId),
+        tags: doc.tags.filter((t) => t.userId !== userId),
+        groupItems: doc.groupItems.map((i) => ({
+          ...i,
+          signups: i.signups.filter((u) => u !== userId),
+        })),
+        days: doc.days.map((d) => ({
+          ...d,
+          stops: d.stops.map((s) =>
+            s.kind === 'split' && s.branches
+              ? {
+                  ...s,
+                  branches: s.branches.map((b) => ({
+                    ...b,
+                    members: (b.members ?? []).filter((u) => u !== userId),
+                  })),
+                }
+              : s,
+          ),
+        })),
+        personalChecks,
+      });
+      if (get().meId === userId) {
+        localStorage.removeItem(ME_KEY);
+        set({ meId: null });
+      }
     },
 
     setActiveDay(dayId) {
