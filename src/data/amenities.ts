@@ -4,7 +4,13 @@ import type { ParkId } from '../lib/types';
  * Park amenities shown as an optional map layer (not taggable/schedulable).
  * Positions are approximate, on the same per-park grid as attractions.
  */
-export type AmenityType = 'restroom' | 'water' | 'photopass' | 'photospot';
+export type AmenityType =
+  | 'restroom'
+  | 'water'
+  | 'photopass'
+  | 'photospot'
+  | 'landmark'
+  | 'kids';
 
 export interface Amenity {
   id: string;
@@ -68,6 +74,18 @@ export const AMENITIES: Amenity[] = [
   { id: 'ep-ps-mexico-aztec', park: 'epcot', type: 'photospot', land: 'Mexico Aztec wall', coords: { x: 432, y: 388 }, note: 'Just past the main building — often empty when Donald isn’t meeting' },
   { id: 'ep-ps-germany', park: 'epcot', type: 'photospot', land: 'Germany courtyard', coords: { x: 372, y: 562 }, note: 'Charming courtyard — go early before it fills up' },
   { id: 'ep-ps-japan', park: 'epcot', type: 'photospot', land: 'Japan pagoda garden', coords: { x: 210, y: 545 }, note: 'Pagoda & koi garden — serene and scenic' },
+
+  // Landmarks (always shown)
+  { id: 'mk-landmark-castle', park: 'mk', type: 'landmark', land: 'Cinderella Castle', coords: { x: 300, y: 300 }, note: 'Cinderella Castle — park center' },
+  { id: 'ep-landmark-sse', park: 'epcot', type: 'landmark', land: 'Spaceship Earth', coords: { x: 300, y: 90 }, note: 'Spaceship Earth — park icon' },
+
+  // Interactive spots for kids
+  { id: 'mk-kids-sirmickeys', park: 'mk', type: 'kids', land: "Sir Mickey's (Fantasyland)", coords: { x: 335, y: 188 }, note: 'Pixie dusting — kids get sprinkled with pixie dust' },
+  { id: 'mk-kids-sword', park: 'mk', type: 'kids', land: 'Sword in the Stone (Fantasyland)', coords: { x: 295, y: 188 }, note: 'Try to pull the sword from the stone' },
+  { id: 'mk-kids-pirates-adv', park: 'mk', type: 'kids', land: "A Pirate's Adventure (Adventureland)", coords: { x: 172, y: 372 }, note: 'Interactive treasure-hunt game stations' },
+  { id: 'mk-kids-sorcerers', park: 'mk', type: 'kids', land: 'Sorcerers of the Magic Kingdom (Firehouse)', coords: { x: 290, y: 460 }, note: 'Free trading-card spell game with portals park-wide' },
+  { id: 'mk-kids-tom-sawyer', park: 'mk', type: 'kids', land: 'Tom Sawyer Island (Frontierland)', coords: { x: 130, y: 210 }, note: 'Caves, bridges & a fort to explore (raft over)' },
+  { id: 'ep-kids-ducktales', park: 'epcot', type: 'kids', land: 'World Showcase Adventure', coords: { x: 300, y: 430 }, note: 'DuckTales interactive phone game around the pavilions' },
 ];
 
 export function amenitiesForPark(park: ParkId): Amenity[] {

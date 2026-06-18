@@ -1,13 +1,14 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { JoinGate } from './components/JoinGate';
 import { ListsView } from './components/ListsView';
+import { MapView } from './components/MapView';
 import { MealsView } from './components/MealsView';
 import { ScheduleView } from './components/ScheduleView';
 import { TagView } from './components/TagView';
 import { UserBar } from './components/UserBar';
 import { useStore } from './store/useStore';
 
-type View = 'tag' | 'schedule' | 'lists' | 'meals';
+type View = 'tag' | 'schedule' | 'map' | 'lists' | 'meals';
 
 export default function App() {
   const init = useStore((s) => s.init);
@@ -50,24 +51,28 @@ export default function App() {
       <div className="mb-4 space-y-3">
         <UserBar />
 
-        <nav className="flex rounded-lg bg-slate-100 p-1">
+        <nav className="flex flex-wrap rounded-lg bg-slate-100 p-1">
           <ViewTab active={view === 'tag'} onClick={() => setView('tag')}>
-            1 · Tag
+            Wishlist
           </ViewTab>
           <ViewTab active={view === 'schedule'} onClick={() => setView('schedule')}>
-            2 · Schedule
+            Schedule
+          </ViewTab>
+          <ViewTab active={view === 'map'} onClick={() => setView('map')}>
+            Map
           </ViewTab>
           <ViewTab active={view === 'lists'} onClick={() => setView('lists')}>
-            3 · Lists
+            Lists
           </ViewTab>
           <ViewTab active={view === 'meals'} onClick={() => setView('meals')}>
-            4 · Meals
+            Meals
           </ViewTab>
         </nav>
       </div>
 
       {view === 'tag' && <TagView />}
       {view === 'schedule' && <ScheduleView />}
+      {view === 'map' && <MapView />}
       {view === 'lists' && <ListsView />}
       {view === 'meals' && <MealsView />}
 

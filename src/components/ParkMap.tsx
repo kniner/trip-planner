@@ -1,30 +1,59 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ITEMS_BY_ID, itemsForDay } from '../data';
 import { amenitiesForPark, type AmenityType } from '../data/amenities';
+import { PARK_PATHS } from '../data/mapPaths';
 import { summarizeTags, TAG_META } from '../lib/tags';
 import type { Attraction, ParkId } from '../lib/types';
 import { useActiveDay, useStore } from '../store/useStore';
+
+const UNTAGGED = '#cbd5e1';
+const PAD = 40;
 
 const AMENITY_GLYPH: Record<AmenityType, string> = {
   restroom: '🚻',
   water: '🚰',
   photopass: '📷',
   photospot: '✨',
+  landmark: '🏰',
+  kids: '🧸',
 };
 const AMENITY_LABEL: Record<AmenityType, string> = {
   restroom: 'Restroom',
   water: 'Water fountain',
   photopass: 'PhotoPass',
   photospot: 'Photo spot',
+  landmark: 'Landmark',
+  kids: 'Kids interactive',
 };
+/** Layers the user can toggle (landmarks are always shown). */
 const AMENITY_TOGGLES: { type: AmenityType; label: string }[] = [
   { type: 'restroom', label: '🚻 Restrooms' },
   { type: 'water', label: '🚰 Water' },
   { type: 'photopass', label: '📷 PhotoPass' },
   { type: 'photospot', label: '✨ Photo spots' },
+  { type: 'kids', label: '🧸 Kids' },
 ];
 
-/** Land zones drawn as translucent regions behind the dots, per park. */
+type TypeCat = 'ride' | 'show' | 'attraction' | 'food';
+const OUTLINE: Record<TypeCat, string> = {
+  ride: '#0f172a',
+  show: '#7c3aed',
+  attraction: '#0891b2',
+  food: '#16a34a',
+};
+const TYPE_LABEL: Record<TypeCat, string> = {
+  ride: 'Ride',
+  show: 'Show',
+  attraction: 'Attraction',
+  food: 'Food',
+};
+function typeCat(kind: Attraction['kind']): TypeCat {
+  if (kind === 'ride') return 'ride';
+  if (kind === 'show' || kind === 'entertainment') return 'show';
+  if (kind === 'food' || kind === 'dining' || kind === 'festival') return 'food';
+  return 'attraction';
+}
+
 const ZONES: Record<ParkId, { label: string; color: string; match: (land: string) => boolean }[]> = {
   mk: [
     { label: 'Main Street', color: '#fde68a', match: (l) => l === 'Main Street, U.S.A.' },
@@ -42,36 +71,11 @@ const ZONES: Record<ParkId, { label: string; color: string; match: (land: string
   ],
 };
 
-const UNTAGGED = '#cbd5e1';
-const PAD = 40;
-
-type TypeCat = 'ride' | 'show' | 'attraction' | 'food';
-
-/** Outline color encodes the kind of place; dot fill encodes the group's tag. */
-const OUTLINE: Record<TypeCat, string> = {
-  ride: '#0f172a',
-  show: '#7c3aed',
-  attraction: '#0891b2',
-  food: '#16a34a',
-};
-const TYPE_LABEL: Record<TypeCat, string> = {
-  ride: 'Ride',
-  show: 'Show',
-  attraction: 'Attraction',
-  food: 'Food',
-};
-
-function typeCat(kind: Attraction['kind']): TypeCat {
-  if (kind === 'ride') return 'ride';
-  if (kind === 'show' || kind === 'entertainment') return 'show';
-  if (kind === 'food' || kind === 'dining' || kind === 'festival') return 'food';
-  return 'attraction'; // attraction, experience
-}
-
 /**
- * Lightweight schematic map: plots the day's attractions by their grid
- * coordinates (fill = group tag, outline = type), draws the route through the
- * scheduled stops, and lets you tap a dot to see what it is. Approximate layout.
+ * Schematic, zoomable park map: land zones, walking paths, attractions (fill =
+ * group tag, outline = type), the planned route, landmarks, and toggleable
+ * amenity layers (restrooms/water/PhotoPass/photo spots/kids). Tap a marker for
+ * details; pinch isn't needed — use the +/−/reset buttons and drag to pan.
  */
 export function ParkMap() {
   const day = useActiveDay();
@@ -85,10 +89,35 @@ export function ParkMap() {
     water: false,
     photopass: false,
     photospot: false,
+    landmark: true,
+    kids: false,
   });
 
   const items = useMemo(() => itemsForDay(day.park, day.event), [day.park, day.event]);
   const amenities = useMemo(() => amenitiesForPark(day.park), [day.park]);
+  const paths = PARK_PATHS[day.park] ?? [];
+
+  const base = useMemo(() => {
+    const xs = items.map((i) => i.coords.x);
+    const ys = items.map((i) => i.coords.y);
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    const w = Math.max(...xs) - minX || 1;
+    const h = Math.max(...ys) - minY || 1;
+    return { x: minX - PAD, y: minY - PAD, w: w + PAD * 2, h: h + PAD * 2 };
+  }, [items]);
+
+  // Zoom + pan around a center point.
+  const [zoom, setZoom] = useState(1);
+  const [center, setCenter] = useState<{ x: number; y: number } | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const drag = useRef<{ x: number; y: number; cx: number; cy: number } | null>(null);
+
+  useEffect(() => {
+    // Reset view when the park changes.
+    setZoom(1);
+    setCenter(null);
+  }, [day.park]);
 
   const zones = useMemo(() => {
     const P = 24;
@@ -112,16 +141,6 @@ export function ParkMap() {
       .filter((z): z is NonNullable<typeof z> => z !== null);
   }, [day.park, items]);
 
-  const view = useMemo(() => {
-    const xs = items.map((i) => i.coords.x);
-    const ys = items.map((i) => i.coords.y);
-    const minX = Math.min(...xs);
-    const minY = Math.min(...ys);
-    const w = Math.max(...xs) - minX || 1;
-    const h = Math.max(...ys) - minY || 1;
-    return { x: minX - PAD, y: minY - PAD, w: w + PAD * 2, h: h + PAD * 2 };
-  }, [items]);
-
   const routePoints = useMemo(() => {
     const pts: { x: number; y: number; n: number }[] = [];
     let n = 0;
@@ -136,6 +155,27 @@ export function ParkMap() {
   }, [day.stops]);
 
   if (items.length === 0) return null;
+
+  const cx = center?.x ?? base.x + base.w / 2;
+  const cy = center?.y ?? base.y + base.h / 2;
+  const vbW = base.w / zoom;
+  const vbH = base.h / zoom;
+  const viewBox = `${cx - vbW / 2} ${cy - vbH / 2} ${vbW} ${vbH}`;
+
+  const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    drag.current = { x: e.clientX, y: e.clientY, cx, cy };
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+  };
+  const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (!drag.current || !svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const dxView = ((e.clientX - drag.current.x) * vbW) / rect.width;
+    const dyView = ((e.clientY - drag.current.y) * vbH) / rect.height;
+    setCenter({ x: drag.current.cx - dxView, y: drag.current.cy - dyView });
+  };
+  const endDrag = () => {
+    drag.current = null;
+  };
 
   const selected = selectedId ? ITEMS_BY_ID[selectedId] : undefined;
 
@@ -170,117 +210,183 @@ export function ParkMap() {
         </span>
       </div>
 
-      <svg
-        viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
-        className="h-auto w-full rounded-md bg-slate-50"
-        role="img"
-        aria-label={`Map of ${day.park === 'mk' ? 'Magic Kingdom' : 'EPCOT'} attractions and your route`}
-      >
-        {/* Land zones (background) */}
-        {zones.map((z) => (
-          <g key={z.label} pointerEvents="none">
-            <rect x={z.x} y={z.y} width={z.w} height={z.h} rx={16} fill={z.color} opacity={0.4} />
-            <text
-              x={z.x + z.w / 2}
-              y={z.y + 15}
-              textAnchor="middle"
-              fontSize={13}
-              fontWeight={700}
-              fill="#334155"
-              opacity={0.75}
-            >
-              {z.label}
-            </text>
-          </g>
-        ))}
-
-        {routePoints.length > 1 && (
-          <polyline
-            points={routePoints.map((p) => `${p.x},${p.y}`).join(' ')}
-            fill="none"
-            stroke="#0f172a"
-            strokeWidth={3}
-            strokeLinejoin="round"
-            strokeDasharray="6 5"
-            opacity={0.5}
-          />
-        )}
-
-        {items.map((it) => {
-          const consensus = summarizeTags(it.id, tags, collaborators, meId).consensus;
-          const fill = consensus ? TAG_META[consensus].color : UNTAGGED;
-          const isSel = it.id === selectedId;
-          return (
-            <g
-              key={it.id}
-              onClick={() => {
-                setSelectedId(isSel ? null : it.id);
-                setAmenityInfo(null);
-              }}
-              style={{ cursor: 'pointer' }}
-            >
-              {/* larger transparent hit target for easy tapping */}
-              <circle cx={it.coords.x} cy={it.coords.y} r={13} fill="transparent" />
-              <circle
-                cx={it.coords.x}
-                cy={it.coords.y}
-                r={isSel ? 9 : 7}
-                fill={fill}
-                stroke={OUTLINE[typeCat(it.kind)]}
-                strokeWidth={isSel ? 4 : 2}
-              >
-                <title>{it.name}</title>
-              </circle>
+      <div className="relative">
+        <svg
+          ref={svgRef}
+          viewBox={viewBox}
+          className="h-auto w-full touch-none select-none rounded-md bg-slate-50"
+          style={{ cursor: drag.current ? 'grabbing' : 'grab' }}
+          role="img"
+          aria-label={`Map of ${day.park === 'mk' ? 'Magic Kingdom' : 'EPCOT'}`}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={endDrag}
+          onPointerLeave={endDrag}
+        >
+          {/* Land zones */}
+          {zones.map((z) => (
+            <g key={z.label} pointerEvents="none">
+              <rect x={z.x} y={z.y} width={z.w} height={z.h} rx={16} fill={z.color} opacity={0.4} />
+              <text x={z.x + z.w / 2} y={z.y + 15} textAnchor="middle" fontSize={13} fontWeight={700} fill="#334155" opacity={0.75}>
+                {z.label}
+              </text>
             </g>
-          );
-        })}
+          ))}
 
-        {amenities
-          .filter((a) => layers[a.type])
-          .map((a) => {
-            const caption = `${AMENITY_LABEL[a.type]} · ${a.land}${a.note ? ` — ${a.note}` : ''}`;
+          {/* Walking paths */}
+          {paths.map((p, i) => (
+            <polyline
+              key={`path-${i}`}
+              points={p.map((pt) => `${pt.x},${pt.y}`).join(' ')}
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth={7}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity={0.9}
+              pointerEvents="none"
+            />
+          ))}
+
+          {/* Route */}
+          {routePoints.length > 1 && (
+            <polyline
+              points={routePoints.map((p) => `${p.x},${p.y}`).join(' ')}
+              fill="none"
+              stroke="#0f172a"
+              strokeWidth={3}
+              strokeLinejoin="round"
+              strokeDasharray="6 5"
+              opacity={0.55}
+              pointerEvents="none"
+            />
+          )}
+
+          {/* Attractions */}
+          {items.map((it) => {
+            const consensus = summarizeTags(it.id, tags, collaborators, meId).consensus;
+            const fill = consensus ? TAG_META[consensus].color : UNTAGGED;
+            const isSel = it.id === selectedId;
             return (
               <g
-                key={a.id}
+                key={it.id}
                 onClick={() => {
-                  setAmenityInfo(caption);
-                  setSelectedId(null);
+                  setSelectedId(isSel ? null : it.id);
+                  setAmenityInfo(null);
                 }}
                 style={{ cursor: 'pointer' }}
               >
-                <circle cx={a.coords.x} cy={a.coords.y} r={11} fill="transparent" />
-                <text x={a.coords.x} y={a.coords.y} dy="0.35em" textAnchor="middle" fontSize={15}>
-                  {AMENITY_GLYPH[a.type]}
-                  <title>{caption}</title>
-                </text>
+                <circle cx={it.coords.x} cy={it.coords.y} r={13} fill="transparent" />
+                <circle
+                  cx={it.coords.x}
+                  cy={it.coords.y}
+                  r={isSel ? 9 : 7}
+                  fill={fill}
+                  stroke={OUTLINE[typeCat(it.kind)]}
+                  strokeWidth={isSel ? 4 : 2}
+                >
+                  <title>{it.name}</title>
+                </circle>
               </g>
             );
           })}
 
-        {routePoints.map((p) => (
-          <g key={`r-${p.n}`} pointerEvents="none">
-            <circle cx={p.x} cy={p.y} r={10} fill="#0f172a" />
-            <text x={p.x} y={p.y} dy="0.35em" textAnchor="middle" fontSize={11} fontWeight="bold" fill="white">
-              {p.n}
-            </text>
-          </g>
-        ))}
-      </svg>
+          {/* Toggleable amenity markers */}
+          {amenities
+            .filter((a) => a.type !== 'landmark' && layers[a.type])
+            .map((a) => {
+              const caption = `${AMENITY_LABEL[a.type]} · ${a.land}${a.note ? ` — ${a.note}` : ''}`;
+              return (
+                <g
+                  key={a.id}
+                  onClick={() => {
+                    setAmenityInfo(caption);
+                    setSelectedId(null);
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <circle cx={a.coords.x} cy={a.coords.y} r={11} fill="transparent" />
+                  <text x={a.coords.x} y={a.coords.y} dy="0.35em" textAnchor="middle" fontSize={15}>
+                    {AMENITY_GLYPH[a.type]}
+                    <title>{caption}</title>
+                  </text>
+                </g>
+              );
+            })}
+
+          {/* Landmarks (always shown) */}
+          {amenities
+            .filter((a) => a.type === 'landmark')
+            .map((a) => {
+              const caption = `${a.land}${a.note ? ` — ${a.note}` : ''}`;
+              return (
+                <g
+                  key={a.id}
+                  onClick={() => {
+                    setAmenityInfo(caption);
+                    setSelectedId(null);
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <circle cx={a.coords.x} cy={a.coords.y} r={14} fill="transparent" />
+                  <text x={a.coords.x} y={a.coords.y} dy="0.35em" textAnchor="middle" fontSize={22}>
+                    {AMENITY_GLYPH.landmark}
+                    <title>{caption}</title>
+                  </text>
+                </g>
+              );
+            })}
+
+          {/* Route order numbers */}
+          {routePoints.map((p) => (
+            <g key={`r-${p.n}`} pointerEvents="none">
+              <circle cx={p.x} cy={p.y} r={10} fill="#0f172a" />
+              <text x={p.x} y={p.y} dy="0.35em" textAnchor="middle" fontSize={11} fontWeight="bold" fill="white">
+                {p.n}
+              </text>
+            </g>
+          ))}
+        </svg>
+
+        {/* Zoom controls */}
+        <div className="absolute right-2 top-2 flex flex-col gap-1">
+          <ZoomBtn onClick={() => setZoom((z) => Math.min(z * 1.4, 6))}>+</ZoomBtn>
+          <ZoomBtn onClick={() => setZoom((z) => Math.max(z / 1.4, 1))}>−</ZoomBtn>
+          <ZoomBtn
+            onClick={() => {
+              setZoom(1);
+              setCenter(null);
+            }}
+          >
+            ⟳
+          </ZoomBtn>
+        </div>
+      </div>
 
       {selected ? (
         <p className="text-[11px] text-slate-600">
-          <strong>{selected.name}</strong> · {selected.land} ·{' '}
-          {TYPE_LABEL[typeCat(selected.kind)]}
+          <strong>{selected.name}</strong> · {selected.land} · {TYPE_LABEL[typeCat(selected.kind)]}
         </p>
       ) : amenityInfo ? (
         <p className="text-[11px] text-slate-600">{amenityInfo}</p>
       ) : (
         <p className="text-[10px] text-slate-400">
-          Tap a dot to see what it is. Toggle restrooms/water above. Schematic
-          layout; dashed line is your route.
+          Tap a marker for details · drag to pan · +/− to zoom. Schematic layout;
+          white lines are walkways, dashed line is your route.
         </p>
       )}
     </section>
+  );
+}
+
+function ZoomBtn({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex h-7 w-7 items-center justify-center rounded-md bg-white/90 text-sm font-bold text-slate-700 shadow ring-1 ring-slate-200 hover:bg-white"
+    >
+      {children}
+    </button>
   );
 }
 
