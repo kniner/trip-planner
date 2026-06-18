@@ -21,6 +21,12 @@ jobs:
 
       - run: npm ci
       - run: npm run build
+        env:
+          # Optional: set these as repo secrets to enable cross-device sync.
+          # If unset, the app falls back to local-only sync and still builds.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_TRIP_ID: ${{ secrets.VITE_TRIP_ID }}
 
       - name: Publish to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4

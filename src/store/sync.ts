@@ -1,4 +1,5 @@
 import type { PlanDoc } from '../lib/types';
+import { isSupabaseConfigured, SupabaseSyncProvider } from './supabaseSync';
 
 /**
  * Transport-agnostic seam for the shared plan document.
@@ -73,3 +74,14 @@ export class LocalSyncProvider implements SyncProvider {
     };
   }
 }
+
+/**
+ * Pick the sync backend: shared Supabase when it's configured (cross-device
+ * collaboration), otherwise local-first (cross-tab on this device only).
+ */
+export function createSyncProvider(): SyncProvider {
+  return isSupabaseConfigured() ? new SupabaseSyncProvider() : new LocalSyncProvider();
+}
+
+/** True when cross-device Supabase sync is active. */
+export { isSupabaseConfigured } from './supabaseSync';

@@ -14,7 +14,7 @@ import type {
   WaitMode,
 } from '../lib/types';
 import { fetchLiveWaits } from '../lib/waitTimes';
-import { LocalSyncProvider, type SyncProvider } from './sync';
+import { createSyncProvider, type SyncProvider } from './sync';
 
 const COLORS = [
   '#e11d48', '#7c3aed', '#0891b2', '#ea580c',
@@ -111,7 +111,7 @@ interface StoreState {
   refreshLive: () => Promise<void>;
 }
 
-const provider: SyncProvider = new LocalSyncProvider();
+const provider: SyncProvider = createSyncProvider();
 
 export const useStore = create<StoreState>((set, get) => {
   const commit = (doc: PlanDoc) => {

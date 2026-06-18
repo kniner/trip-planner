@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import { isSupabaseConfigured } from '../store/sync';
 import { useStore } from '../store/useStore';
+
+const CLOUD_SYNC = isSupabaseConfigured();
 
 /** Identity + presence: who you are on this client, and who else is collaborating. */
 export function UserBar() {
@@ -52,7 +55,23 @@ export function UserBar() {
         </form>
       )}
 
-      <div className="ml-auto flex items-center gap-1.5">
+      <span
+        className={`ml-auto inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium ${
+          CLOUD_SYNC ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+        }`}
+        title={
+          CLOUD_SYNC
+            ? 'Shared live with everyone on this trip'
+            : 'Local only — shared across tabs on this device'
+        }
+      >
+        <span
+          className={`h-1.5 w-1.5 rounded-full ${CLOUD_SYNC ? 'bg-emerald-500' : 'bg-slate-400'}`}
+        />
+        {CLOUD_SYNC ? 'Group sync' : 'This device only'}
+      </span>
+
+      <div className="flex items-center gap-1.5">
         <span className="text-xs text-slate-400">Collaborators:</span>
         {collaborators.length === 0 && (
           <span className="text-xs text-slate-400">none yet</span>
