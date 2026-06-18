@@ -522,12 +522,15 @@ interface GItem {
   isExtra: boolean;
 }
 
+type GroupBy = 'none' | 'store' | 'person';
+
 function Grocery({ grocery }: { grocery: ReturnType<typeof computeGrocery> }) {
   const meals = useStore((s) => s.doc.meals);
+  const collaborators = useStore((s) => s.doc.collaborators);
   const addGroceryExtra = useStore((s) => s.addGroceryExtra);
   const resetGroceryLine = useStore((s) => s.resetGroceryLine);
   const [extra, setExtra] = useState('');
-  const [byStore, setByStore] = useState(false);
+  const [groupBy, setGroupBy] = useState<GroupBy>('none');
 
   const items = useMemo<GItem[]>(() => {
     const list: GItem[] = [];
@@ -548,18 +551,26 @@ function Grocery({ grocery }: { grocery: ReturnType<typeof computeGrocery> }) {
   );
 
   const groups = useMemo(() => {
-    if (!byStore) return [{ store: null as string | null, items }];
+    if (groupBy === 'none') return [{ label: null as string | null, items }];
+    const fallback = groupBy === 'store' ? '' : '';
+    const nameFor = (it: GItem) => {
+      const meta = meals.groceryMeta[it.key];
+      if (groupBy === 'store') return meta?.store ?? '';
+      const id = meta?.assignee;
+      return id ? collaborators.find((c) => c.id === id)?.name ?? '' : '';
+    };
+    const empty = groupBy === 'store' ? 'No store assigned' : 'Unclaimed';
     const map = new Map<string, GItem[]>();
     for (const it of items) {
-      const s = meals.groceryMeta[it.key]?.store ?? '';
-      const arr = map.get(s) ?? [];
+      const key = nameFor(it) || fallback;
+      const arr = map.get(key) ?? [];
       arr.push(it);
-      map.set(s, arr);
+      map.set(key, arr);
     }
     return [...map.entries()]
       .sort(([a], [b]) => (a === '' ? 1 : b === '' ? -1 : a.localeCompare(b)))
-      .map(([s, its]) => ({ store: s || null, items: its }));
-  }, [byStore, items, meals.groceryMeta]);
+      .map(([k, its]) => ({ label: k || empty, items: its }));
+  }, [groupBy, items, meals.groceryMeta, collaborators]);
 
   return (
     <section className="space-y-3">
@@ -572,13 +583,16 @@ function Grocery({ grocery }: { grocery: ReturnType<typeof computeGrocery> }) {
           </p>
         </div>
         <label className="flex items-center gap-1 text-[11px] text-slate-500">
-          <input
-            type="checkbox"
-            checked={byStore}
-            onChange={(e) => setByStore(e.target.checked)}
-            className="h-3.5 w-3.5 accent-slate-700"
-          />
-          Group by store
+          Group by
+          <select
+            value={groupBy}
+            onChange={(e) => setGroupBy(e.target.value as GroupBy)}
+            className="rounded border border-slate-300 px-1.5 py-0.5 text-[11px]"
+          >
+            <option value="none">Nothing</option>
+            <option value="store">Store</option>
+            <option value="person">Person signed up</option>
+          </select>
         </label>
       </div>
 
@@ -594,10 +608,10 @@ function Grocery({ grocery }: { grocery: ReturnType<typeof computeGrocery> }) {
         </p>
       ) : (
         groups.map((g) => (
-          <div key={g.store ?? '__none'}>
-            {byStore && (
+          <div key={g.label ?? '__none'}>
+            {groupBy !== 'none' && (
               <h3 className="mb-1 mt-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-                {g.store ?? 'No store assigned'}
+                {g.label}
               </h3>
             )}
             <ul className="space-y-1.5">
