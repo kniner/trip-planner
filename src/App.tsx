@@ -22,6 +22,10 @@ export default function App() {
   // device falls back to the join screen rather than acting as a ghost user.
   const joined = meId != null && collaborators.some((c) => c.id === meId);
 
+  // The trip's first member owns the schedule (only they can see it for now).
+  const isOwner = meId != null && collaborators[0]?.id === meId;
+  const effectiveView = view === 'schedule' && !isOwner ? 'tag' : view;
+
   useEffect(() => {
     void init();
   }, [init]);
@@ -52,29 +56,31 @@ export default function App() {
         <UserBar />
 
         <nav className="flex flex-wrap rounded-lg bg-slate-100 p-1">
-          <ViewTab active={view === 'tag'} onClick={() => setView('tag')}>
+          <ViewTab active={effectiveView === 'tag'} onClick={() => setView('tag')}>
             Wishlist
           </ViewTab>
-          <ViewTab active={view === 'schedule'} onClick={() => setView('schedule')}>
-            Schedule
-          </ViewTab>
-          <ViewTab active={view === 'map'} onClick={() => setView('map')}>
+          {isOwner && (
+            <ViewTab active={effectiveView === 'schedule'} onClick={() => setView('schedule')}>
+              Schedule
+            </ViewTab>
+          )}
+          <ViewTab active={effectiveView === 'map'} onClick={() => setView('map')}>
             Map
           </ViewTab>
-          <ViewTab active={view === 'lists'} onClick={() => setView('lists')}>
+          <ViewTab active={effectiveView === 'lists'} onClick={() => setView('lists')}>
             Lists
           </ViewTab>
-          <ViewTab active={view === 'meals'} onClick={() => setView('meals')}>
+          <ViewTab active={effectiveView === 'meals'} onClick={() => setView('meals')}>
             Meals
           </ViewTab>
         </nav>
       </div>
 
-      {view === 'tag' && <TagView />}
-      {view === 'schedule' && <ScheduleView />}
-      {view === 'map' && <MapView />}
-      {view === 'lists' && <ListsView />}
-      {view === 'meals' && <MealsView />}
+      {effectiveView === 'tag' && <TagView />}
+      {effectiveView === 'schedule' && isOwner && <ScheduleView />}
+      {effectiveView === 'map' && <MapView />}
+      {effectiveView === 'lists' && <ListsView />}
+      {effectiveView === 'meals' && <MealsView />}
 
       <footer className="mt-8 text-center text-[11px] text-slate-400">
         Tag attractions per park, then schedule them onto specific days. Wait times
