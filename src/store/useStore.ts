@@ -8,6 +8,7 @@ import type {
   Day,
   EventType,
   LiveWaits,
+  MealCategory,
   Pace,
   ParkId,
   PlanDoc,
@@ -183,8 +184,11 @@ interface StoreState {
   // Meal planner
   setMealHeadcount: (adults: number, kids: number) => void;
   setGlutenFree: (count: number) => void;
-  addMealEntry: (date: string, recipeId: string) => void;
-  updateMealEntry: (id: string, patch: Partial<{ date: string; recipeId: string }>) => void;
+  addMealEntry: (date: string, recipeId: string, course?: MealCategory) => void;
+  updateMealEntry: (
+    id: string,
+    patch: Partial<{ date: string; recipeId: string; course: MealCategory }>,
+  ) => void;
   removeMealEntry: (id: string) => void;
   addCustomRecipe: (recipe: Recipe) => void;
   removeCustomRecipe: (id: string) => void;
@@ -656,14 +660,14 @@ export const useStore = create<StoreState>((set, get) => {
       commit({ ...doc, meals: { ...doc.meals, glutenFree: Math.max(0, count) } });
     },
 
-    addMealEntry(date, recipeId) {
+    addMealEntry(date, recipeId, course) {
       if (!recipeId) return;
       const doc = get().doc;
       commit({
         ...doc,
         meals: {
           ...doc.meals,
-          entries: [...doc.meals.entries, { id: uid(), date, recipeId }],
+          entries: [...doc.meals.entries, { id: uid(), date, recipeId, ...(course ? { course } : {}) }],
         },
       });
     },

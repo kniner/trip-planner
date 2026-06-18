@@ -24,6 +24,16 @@ const CATEGORY_BADGE: Record<MealCategory, string> = {
   out: 'bg-slate-100 text-slate-500',
 };
 
+/** Selectable meal slots (the recipe's own 'out' category isn't a slot). */
+const COURSES: MealCategory[] = ['breakfast', 'lunch', 'dinner'];
+
+/** A meal entry's slot: its explicit course, else the recipe's category. */
+function entryCourse(course: MealCategory | undefined, recipe: Recipe | undefined): MealCategory {
+  if (course) return course;
+  const c = recipe?.category;
+  return c && c !== 'out' ? c : 'dinner';
+}
+
 export function MealsView() {
   const meals = useStore((s) => s.doc.meals);
   const setMealHeadcount = useStore((s) => s.setMealHeadcount);
@@ -104,6 +114,13 @@ function MealPlan({ allRecipes, recipesById }: { allRecipes: Recipe[]; recipesBy
 
   const [date, setDate] = useState('');
   const [recipeId, setRecipeId] = useState(RECIPES[0].id);
+  const [course, setCourse] = useState<MealCategory>(entryCourse(undefined, RECIPES[0]));
+
+  const pickRecipe = (id: string) => {
+    setRecipeId(id);
+    const cat = allRecipes.find((r) => r.id === id)?.category;
+    if (cat && cat !== 'out') setCourse(cat); // auto-match slot for normal recipes
+  };
 
   // Group entries by date (unscheduled last), then by meal category.
   const groups = useMemo(() => {
@@ -119,8 +136,8 @@ function MealPlan({ allRecipes, recipesById }: { allRecipes: Recipe[]; recipesBy
         date: d,
         entries: [...list].sort(
           (x, y) =>
-            CATEGORY_ORDER.indexOf(recipesById[x.recipeId]?.category ?? 'dinner') -
-            CATEGORY_ORDER.indexOf(recipesById[y.recipeId]?.category ?? 'dinner'),
+            COURSES.indexOf(entryCourse(x.course, recipesById[x.recipeId])) -
+            COURSES.indexOf(entryCourse(y.course, recipesById[y.recipeId])),
         ),
       }));
   }, [meals.entries, recipesById]);
@@ -142,18 +159,24 @@ function MealPlan({ allRecipes, recipesById }: { allRecipes: Recipe[]; recipesBy
           <ul className="space-y-1.5">
             {g.entries.map((entry) => {
               const recipe = recipesById[entry.recipeId];
+              const course = entryCourse(entry.course, recipe);
               return (
                 <li
                   key={entry.id}
                   className="flex items-center gap-2 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100"
                 >
-                  {recipe && (
-                    <span
-                      className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${CATEGORY_BADGE[recipe.category]}`}
-                    >
-                      {CATEGORY_LABELS[recipe.category].slice(0, 1)}
-                    </span>
-                  )}
+                  <select
+                    value={course}
+                    onChange={(e) => updateMealEntry(entry.id, { course: e.target.value as MealCategory })}
+                    className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-bold uppercase ${CATEGORY_BADGE[course]}`}
+                    title="Meal slot"
+                  >
+                    {COURSES.map((c) => (
+                      <option key={c} value={c}>
+                        {CATEGORY_LABELS[c].slice(0, 3)}
+                      </option>
+                    ))}
+                  </select>
                   <select
                     value={entry.recipeId}
                     onChange={(e) => updateMealEntry(entry.id, { recipeId: e.target.value })}
@@ -191,7 +214,7 @@ function MealPlan({ allRecipes, recipesById }: { allRecipes: Recipe[]; recipesBy
         className="flex flex-wrap items-center gap-2 rounded-lg bg-white p-3 shadow-sm"
         onSubmit={(e) => {
           e.preventDefault();
-          addMealEntry(date, recipeId);
+          addMealEntry(date, recipeId, course);
         }}
       >
         <input
@@ -201,8 +224,20 @@ function MealPlan({ allRecipes, recipesById }: { allRecipes: Recipe[]; recipesBy
           className="rounded border border-slate-300 px-2 py-1.5 text-sm"
         />
         <select
+          value={course}
+          onChange={(e) => setCourse(e.target.value as MealCategory)}
+          className="rounded border border-slate-300 px-2 py-1.5 text-sm"
+          title="Meal slot"
+        >
+          {COURSES.map((c) => (
+            <option key={c} value={c}>
+              {CATEGORY_LABELS[c]}
+            </option>
+          ))}
+        </select>
+        <select
           value={recipeId}
-          onChange={(e) => setRecipeId(e.target.value)}
+          onChange={(e) => pickRecipe(e.target.value)}
           className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm"
         >
           {recipeOptions(allRecipes)}

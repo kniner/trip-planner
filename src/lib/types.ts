@@ -193,6 +193,8 @@ export interface MealEntry {
   /** ISO date "YYYY-MM-DD" (empty string if unscheduled). */
   date: string;
   recipeId: string;
+  /** Which meal slot this fills; overrides the recipe's own category. */
+  course?: MealCategory;
 }
 
 /** A manually-added grocery item not tied to a recipe. */
