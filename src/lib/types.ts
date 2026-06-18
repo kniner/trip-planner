@@ -149,8 +149,10 @@ export interface PlanDoc {
   tags: TagEntry[];
   days: Day[];
   activeDayId: string;
-  /** Shared personal/packing suggestions (each person checks them off locally). */
+  /** Shared personal/packing suggestions (each person checks them off). */
   personalItems: ChecklistItem[];
+  /** Per-user checked item ids for the personal list, keyed by collaborator id. */
+  personalChecks: Record<string, string[]>;
   /** Shared group tasks people sign up for. */
   groupItems: GroupItem[];
 }

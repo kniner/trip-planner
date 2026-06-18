@@ -48,26 +48,27 @@ function addedByName(id: string | undefined, collaborators: Collaborator[]): str
 function PersonalList() {
   const items = useStore((s) => s.doc.personalItems);
   const collaborators = useStore((s) => s.doc.collaborators);
-  const checked = useStore((s) => s.checkedItems);
+  const myChecks = useStore((s) => (s.meId ? s.doc.personalChecks[s.meId] : undefined));
   const toggleChecked = useStore((s) => s.toggleChecked);
   const addPersonalItem = useStore((s) => s.addPersonalItem);
   const removePersonalItem = useStore((s) => s.removePersonalItem);
 
-  const doneCount = items.filter((i) => checked[i.id]).length;
+  const checked = new Set(myChecks ?? []);
+  const doneCount = items.filter((i) => checked.has(i.id)).length;
 
   return (
     <section className="space-y-3">
       <div>
         <h2 className="text-lg font-bold">My checklist</h2>
         <p className="text-xs text-slate-500">
-          Shared suggestions — anyone can add for everyone, but your checkmarks are
-          private to this device. {doneCount}/{items.length} done.
+          Shared suggestions — anyone can add for everyone, and your checkmarks are
+          your own (synced across your devices). {doneCount}/{items.length} done.
         </p>
       </div>
 
       <ul className="space-y-1.5">
         {items.map((item) => {
-          const isChecked = !!checked[item.id];
+          const isChecked = checked.has(item.id);
           const who = addedByName(item.addedBy, collaborators);
           return (
             <li

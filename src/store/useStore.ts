@@ -24,15 +24,17 @@ const COLORS = [
 ];
 
 const ME_KEY = 'mk-planner:me';
-/** Local, per-device checked status for personal checklist items. */
+/** Legacy local checked status — migrated into the synced doc per user. */
 const CHECKED_KEY = 'mk-planner:checked';
 
-function loadChecked(): Record<string, boolean> {
+function loadLegacyChecked(): string[] {
   try {
     const raw = localStorage.getItem(CHECKED_KEY);
-    return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+    if (!raw) return [];
+    const map = JSON.parse(raw) as Record<string, boolean>;
+    return Object.keys(map).filter((id) => map[id]);
   } catch {
-    return {};
+    return [];
   }
 }
 
@@ -65,6 +67,7 @@ function emptyDoc(): PlanDoc {
     days: [day],
     activeDayId: day.id,
     personalItems: [...SUGGESTED_PERSONAL],
+    personalChecks: {},
     groupItems: [...SUGGESTED_GROUP],
   };
 }
@@ -95,6 +98,7 @@ function migrate(raw: unknown): PlanDoc {
     days,
     activeDayId,
     personalItems: doc.personalItems ?? [...SUGGESTED_PERSONAL],
+    personalChecks: doc.personalChecks ?? {},
     groupItems: doc.groupItems ?? [...SUGGESTED_GROUP],
   };
 }
@@ -105,8 +109,6 @@ interface StoreState {
   live: LiveWaits;
   liveStatus: 'idle' | 'loading' | 'ok' | 'unavailable';
   ready: boolean;
-  /** Local per-device done status for personal checklist items. */
-  checkedItems: Record<string, boolean>;
 
   init: () => Promise<void>;
   join: (name: string) => void;
@@ -191,14 +193,24 @@ export const useStore = create<StoreState>((set, get) => {
     live: {},
     liveStatus: 'idle',
     ready: false,
-    checkedItems: {},
 
     async init() {
       const remote = await provider.load();
       const storedMe = localStorage.getItem(ME_KEY);
-      set({ doc: migrate(remote), meId: storedMe, ready: true, checkedItems: loadChecked() });
+      const doc = migrate(remote);
+      set({ doc, meId: storedMe, ready: true });
 
-      provider.subscribe((doc) => set({ doc: migrate(doc) }));
+      // One-time migration: fold any legacy device-local checkmarks into this
+      // user's cloud-backed checks, then drop the local copy.
+      const legacy = loadLegacyChecked();
+      if (storedMe && legacy.length > 0) {
+        const existing = doc.personalChecks[storedMe] ?? [];
+        const merged = Array.from(new Set([...existing, ...legacy]));
+        commit({ ...doc, personalChecks: { ...doc.personalChecks, [storedMe]: merged } });
+      }
+      localStorage.removeItem(CHECKED_KEY);
+
+      provider.subscribe((d) => set({ doc: migrate(d) }));
       void get().refreshLive();
     },
 
@@ -439,13 +451,14 @@ export const useStore = create<StoreState>((set, get) => {
     },
 
     toggleChecked(id) {
-      const next = { ...get().checkedItems, [id]: !get().checkedItems[id] };
-      try {
-        localStorage.setItem(CHECKED_KEY, JSON.stringify(next));
-      } catch {
-        /* ignore quota errors */
-      }
-      set({ checkedItems: next });
+      const meId = me();
+      if (!meId) return;
+      const doc = get().doc;
+      const current = doc.personalChecks[meId] ?? [];
+      const next = current.includes(id)
+        ? current.filter((x) => x !== id)
+        : [...current, id];
+      commit({ ...doc, personalChecks: { ...doc.personalChecks, [meId]: next } });
     },
 
     addGroupItem(text) {
