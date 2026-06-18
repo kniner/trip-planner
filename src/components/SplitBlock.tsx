@@ -1,22 +1,18 @@
+import { useState } from 'react';
 import { itemsForDay, landsForDay } from '../data';
-import type { EstimatedStop } from '../lib/estimator';
+import type { EstimatedBranch, EstimatedStop } from '../lib/estimator';
+import type { Attraction } from '../lib/types';
 import { useActiveDay, useStore } from '../store/useStore';
 
 interface Props {
   es: EstimatedStop;
 }
 
-/** Renders a parallel-split stop: each group's mini-route, side by side. */
+/** Renders a parallel-split stop: each group's members and mini-route. */
 export function SplitBlock({ es }: Props) {
   const day = useActiveDay();
   const splitId = es.stop.id;
   const addBranch = useStore((s) => s.addBranch);
-  const removeBranch = useStore((s) => s.removeBranch);
-  const renameBranch = useStore((s) => s.renameBranch);
-  const addToBranch = useStore((s) => s.addToBranch);
-  const addCustomToBranch = useStore((s) => s.addCustomToBranch);
-  const removeFromBranch = useStore((s) => s.removeFromBranch);
-  const moveWithinBranch = useStore((s) => s.moveWithinBranch);
   const setArrival = useStore((s) => s.setArrival);
 
   const items = itemsForDay(day.park, day.event);
@@ -51,140 +47,18 @@ export function SplitBlock({ es }: Props) {
       </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {branches.map((branch) => {
-          // Slack/late vs the rejoin time (es.duration is the block length).
-          const diff = es.duration - branch.total;
-          const late = diff < 0;
-          return (
-          <div
+        {branches.map((branch) => (
+          <BranchCard
             key={branch.id}
-            className={`rounded-lg border p-2 ${
-              late
-                ? 'border-red-300 bg-red-50'
-                : branch.isLongest
-                  ? 'border-amber-300 bg-amber-50'
-                  : 'border-slate-200 bg-slate-50'
-            }`}
-          >
-            <div className="mb-1.5 flex items-center gap-1">
-              <input
-                defaultValue={branch.name}
-                onBlur={(e) => renameBranch(splitId, branch.id, e.target.value)}
-                className="min-w-0 flex-1 rounded bg-transparent px-1 text-sm font-semibold focus:bg-white"
-              />
-              {branch.total > 0 && (
-                <span
-                  className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
-                    late
-                      ? 'bg-red-200 text-red-800'
-                      : diff > 0
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-amber-200 text-amber-800'
-                  }`}
-                  title={`This group is busy until ~${branch.endClock}`}
-                >
-                  {late
-                    ? `${-diff}m over`
-                    : diff > 0
-                      ? `${diff}m to spare`
-                      : fixedMeetUp
-                        ? 'on time'
-                        : 'sets rejoin'}
-                </span>
-              )}
-              {branches.length > 1 && (
-                <button
-                  onClick={() => removeBranch(splitId, branch.id)}
-                  className="text-xs text-slate-300 hover:text-red-500"
-                  title="Remove group"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
-            {branch.stops.length === 0 ? (
-              <p className="px-1 py-1 text-[11px] text-slate-400">No stops yet.</p>
-            ) : (
-              <ol className="space-y-1">
-                {branch.stops.map((bs, i) => (
-                  <li
-                    key={bs.stop.id}
-                    className="flex items-center gap-1.5 rounded bg-white px-2 py-1 text-xs ring-1 ring-slate-100"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{bs.label}</span>
-                      <span className="text-[10px] text-slate-400">
-                        ~{bs.arriveClock} · {bs.wait > 0 ? `wait ${bs.wait}m · ` : ''}
-                        {bs.duration}m
-                      </span>
-                    </span>
-                    <span className="flex shrink-0 gap-0.5">
-                      <MiniBtn
-                        onClick={() => moveWithinBranch(splitId, branch.id, bs.stop.id, -1)}
-                        disabled={i === 0}
-                      >
-                        ↑
-                      </MiniBtn>
-                      <MiniBtn
-                        onClick={() => moveWithinBranch(splitId, branch.id, bs.stop.id, 1)}
-                        disabled={i === branch.stops.length - 1}
-                      >
-                        ↓
-                      </MiniBtn>
-                      <MiniBtn onClick={() => removeFromBranch(splitId, branch.id, bs.stop.id)}>
-                        ✕
-                      </MiniBtn>
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            )}
-
-            <select
-              value=""
-              onChange={(e) => {
-                if (e.target.value) addToBranch(splitId, branch.id, e.target.value);
-                e.target.value = '';
-              }}
-              className="mt-1.5 w-full rounded border border-slate-300 bg-white px-1.5 py-1 text-xs text-slate-600"
-            >
-              <option value="">+ Add to this group…</option>
-              {lands.map((land) => {
-                const landItems = items.filter((it) => it.land === land);
-                if (landItems.length === 0) return null;
-                return (
-                  <optgroup key={land} label={land}>
-                    {landItems.map((it) => (
-                      <option key={it.id} value={it.id}>
-                        {it.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                );
-              })}
-            </select>
-
-            <div className="mt-1 flex flex-wrap items-center gap-1">
-              <span className="text-[10px] text-slate-400">Buffer:</span>
-              {[10, 15, 30].map((min) => (
-                <button
-                  key={min}
-                  onClick={() =>
-                    addCustomToBranch(splitId, branch.id, {
-                      name: 'Buffer / free time',
-                      durationMin: min,
-                    })
-                  }
-                  className="rounded border border-slate-200 px-1.5 py-0.5 text-[10px] text-slate-600 hover:bg-white"
-                >
-                  +{min}m
-                </button>
-              ))}
-            </div>
-          </div>
-          );
-        })}
+            splitId={splitId}
+            branch={branch}
+            splitDuration={es.duration}
+            fixedMeetUp={fixedMeetUp}
+            items={items}
+            lands={lands}
+            canRemove={branches.length > 1}
+          />
+        ))}
       </div>
 
       <button
@@ -193,6 +67,256 @@ export function SplitBlock({ es }: Props) {
       >
         + Add group
       </button>
+    </div>
+  );
+}
+
+interface BranchProps {
+  splitId: string;
+  branch: EstimatedBranch;
+  splitDuration: number;
+  fixedMeetUp: boolean;
+  items: Attraction[];
+  lands: string[];
+  canRemove: boolean;
+}
+
+function BranchCard({ splitId, branch, splitDuration, fixedMeetUp, items, lands, canRemove }: BranchProps) {
+  const collaborators = useStore((s) => s.doc.collaborators);
+  const renameBranch = useStore((s) => s.renameBranch);
+  const removeBranch = useStore((s) => s.removeBranch);
+  const addToBranch = useStore((s) => s.addToBranch);
+  const addCustomToBranch = useStore((s) => s.addCustomToBranch);
+  const removeFromBranch = useStore((s) => s.removeFromBranch);
+  const moveWithinBranch = useStore((s) => s.moveWithinBranch);
+  const toggleBranchMember = useStore((s) => s.toggleBranchMember);
+  const addBranchManualMember = useStore((s) => s.addBranchManualMember);
+  const removeBranchManualMember = useStore((s) => s.removeBranchManualMember);
+
+  const [memberName, setMemberName] = useState('');
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customMin, setCustomMin] = useState(15);
+
+  const diff = splitDuration - branch.total;
+  const late = diff < 0;
+  const members = branch.members;
+  const manual = branch.manualMembers;
+
+  const addCustom = () => {
+    if (!customName.trim() || customMin <= 0) return;
+    addCustomToBranch(splitId, branch.id, { name: customName.trim(), durationMin: customMin });
+    setCustomName('');
+    setCustomMin(15);
+    setCustomOpen(false);
+  };
+
+  return (
+    <div
+      className={`rounded-lg border p-2 ${
+        late
+          ? 'border-red-300 bg-red-50'
+          : branch.isLongest
+            ? 'border-amber-300 bg-amber-50'
+            : 'border-slate-200 bg-slate-50'
+      }`}
+    >
+      <div className="mb-1.5 flex items-center gap-1">
+        <input
+          defaultValue={branch.name}
+          onBlur={(e) => renameBranch(splitId, branch.id, e.target.value)}
+          className="min-w-0 flex-1 rounded bg-transparent px-1 text-sm font-semibold focus:bg-white"
+        />
+        {branch.total > 0 && (
+          <span
+            className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+              late
+                ? 'bg-red-200 text-red-800'
+                : diff > 0
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-amber-200 text-amber-800'
+            }`}
+            title={`This group is busy until ~${branch.endClock}`}
+          >
+            {late ? `${-diff}m over` : diff > 0 ? `${diff}m to spare` : fixedMeetUp ? 'on time' : 'sets rejoin'}
+          </span>
+        )}
+        {canRemove && (
+          <button
+            onClick={() => removeBranch(splitId, branch.id)}
+            className="text-xs text-slate-300 hover:text-red-500"
+            title="Remove group"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {/* Who's in this group */}
+      <div className="mb-1.5 space-y-1 rounded bg-white/60 p-1.5">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Who's in this group</p>
+        <div className="flex flex-wrap gap-1">
+          {collaborators.map((c) => {
+            const on = members.includes(c.id);
+            return (
+              <button
+                key={c.id}
+                onClick={() => toggleBranchMember(splitId, branch.id, c.id)}
+                className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]"
+                style={
+                  on
+                    ? { background: c.color, borderColor: c.color, color: 'white' }
+                    : { borderColor: '#cbd5e1', color: '#475569' }
+                }
+              >
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ background: on ? 'white' : c.color }}
+                />
+                {c.name}
+              </button>
+            );
+          })}
+          {manual.map((n) => (
+            <span
+              key={`m-${n}`}
+              className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] text-slate-600"
+            >
+              {n}
+              <button
+                onClick={() => removeBranchManualMember(splitId, branch.id, n)}
+                className="text-slate-300 hover:text-red-500"
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+        <form
+          className="flex gap-1"
+          onSubmit={(e) => {
+            e.preventDefault();
+            addBranchManualMember(splitId, branch.id, memberName);
+            setMemberName('');
+          }}
+        >
+          <input
+            value={memberName}
+            onChange={(e) => setMemberName(e.target.value)}
+            placeholder="+ add someone by name"
+            className="min-w-0 flex-1 rounded border border-slate-200 px-2 py-0.5 text-[11px]"
+          />
+          {memberName.trim() && (
+            <button type="submit" className="shrink-0 rounded bg-slate-700 px-2 py-0.5 text-[11px] font-medium text-white">
+              Add
+            </button>
+          )}
+        </form>
+      </div>
+
+      {branch.stops.length === 0 ? (
+        <p className="px-1 py-1 text-[11px] text-slate-400">No stops yet.</p>
+      ) : (
+        <ol className="space-y-1">
+          {branch.stops.map((bs, i) => (
+            <li
+              key={bs.stop.id}
+              className="flex items-center gap-1.5 rounded bg-white px-2 py-1 text-xs ring-1 ring-slate-100"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{bs.label}</span>
+                <span className="text-[10px] text-slate-400">
+                  ~{bs.arriveClock} · {bs.wait > 0 ? `wait ${bs.wait}m · ` : ''}
+                  {bs.duration}m
+                </span>
+              </span>
+              <span className="flex shrink-0 gap-0.5">
+                <MiniBtn onClick={() => moveWithinBranch(splitId, branch.id, bs.stop.id, -1)} disabled={i === 0}>
+                  ↑
+                </MiniBtn>
+                <MiniBtn
+                  onClick={() => moveWithinBranch(splitId, branch.id, bs.stop.id, 1)}
+                  disabled={i === branch.stops.length - 1}
+                >
+                  ↓
+                </MiniBtn>
+                <MiniBtn onClick={() => removeFromBranch(splitId, branch.id, bs.stop.id)}>✕</MiniBtn>
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      <select
+        value=""
+        onChange={(e) => {
+          if (e.target.value) addToBranch(splitId, branch.id, e.target.value);
+          e.target.value = '';
+        }}
+        className="mt-1.5 w-full rounded border border-slate-300 bg-white px-1.5 py-1 text-xs text-slate-600"
+      >
+        <option value="">+ Add attraction to this group…</option>
+        {lands.map((land) => {
+          const landItems = items.filter((it) => it.land === land);
+          if (landItems.length === 0) return null;
+          return (
+            <optgroup key={land} label={land}>
+              {landItems.map((it) => (
+                <option key={it.id} value={it.id}>
+                  {it.name}
+                </option>
+              ))}
+            </optgroup>
+          );
+        })}
+      </select>
+
+      <div className="mt-1 flex flex-wrap items-center gap-1">
+        <span className="text-[10px] text-slate-400">Buffer:</span>
+        {[10, 15, 30].map((min) => (
+          <button
+            key={min}
+            onClick={() => addCustomToBranch(splitId, branch.id, { name: 'Buffer / free time', durationMin: min })}
+            className="rounded border border-slate-200 px-1.5 py-0.5 text-[10px] text-slate-600 hover:bg-white"
+          >
+            +{min}m
+          </button>
+        ))}
+        <button
+          onClick={() => setCustomOpen((v) => !v)}
+          className="rounded border border-slate-200 px-1.5 py-0.5 text-[10px] text-slate-600 hover:bg-white"
+        >
+          + custom block
+        </button>
+      </div>
+
+      {customOpen && (
+        <form
+          className="mt-1 flex flex-wrap items-center gap-1"
+          onSubmit={(e) => {
+            e.preventDefault();
+            addCustom();
+          }}
+        >
+          <input
+            value={customName}
+            onChange={(e) => setCustomName(e.target.value)}
+            placeholder="e.g. Snack stop"
+            className="min-w-0 flex-1 rounded border border-slate-200 px-2 py-0.5 text-[11px]"
+          />
+          <input
+            type="number"
+            min={1}
+            value={customMin}
+            onChange={(e) => setCustomMin(Number(e.target.value))}
+            className="w-14 rounded border border-slate-200 px-1.5 py-0.5 text-[11px]"
+          />
+          <span className="text-[10px] text-slate-400">min</span>
+          <button type="submit" className="rounded bg-slate-700 px-2 py-0.5 text-[11px] font-medium text-white">
+            Add
+          </button>
+        </form>
+      )}
     </div>
   );
 }

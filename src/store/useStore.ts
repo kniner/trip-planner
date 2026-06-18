@@ -138,6 +138,9 @@ interface StoreState {
   addToBranch: (splitId: string, branchId: string, attractionId: string) => void;
   addCustomToBranch: (splitId: string, branchId: string, entry: CustomEntry) => void;
   removeFromBranch: (splitId: string, branchId: string, stopId: string) => void;
+  toggleBranchMember: (splitId: string, branchId: string, userId: string) => void;
+  addBranchManualMember: (splitId: string, branchId: string, name: string) => void;
+  removeBranchManualMember: (splitId: string, branchId: string, name: string) => void;
   moveWithinBranch: (splitId: string, branchId: string, stopId: string, dir: -1 | 1) => void;
 
   setPace: (pace: Pace) => void;
@@ -411,6 +414,44 @@ export const useStore = create<StoreState>((set, get) => {
       updateBranches(splitId, (branches) =>
         branches.map((b) =>
           b.id === branchId ? { ...b, stops: b.stops.filter((s) => s.id !== stopId) } : b,
+        ),
+      );
+    },
+
+    toggleBranchMember(splitId, branchId, userId) {
+      updateBranches(splitId, (branches) =>
+        branches.map((b) => {
+          if (b.id !== branchId) return b;
+          const members = b.members ?? [];
+          return {
+            ...b,
+            members: members.includes(userId)
+              ? members.filter((u) => u !== userId)
+              : [...members, userId],
+          };
+        }),
+      );
+    },
+
+    addBranchManualMember(splitId, branchId, name) {
+      const clean = name.trim();
+      if (!clean) return;
+      updateBranches(splitId, (branches) =>
+        branches.map((b) => {
+          if (b.id !== branchId) return b;
+          const manual = b.manualMembers ?? [];
+          if (manual.some((n) => n.toLowerCase() === clean.toLowerCase())) return b;
+          return { ...b, manualMembers: [...manual, clean] };
+        }),
+      );
+    },
+
+    removeBranchManualMember(splitId, branchId, name) {
+      updateBranches(splitId, (branches) =>
+        branches.map((b) =>
+          b.id === branchId
+            ? { ...b, manualMembers: (b.manualMembers ?? []).filter((n) => n !== name) }
+            : b,
         ),
       );
     },

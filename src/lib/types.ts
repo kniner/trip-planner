@@ -75,6 +75,10 @@ export interface SplitBranch {
   name: string;
   /** This group's mini-route (item/custom stops only). */
   stops: PlanStop[];
+  /** Collaborator ids (app users) assigned to this group. */
+  members?: string[];
+  /** Free-text names assigned (for people not using the app). */
+  manualMembers?: string[];
 }
 
 /**

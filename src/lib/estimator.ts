@@ -29,6 +29,10 @@ export interface EstimatedBranch {
   /** True for the group that takes longest (drives the rejoin time). */
   isLongest: boolean;
   stops: EstimatedStop[];
+  /** Collaborator ids assigned to this group. */
+  members: string[];
+  /** Free-text names assigned to this group. */
+  manualMembers: string[];
 }
 
 export interface PlanEstimate {
@@ -239,6 +243,8 @@ export function estimatePlan(day: EstimateInput, live: LiveWaits): PlanEstimate 
           endClock: formatClock(splitStartAbs + b.r.end),
           isLongest,
           stops: b.r.stops,
+          members: b.branch.members ?? [],
+          manualMembers: b.branch.manualMembers ?? [],
         };
       });
 
