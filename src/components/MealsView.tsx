@@ -56,10 +56,12 @@ export function MealsView() {
       <div className="flex flex-wrap items-end gap-3 rounded-lg bg-white p-3 shadow-sm">
         <Num label="Adults" value={meals.adults} onChange={(n) => setMealHeadcount(n, meals.kids)} />
         <Num label="Kids" value={meals.kids} onChange={(n) => setMealHeadcount(meals.adults, n)} />
-        <Num label="Gluten-free" value={meals.glutenFree} onChange={setGlutenFree} />
+        <Num label="Gluten-free (of adults)" value={meals.glutenFree} onChange={setGlutenFree} />
         <p className="text-[11px] text-slate-400">
           ≈ {servings.toFixed(1)} adult servings (kids = 60%).{' '}
-          {meals.glutenFree > 0 && `GF substitutes split off for ${meals.glutenFree}.`}
+          {meals.glutenFree > 0
+            ? `${meals.glutenFree} of the adults above eat GF — their portions use GF substitutes (not extra people).`
+            : 'Gluten-free eaters are counted within the adults above, not added on top.'}
         </p>
       </div>
 
@@ -520,6 +522,8 @@ interface GItem {
   unit?: string;
   baseQty?: number;
   isExtra: boolean;
+  /** Free-text quantity for manual extras. */
+  extraQty?: string;
 }
 
 type GroupBy = 'none' | 'store' | 'person';
@@ -530,6 +534,7 @@ function Grocery({ grocery }: { grocery: ReturnType<typeof computeGrocery> }) {
   const addGroceryExtra = useStore((s) => s.addGroceryExtra);
   const resetGroceryLine = useStore((s) => s.resetGroceryLine);
   const [extra, setExtra] = useState('');
+  const [extraQty, setExtraQty] = useState('');
   const [groupBy, setGroupBy] = useState<GroupBy>('none');
 
   const items = useMemo<GItem[]>(() => {
@@ -538,7 +543,8 @@ function Grocery({ grocery }: { grocery: ReturnType<typeof computeGrocery> }) {
       if (meals.groceryOverrides[line.key]?.removed) continue;
       list.push({ key: line.key, name: line.name, unit: line.unit, baseQty: line.qty, isExtra: false });
     }
-    for (const x of meals.extras) list.push({ key: x.id, name: x.text, isExtra: true });
+    for (const x of meals.extras)
+      list.push({ key: x.id, name: x.text, isExtra: true, extraQty: x.qty });
     return list;
   }, [grocery, meals.extras, meals.groceryOverrides]);
 
@@ -645,8 +651,9 @@ function Grocery({ grocery }: { grocery: ReturnType<typeof computeGrocery> }) {
         className="flex gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          addGroceryExtra(extra);
+          addGroceryExtra(extra, extraQty);
           setExtra('');
+          setExtraQty('');
         }}
       >
         <input
@@ -654,6 +661,13 @@ function Grocery({ grocery }: { grocery: ReturnType<typeof computeGrocery> }) {
           onChange={(e) => setExtra(e.target.value)}
           placeholder="Add a staple (milk, coffee, paper towels…)"
           className="min-w-0 flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm"
+        />
+        <input
+          value={extraQty}
+          onChange={(e) => setExtraQty(e.target.value)}
+          placeholder="qty"
+          className="w-20 shrink-0 rounded border border-slate-300 px-2 py-1.5 text-sm"
+          title="Optional quantity (e.g. 2 gallons)"
         />
         <button
           type="submit"
@@ -676,6 +690,7 @@ function GroceryRow({ item }: { item: GItem }) {
   const removeGroceryLine = useStore((s) => s.removeGroceryLine);
   const resetGroceryLine = useStore((s) => s.resetGroceryLine);
   const removeGroceryExtra = useStore((s) => s.removeGroceryExtra);
+  const setGroceryExtraQty = useStore((s) => s.setGroceryExtraQty);
   const toggleGroceryClaim = useStore((s) => s.toggleGroceryClaim);
   const setGroceryStore = useStore((s) => s.setGroceryStore);
 
@@ -714,6 +729,15 @@ function GroceryRow({ item }: { item: GItem }) {
             />
             <span className="w-10 shrink-0 text-xs text-slate-500">{item.unit}</span>
           </>
+        )}
+        {item.isExtra && (
+          <input
+            value={item.extraQty ?? ''}
+            onChange={(e) => setGroceryExtraQty(item.key, e.target.value)}
+            placeholder="qty"
+            className="w-20 shrink-0 rounded border border-slate-200 px-1.5 py-0.5 text-right text-xs"
+            title="Quantity"
+          />
         )}
         {adjusted ? (
           <button

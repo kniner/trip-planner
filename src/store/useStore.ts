@@ -204,11 +204,14 @@ interface StoreState {
   setBuffer: (minutes: number) => void;
 
   // Checklist & group sign-up lists
-  addPersonalItem: (text: string) => void;
+  addPersonalItem: (text: string, isPrivate?: boolean) => void;
   removePersonalItem: (id: string) => void;
+  setPersonalItemNote: (id: string, note: string) => void;
   toggleChecked: (id: string) => void;
   addGroupItem: (text: string) => void;
   removeGroupItem: (id: string) => void;
+  setGroupItemNote: (id: string, note: string) => void;
+  toggleGroupDone: (id: string) => void;
   toggleSignup: (id: string) => void;
   addManualSignup: (id: string, name: string) => void;
   removeManualSignup: (id: string, name: string) => void;
@@ -225,7 +228,8 @@ interface StoreState {
   addCustomRecipe: (recipe: Recipe) => void;
   removeCustomRecipe: (id: string) => void;
   toggleGrocery: (key: string) => void;
-  addGroceryExtra: (text: string) => void;
+  addGroceryExtra: (text: string, qty?: string) => void;
+  setGroceryExtraQty: (id: string, qty: string) => void;
   removeGroceryExtra: (id: string) => void;
   setGroceryQty: (key: string, qty: number) => void;
   removeGroceryLine: (key: string) => void;
@@ -622,19 +626,33 @@ export const useStore = create<StoreState>((set, get) => {
       }));
     },
 
-    addPersonalItem(text) {
+    addPersonalItem(text, isPrivate) {
       const clean = text.trim();
       if (!clean) return;
       const doc = get().doc;
       commit({
         ...doc,
-        personalItems: [...doc.personalItems, { id: uid(), text: clean, addedBy: me() ?? undefined }],
+        personalItems: [
+          ...doc.personalItems,
+          { id: uid(), text: clean, addedBy: me() ?? undefined, ...(isPrivate ? { private: true } : {}) },
+        ],
       });
     },
 
     removePersonalItem(id) {
       const doc = get().doc;
       commit({ ...doc, personalItems: doc.personalItems.filter((i) => i.id !== id) });
+    },
+
+    setPersonalItemNote(id, note) {
+      const doc = get().doc;
+      const clean = note.trim();
+      commit({
+        ...doc,
+        personalItems: doc.personalItems.map((i) =>
+          i.id === id ? { ...i, note: clean || undefined } : i,
+        ),
+      });
     },
 
     toggleChecked(id) {
@@ -661,6 +679,25 @@ export const useStore = create<StoreState>((set, get) => {
     removeGroupItem(id) {
       const doc = get().doc;
       commit({ ...doc, groupItems: doc.groupItems.filter((i) => i.id !== id) });
+    },
+
+    toggleGroupDone(id) {
+      const doc = get().doc;
+      commit({
+        ...doc,
+        groupItems: doc.groupItems.map((i) => (i.id === id ? { ...i, done: !i.done } : i)),
+      });
+    },
+
+    setGroupItemNote(id, note) {
+      const doc = get().doc;
+      const clean = note.trim();
+      commit({
+        ...doc,
+        groupItems: doc.groupItems.map((i) =>
+          i.id === id ? { ...i, note: clean || undefined } : i,
+        ),
+      });
     },
 
     toggleSignup(id) {
@@ -799,13 +836,31 @@ export const useStore = create<StoreState>((set, get) => {
       });
     },
 
-    addGroceryExtra(text) {
+    addGroceryExtra(text, qty) {
       const clean = text.trim();
       if (!clean) return;
+      const cleanQty = qty?.trim();
       const doc = get().doc;
       commit({
         ...doc,
-        meals: { ...doc.meals, extras: [...doc.meals.extras, { id: uid(), text: clean }] },
+        meals: {
+          ...doc.meals,
+          extras: [...doc.meals.extras, { id: uid(), text: clean, ...(cleanQty ? { qty: cleanQty } : {}) }],
+        },
+      });
+    },
+
+    setGroceryExtraQty(id, qty) {
+      const doc = get().doc;
+      const clean = qty.trim();
+      commit({
+        ...doc,
+        meals: {
+          ...doc.meals,
+          extras: doc.meals.extras.map((x) =>
+            x.id === id ? { ...x, qty: clean || undefined } : x,
+          ),
+        },
       });
     },
 

@@ -144,6 +144,13 @@ export interface ChecklistItem {
   text: string;
   /** Collaborator id who added it (undefined for seeded suggestions). */
   addedBy?: string;
+  /**
+   * Private items are only visible to the collaborator who added them
+   * (`addedBy`); shared items appear on everyone's list as suggestions.
+   */
+  private?: boolean;
+  /** Optional free-text note shown under the item. */
+  note?: string;
 }
 
 /** A shared group task people can sign up for. */
@@ -155,6 +162,10 @@ export interface GroupItem {
   signups: string[];
   /** Free-text names signed up manually (for people not using the app). */
   manualSignups?: string[];
+  /** Shared completion flag — the task is done (anyone can check it off). */
+  done?: boolean;
+  /** Optional free-text note shown under the item. */
+  note?: string;
 }
 
 /** The full shared, synced plan document, spanning multiple days/parks. */
@@ -212,6 +223,8 @@ export interface MealEntry {
 export interface GroceryExtra {
   id: string;
   text: string;
+  /** Optional free-text quantity (e.g. "2 gallons", "1 dozen"). */
+  qty?: string;
 }
 
 export interface MealPlan {

@@ -171,9 +171,11 @@ export function ParkMap() {
   const vbW = base.w / zoom;
   const vbH = base.h / zoom;
   const viewBox = `${cx - vbW / 2} ${cy - vbH / 2} ${vbW} ${vbH}`;
-  // Markers are sized in viewBox units; dividing by zoom keeps them a constant
-  // on-screen size so they shrink (relative to the map) and overlap less.
-  const s = 1 / zoom;
+  // Markers are sized in viewBox units. We dampen by sqrt(zoom) rather than the
+  // full zoom: markers still shrink relative to the map (less overlap as you
+  // zoom in) but grow on screen enough to stay readable instead of pinning to a
+  // tiny constant size.
+  const s = 1 / Math.sqrt(zoom);
 
   const twoPointerDist = () => {
     const pts = [...pointers.current.values()];

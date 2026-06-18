@@ -12,30 +12,53 @@ export function ListsView() {
   );
 }
 
-function AddRow({ onAdd, placeholder }: { onAdd: (t: string) => void; placeholder: string }) {
+function AddRow({
+  onAdd,
+  placeholder,
+  withPrivacy,
+}: {
+  onAdd: (t: string, isPrivate?: boolean) => void;
+  placeholder: string;
+  /** When set, shows a "Private (just me)" toggle and passes it to onAdd. */
+  withPrivacy?: boolean;
+}) {
   const [text, setText] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
   return (
     <form
-      className="flex gap-2"
+      className="space-y-1.5"
       onSubmit={(e) => {
         e.preventDefault();
-        onAdd(text);
+        onAdd(text, withPrivacy ? isPrivate : undefined);
         setText('');
       }}
     >
-      <input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder={placeholder}
-        className="min-w-0 flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm"
-      />
-      <button
-        type="submit"
-        disabled={!text.trim()}
-        className="rounded bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
-      >
-        Add
-      </button>
+      <div className="flex gap-2">
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={placeholder}
+          className="min-w-0 flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm"
+        />
+        <button
+          type="submit"
+          disabled={!text.trim()}
+          className="rounded bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+        >
+          Add
+        </button>
+      </div>
+      {withPrivacy && (
+        <label className="flex items-center gap-1.5 text-[11px] text-slate-500">
+          <input
+            type="checkbox"
+            checked={isPrivate}
+            onChange={(e) => setIsPrivate(e.target.checked)}
+            className="h-3.5 w-3.5 accent-indigo-600"
+          />
+          Private — only I can see this item
+        </label>
+      )}
     </form>
   );
 }
@@ -45,14 +68,76 @@ function addedByName(id: string | undefined, collaborators: Collaborator[]): str
   return collaborators.find((c) => c.id === id)?.name ?? null;
 }
 
+/** Inline note display + editor for a checklist or group item. */
+function NoteEditor({ note, onSave }: { note?: string; onSave: (n: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(note ?? '');
+
+  if (editing) {
+    return (
+      <form
+        className="flex gap-1"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSave(draft);
+          setEditing(false);
+        }}
+      >
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Add a note…"
+          className="min-w-0 flex-1 rounded border border-slate-200 px-2 py-1 text-[11px]"
+        />
+        <button type="submit" className="shrink-0 rounded bg-slate-700 px-2 py-1 text-[11px] font-medium text-white">
+          Save
+        </button>
+      </form>
+    );
+  }
+
+  if (note) {
+    return (
+      <button
+        onClick={() => {
+          setDraft(note);
+          setEditing(true);
+        }}
+        className="block w-full text-left text-[11px] text-slate-500 hover:text-slate-700"
+        title="Edit note"
+      >
+        📝 {note}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => {
+        setDraft('');
+        setEditing(true);
+      }}
+      className="text-[11px] text-slate-300 hover:text-slate-500"
+    >
+      + add note
+    </button>
+  );
+}
+
 function PersonalList() {
-  const items = useStore((s) => s.doc.personalItems);
+  const allItems = useStore((s) => s.doc.personalItems);
+  const meId = useStore((s) => s.meId);
   const collaborators = useStore((s) => s.doc.collaborators);
   const myChecks = useStore((s) => (s.meId ? s.doc.personalChecks[s.meId] : undefined));
   const toggleChecked = useStore((s) => s.toggleChecked);
   const addPersonalItem = useStore((s) => s.addPersonalItem);
   const removePersonalItem = useStore((s) => s.removePersonalItem);
+  const setPersonalItemNote = useStore((s) => s.setPersonalItemNote);
 
+  // Private items only show for the person who added them; shared items show
+  // for everyone.
+  const items = allItems.filter((i) => !i.private || i.addedBy === meId);
   const checked = new Set(myChecks ?? []);
   const doneCount = items.filter((i) => checked.has(i.id)).length;
 
@@ -61,8 +146,9 @@ function PersonalList() {
       <div>
         <h2 className="text-lg font-bold">My checklist</h2>
         <p className="text-xs text-slate-500">
-          Shared suggestions — anyone can add for everyone, and your checkmarks are
-          your own (synced across your devices). {doneCount}/{items.length} done.
+          Add shared suggestions (everyone sees them) or private items (just you).
+          Your checkmarks are your own, synced across your devices.{' '}
+          {doneCount}/{items.length} done.
         </p>
       </div>
 
@@ -73,34 +159,48 @@ function PersonalList() {
           return (
             <li
               key={item.id}
-              className="flex items-center gap-2 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100"
+              className="space-y-1 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100"
             >
-              <input
-                type="checkbox"
-                checked={isChecked}
-                onChange={() => toggleChecked(item.id)}
-                className="h-4 w-4 shrink-0 accent-emerald-600"
-              />
-              <span className={`min-w-0 flex-1 text-sm ${isChecked ? 'text-slate-400 line-through' : ''}`}>
-                {item.text}
-                {who && (
-                  <span className="ml-1 text-[11px] text-slate-300">Added by: {who}</span>
-                )}
-              </span>
-              <button
-                onClick={() => removePersonalItem(item.id)}
-                className="shrink-0 text-xs text-slate-300 hover:text-red-500"
-                title="Remove for everyone"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleChecked(item.id)}
+                  className="h-4 w-4 shrink-0 accent-emerald-600"
+                />
+                <span className={`min-w-0 flex-1 text-sm ${isChecked ? 'text-slate-400 line-through' : ''}`}>
+                  {item.text}
+                  {item.private && (
+                    <span className="ml-1 rounded bg-indigo-50 px-1 text-[10px] font-medium text-indigo-500">
+                      private
+                    </span>
+                  )}
+                  {!item.private && who && (
+                    <span className="ml-1 text-[11px] text-slate-300">Added by: {who}</span>
+                  )}
+                </span>
+                <button
+                  onClick={() => removePersonalItem(item.id)}
+                  className="shrink-0 text-xs text-slate-300 hover:text-red-500"
+                  title={item.private ? 'Remove' : 'Remove for everyone'}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="pl-6">
+                <NoteEditor note={item.note} onSave={(n) => setPersonalItemNote(item.id, n)} />
+              </div>
             </li>
           );
         })}
         {items.length === 0 && <Empty>No items yet — add your first.</Empty>}
       </ul>
 
-      <AddRow onAdd={addPersonalItem} placeholder="Add a personal item (shared as a suggestion)…" />
+      <AddRow
+        onAdd={addPersonalItem}
+        withPrivacy
+        placeholder="Add a packing item…"
+      />
     </section>
   );
 }
@@ -135,6 +235,8 @@ function GroupRow({ item }: { item: GroupItem }) {
   const collaborators = useStore((s) => s.doc.collaborators);
   const meId = useStore((s) => s.meId);
   const toggleSignup = useStore((s) => s.toggleSignup);
+  const toggleGroupDone = useStore((s) => s.toggleGroupDone);
+  const setGroupItemNote = useStore((s) => s.setGroupItemNote);
   const removeGroupItem = useStore((s) => s.removeGroupItem);
   const addManualSignup = useStore((s) => s.addManualSignup);
   const removeManualSignup = useStore((s) => s.removeManualSignup);
@@ -150,7 +252,14 @@ function GroupRow({ item }: { item: GroupItem }) {
   return (
     <li className="space-y-1.5 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100">
       <div className="flex items-center gap-2">
-        <span className="min-w-0 flex-1 text-sm">
+        <input
+          type="checkbox"
+          checked={!!item.done}
+          onChange={() => toggleGroupDone(item.id)}
+          className="h-4 w-4 shrink-0 accent-emerald-600"
+          title="Mark done"
+        />
+        <span className={`min-w-0 flex-1 text-sm ${item.done ? 'text-slate-400 line-through' : ''}`}>
           {item.text}
           {who && <span className="ml-1 text-[11px] text-slate-300">Added by: {who}</span>}
         </span>
@@ -171,6 +280,10 @@ function GroupRow({ item }: { item: GroupItem }) {
         >
           ✕
         </button>
+      </div>
+
+      <div className="pl-6">
+        <NoteEditor note={item.note} onSave={(n) => setGroupItemNote(item.id, n)} />
       </div>
 
       {(signups.length > 0 || manual.length > 0) && (
