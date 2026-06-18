@@ -21,6 +21,7 @@ const CATEGORY_BADGE: Record<MealCategory, string> = {
   breakfast: 'bg-amber-100 text-amber-700',
   lunch: 'bg-sky-100 text-sky-700',
   dinner: 'bg-indigo-100 text-indigo-700',
+  out: 'bg-slate-100 text-slate-500',
 };
 
 export function MealsView() {

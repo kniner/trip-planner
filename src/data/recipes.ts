@@ -217,6 +217,11 @@ export const RECIPES: Recipe[] = [
       { name: 'Butter', unit: 'tbsp', perPerson: 1 },
     ],
   },
+
+  // ---- Eating out / no-cook (no groceries generated) ----
+  { id: 'at-the-parks', name: 'At the parks', category: 'out', ingredients: [] },
+  { id: 'eating-out', name: 'Eating out / restaurant', category: 'out', ingredients: [] },
+  { id: 'leftovers', name: 'Leftovers', category: 'out', ingredients: [] },
 ];
 
 export const RECIPES_BY_ID: Record<string, Recipe> = Object.fromEntries(
@@ -227,6 +232,7 @@ export const CATEGORY_LABELS: Record<Recipe['category'], string> = {
   breakfast: 'Breakfast',
   lunch: 'Lunch',
   dinner: 'Dinner',
+  out: 'Eating out',
 };
 
-export const CATEGORY_ORDER: Recipe['category'][] = ['breakfast', 'lunch', 'dinner'];
+export const CATEGORY_ORDER: Recipe['category'][] = ['breakfast', 'lunch', 'dinner', 'out'];

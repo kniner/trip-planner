@@ -175,7 +175,7 @@ export interface Ingredient {
   gfSub?: string;
 }
 
-export type MealCategory = 'breakfast' | 'lunch' | 'dinner';
+export type MealCategory = 'breakfast' | 'lunch' | 'dinner' | 'out';
 
 /** A known meal/recipe with its ingredient list. */
 export interface Recipe {
