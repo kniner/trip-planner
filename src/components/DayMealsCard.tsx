@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { CATEGORY_LABELS, RECIPES_BY_ID } from '../data/recipes';
 import type { MealCategory, Recipe } from '../lib/types';
-import { useStore } from '../store/useStore';
+import { useActiveDay, useStore } from '../store/useStore';
 
 const CATEGORY_BADGE: Record<MealCategory, string> = {
   breakfast: 'bg-amber-100 text-amber-700',
@@ -35,6 +35,14 @@ const MEAL_BLOCK_MIN: Record<MealCategory, number> = {
 export function DayMealsCard({ date }: { date?: string }) {
   const meals = useStore((s) => s.doc.meals);
   const addCustomStop = useStore((s) => s.addCustomStop);
+  const removeStop = useStore((s) => s.removeStop);
+  const day = useActiveDay();
+
+  const blockName = (course: MealCategory, name: string) => `${CATEGORY_LABELS[course]}: ${name}`;
+
+  /** The custom stop already on this day for a given meal block name, if any. */
+  const scheduledStopId = (name: string): string | undefined =>
+    day.stops.find((s) => s.kind === 'custom' && s.custom?.name === name)?.id;
 
   const recipesById = useMemo<Record<string, Recipe>>(
     () => ({ ...RECIPES_BY_ID, ...Object.fromEntries(meals.customRecipes.map((r) => [r.id, r])) }),
@@ -72,28 +80,37 @@ export function DayMealsCard({ date }: { date?: string }) {
         </p>
       ) : (
         <ul className="mt-2 space-y-1.5">
-          {dayMeals.map(({ entry, recipe, course }) => (
-            <li key={entry.id} className="flex items-center gap-2">
-              <span
-                className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${CATEGORY_BADGE[course]}`}
-              >
-                {CATEGORY_LABELS[course]}
-              </span>
-              <span className="min-w-0 flex-1 truncate text-sm">{recipe!.name}</span>
-              <button
-                onClick={() =>
-                  addCustomStop({
-                    name: `${CATEGORY_LABELS[course]}: ${recipe!.name}`,
-                    durationMin: MEAL_BLOCK_MIN[course],
-                  })
-                }
-                className="shrink-0 rounded border border-slate-300 px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
-                title="Add this meal to the day's timeline"
-              >
-                + schedule
-              </button>
-            </li>
-          ))}
+          {dayMeals.map(({ entry, recipe, course }) => {
+            const name = blockName(course, recipe!.name);
+            const stopId = scheduledStopId(name);
+            return (
+              <li key={entry.id} className="flex items-center gap-2">
+                <span
+                  className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${CATEGORY_BADGE[course]}`}
+                >
+                  {CATEGORY_LABELS[course]}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-sm">{recipe!.name}</span>
+                {stopId ? (
+                  <button
+                    onClick={() => removeStop(stopId)}
+                    className="shrink-0 rounded border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-100"
+                    title="Remove this meal from the day's timeline"
+                  >
+                    ✓ Scheduled
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => addCustomStop({ name, durationMin: MEAL_BLOCK_MIN[course] })}
+                    className="shrink-0 rounded border border-slate-300 px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+                    title="Add this meal to the day's timeline"
+                  >
+                    + schedule
+                  </button>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
