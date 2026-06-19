@@ -3,8 +3,10 @@ import { JoinGate } from './components/JoinGate';
 import { ListsView } from './components/ListsView';
 import { MapView } from './components/MapView';
 import { MealsView } from './components/MealsView';
+import { NowNext } from './components/NowNext';
 import { ScheduleView } from './components/ScheduleView';
 import { TagView } from './components/TagView';
+import { TripCountdown } from './components/TripCountdown';
 import { TripView } from './components/TripView';
 import { UserBar } from './components/UserBar';
 import { useStore } from './store/useStore';
@@ -59,6 +61,8 @@ export default function App() {
 
       <div className="mb-4 space-y-3">
         <UserBar />
+        <TripCountdown />
+        <NowNext isOwner={isOwner} />
 
         <nav className="flex flex-wrap rounded-lg bg-slate-100 p-1">
           <ViewTab active={effectiveView === 'tag'} onClick={() => setView('tag')}>
