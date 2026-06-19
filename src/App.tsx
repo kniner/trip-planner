@@ -31,7 +31,8 @@ export default function App() {
   const claimOwnership = useStore((s) => s.claimOwnership);
   const isOwner = meId != null && ownerId === meId;
   const ownerName = collaborators.find((c) => c.id === ownerId)?.name;
-  const effectiveView = view === 'schedule' && !isOwner ? 'tag' : view;
+  const effectiveView =
+    (view === 'schedule' || view === 'map') && !isOwner ? 'tag' : view;
 
   useEffect(() => {
     void init();
@@ -73,9 +74,11 @@ export default function App() {
               Schedule
             </ViewTab>
           )}
-          <ViewTab active={effectiveView === 'map'} onClick={() => setView('map')}>
-            Map
-          </ViewTab>
+          {isOwner && (
+            <ViewTab active={effectiveView === 'map'} onClick={() => setView('map')}>
+              Map
+            </ViewTab>
+          )}
           <ViewTab active={effectiveView === 'lists'} onClick={() => setView('lists')}>
             Lists
           </ViewTab>
@@ -118,7 +121,7 @@ export default function App() {
 
       {effectiveView === 'tag' && <TagView />}
       {effectiveView === 'schedule' && isOwner && <ScheduleView />}
-      {effectiveView === 'map' && <MapView />}
+      {effectiveView === 'map' && isOwner && <MapView />}
       {effectiveView === 'lists' && <ListsView />}
       {effectiveView === 'meals' && <MealsView />}
       {effectiveView === 'trip' && <TripView />}
