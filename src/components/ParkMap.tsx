@@ -543,6 +543,9 @@ export function ParkMap() {
               </span>
             );
           })()}
+          {selected.description && (
+            <span className="mt-0.5 block text-slate-500">{selected.description}</span>
+          )}
         </p>
       ) : amenityInfo ? (
         <p className="text-[11px] text-slate-600">{amenityInfo}</p>

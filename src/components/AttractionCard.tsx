@@ -75,6 +75,10 @@ export function AttractionCard({ attraction, showAddToRoute = true }: Props) {
         )}
       </div>
 
+      {attraction.description && (
+        <p className="text-xs leading-snug text-slate-600">{attraction.description}</p>
+      )}
+
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
         {showWaits ? (
           <>

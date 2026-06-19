@@ -31,7 +31,12 @@ export function ItemList({ items, lands, showAddToRoute = true }: Props) {
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items.filter((a) => {
-      if (q && !a.name.toLowerCase().includes(q)) return false;
+      if (
+        q &&
+        !a.name.toLowerCase().includes(q) &&
+        !(a.description ?? '').toLowerCase().includes(q)
+      )
+        return false;
       if (filter === 'all') return true;
       const summary = summarizeTags(a.id, doc.tags, doc.collaborators, meId);
       if (filter === 'untagged') return summary.consensus === null;

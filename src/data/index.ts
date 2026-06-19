@@ -1,4 +1,5 @@
 import type { Attraction, EventType, ParkId } from '../lib/types';
+import { DESCRIPTIONS } from './descriptions';
 import { EPCOT } from './epcot';
 import { LEGOLAND_WATER_PARK } from './legolandWaterPark';
 import { MAGIC_KINGDOM } from './magicKingdom';
@@ -81,7 +82,9 @@ export const EVENT_SHORT: Record<EventType, string> = {
   'food-and-wine': 'Food & Wine',
 };
 
-export const ITEMS: Attraction[] = [...MAGIC_KINGDOM, ...EPCOT, ...LEGOLAND_WATER_PARK];
+export const ITEMS: Attraction[] = [...MAGIC_KINGDOM, ...EPCOT, ...LEGOLAND_WATER_PARK].map(
+  (a) => (DESCRIPTIONS[a.id] ? { ...a, description: DESCRIPTIONS[a.id] } : a),
+);
 
 export const ITEMS_BY_ID: Record<string, Attraction> = Object.fromEntries(
   ITEMS.map((a) => [a.id, a]),
