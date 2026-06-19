@@ -245,6 +245,11 @@ export interface Expense {
   date?: string;
   /** Collaborator ids who share this cost. Empty/undefined = split among all. */
   splitAmong?: string[];
+  /**
+   * Custom (uneven) split: exact dollars each collaborator owes, keyed by id.
+   * When present it overrides the even split (and `amount` equals their sum).
+   */
+  shares?: Record<string, number>;
 }
 
 /** A single ingredient and how much is needed per adult serving. */

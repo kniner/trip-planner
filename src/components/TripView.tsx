@@ -298,26 +298,34 @@ function Budget() {
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
   const [paidBy, setPaidBy] = useState('');
+  const [mode, setMode] = useState<'even' | 'custom'>('even');
   // Empty set = "everyone". Otherwise only these collaborators split the cost.
   const [splitAmong, setSplitAmong] = useState<string[]>([]);
+  // Custom mode: per-collaborator dollar inputs (id -> string).
+  const [shares, setShares] = useState<Record<string, string>>({});
 
   const allIds = useMemo(() => collaborators.map((c) => c.id), [collaborators]);
   const total = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);
 
   /** Who actually shares an expense (falls back to everyone). */
   const participantsOf = (e: Expense): string[] => {
+    if (e.shares) return Object.keys(e.shares).filter((id) => allIds.includes(id));
     const chosen = (e.splitAmong ?? []).filter((id) => allIds.includes(id));
     return chosen.length > 0 ? chosen : allIds;
+  };
+
+  /** What one person owes for an expense (custom amount, else even share). */
+  const owedBy = (e: Expense, id: string): number => {
+    if (e.shares) return e.shares[id] ?? 0;
+    const p = participantsOf(e);
+    return p.includes(id) ? e.amount / p.length : 0;
   };
 
   const balances = useMemo<Balance[]>(
     () =>
       collaborators.map((c) => {
         const paid = expenses.filter((e) => e.paidBy === c.id).reduce((s, e) => s + e.amount, 0);
-        const owed = expenses.reduce((s, e) => {
-          const p = participantsOf(e);
-          return p.includes(c.id) ? s + e.amount / p.length : s;
-        }, 0);
+        const owed = expenses.reduce((s, e) => s + owedBy(e, c.id), 0);
         return { collaborator: c, paid, owed, net: paid - owed };
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -328,6 +336,10 @@ function Budget() {
   const nameOf = (id?: string) => collaborators.find((c) => c.id === id)?.name ?? 'Someone';
   const toggleSplit = (id: string) =>
     setSplitAmong((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const customTotal = Object.values(shares).reduce((s, v) => s + (Number(v) || 0), 0);
+  const canSubmit =
+    label.trim().length > 0 && (mode === 'even' ? Number(amount) > 0 : customTotal > 0);
 
   return (
     <section className="space-y-3">
@@ -395,8 +407,11 @@ function Budget() {
       <ul className="space-y-1.5">
         {expenses.map((e: Expense) => {
           const p = participantsOf(e);
-          const splitLabel =
-            p.length === allIds.length ? 'everyone' : p.map((id) => nameOf(id)).join(', ');
+          const splitLabel = e.shares
+            ? `custom — ${p.map((id) => `${nameOf(id)} ${money(e.shares![id] ?? 0)}`).join(', ')}`
+            : p.length === allIds.length
+              ? `split evenly — everyone`
+              : `split evenly — ${p.map((id) => nameOf(id)).join(', ')}`;
           return (
             <li
               key={e.id}
@@ -405,7 +420,7 @@ function Budget() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">{e.label}</p>
                 <p className="text-[11px] text-slate-500">
-                  paid by {nameOf(e.paidBy)} · split {p.length} way{p.length === 1 ? '' : 's'} ({splitLabel})
+                  paid by {nameOf(e.paidBy)} · {splitLabel}
                 </p>
               </div>
               <span className="shrink-0 text-sm font-semibold">{money(e.amount)}</span>
@@ -430,17 +445,29 @@ function Budget() {
         className="space-y-2 rounded-lg bg-white p-3 shadow-sm ring-1 ring-slate-100"
         onSubmit={(e) => {
           e.preventDefault();
-          addExpense({
-            label,
-            amount: Number(amount),
-            paidBy: paidBy || undefined,
-            // Only store a subset; full selection (or none) means "everyone".
-            splitAmong:
-              splitAmong.length > 0 && splitAmong.length < allIds.length ? splitAmong : undefined,
-          });
+          if (mode === 'custom') {
+            const map: Record<string, number> = {};
+            for (const c of collaborators) {
+              const v = Number(shares[c.id]);
+              if (v > 0) map[c.id] = Math.round(v * 100) / 100;
+            }
+            const sum = Object.values(map).reduce((s, v) => s + v, 0);
+            if (sum <= 0) return;
+            addExpense({ label, amount: sum, paidBy: paidBy || undefined, shares: map });
+          } else {
+            addExpense({
+              label,
+              amount: Number(amount),
+              paidBy: paidBy || undefined,
+              // Only store a subset; full selection (or none) means "everyone".
+              splitAmong:
+                splitAmong.length > 0 && splitAmong.length < allIds.length ? splitAmong : undefined,
+            });
+          }
           setLabel('');
           setAmount('');
           setSplitAmong([]);
+          setShares({});
         }}
       >
         <input
@@ -450,15 +477,17 @@ function Budget() {
           className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
         />
         <div className="flex flex-wrap gap-2">
-          <input
-            type="number"
-            min={0}
-            step="0.01"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="$ amount"
-            className="w-28 rounded border border-slate-300 px-2 py-1.5 text-sm"
-          />
+          {mode === 'even' && (
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="$ amount"
+              className="w-28 rounded border border-slate-300 px-2 py-1.5 text-sm"
+            />
+          )}
           <select
             value={paidBy}
             onChange={(e) => setPaidBy(e.target.value)}
@@ -473,7 +502,22 @@ function Budget() {
           </select>
         </div>
 
-        {collaborators.length > 0 && (
+        <div className="flex rounded-lg bg-slate-100 p-0.5 text-xs">
+          {(['even', 'custom'] as const).map((m) => (
+            <button
+              type="button"
+              key={m}
+              onClick={() => setMode(m)}
+              className={`flex-1 rounded-md px-2 py-1 font-semibold ${
+                mode === m ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              {m === 'even' ? 'Split evenly' : 'Custom amounts'}
+            </button>
+          ))}
+        </div>
+
+        {collaborators.length > 0 && mode === 'even' && (
           <div>
             <p className="mb-1 text-[11px] text-slate-500">
               Split between{' '}
@@ -508,9 +552,36 @@ function Budget() {
           </div>
         )}
 
+        {collaborators.length > 0 && mode === 'custom' && (
+          <div className="space-y-1">
+            <p className="text-[11px] text-slate-500">
+              Enter each person's share (leave blank for $0). Total:{' '}
+              <span className="font-semibold text-slate-700">{money(customTotal)}</span>
+            </p>
+            {collaborators.map((c) => (
+              <div key={c.id} className="flex items-center gap-2">
+                <span className="flex min-w-0 flex-1 items-center gap-1.5 text-sm">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: c.color }} />
+                  <span className="truncate">{c.name}</span>
+                </span>
+                <span className="text-xs text-slate-400">$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={shares[c.id] ?? ''}
+                  onChange={(e) => setShares((p) => ({ ...p, [c.id]: e.target.value }))}
+                  placeholder="0.00"
+                  className="w-24 rounded border border-slate-300 px-2 py-1 text-right text-sm"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
         <button
           type="submit"
-          disabled={!label.trim() || !(Number(amount) > 0)}
+          disabled={!canSubmit}
           className="w-full rounded bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
         >
           Add expense
