@@ -42,10 +42,15 @@ function InfoValue({ value }: { value: string }) {
 export function TripView() {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <div className="space-y-6">
-        <InfoHub />
-        <DiningList />
-      </div>
+      <InfoHub />
+      <DiningList />
+    </div>
+  );
+}
+
+export function FinancesView() {
+  return (
+    <div className="mx-auto max-w-2xl">
       <Budget />
     </div>
   );
