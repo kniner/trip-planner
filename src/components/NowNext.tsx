@@ -37,7 +37,11 @@ export function NowNext({ isOwner }: { isOwner: boolean }) {
       target = days.find((d) => d.date === first);
       mode = 'tomorrow';
     } else if (isOwner) {
-      target = activeDay;
+      // Preview the next upcoming day of the trip (soonest date today-or-later),
+      // not whatever day happens to be selected in the schedule. Fall back to the
+      // first dated day, then the currently active day.
+      const upcoming = dates.find((d) => (diffDays(today, d) ?? -1) >= 0) ?? first;
+      target = (upcoming ? days.find((d) => d.date === upcoming) : undefined) ?? activeDay;
       mode = 'preview';
     } else {
       return null;
