@@ -71,7 +71,7 @@ export function UserBar() {
         {CLOUD_SYNC ? 'Group sync' : 'This device only'}
       </span>
 
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-xs text-slate-400">Collaborators:</span>
         {collaborators.length === 0 && (
           <span className="text-xs text-slate-400">none yet</span>
@@ -79,11 +79,18 @@ export function UserBar() {
         {collaborators.map((c) => (
           <span
             key={c.id}
-            title={c.name}
-            className="inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white ring-2 ring-white"
-            style={{ background: c.color }}
+            className={`inline-flex items-center gap-1.5 rounded-full bg-slate-100 py-0.5 pl-1 pr-2.5 text-xs ${
+              c.id === meId ? 'font-bold text-slate-900' : 'font-medium text-slate-600'
+            }`}
           >
-            {c.name.slice(0, 1).toUpperCase()}
+            <span
+              className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white"
+              style={{ background: c.color }}
+            >
+              {c.name.slice(0, 1).toUpperCase()}
+            </span>
+            {c.name}
+            {c.id === meId && <span className="text-[10px] font-normal text-slate-400">(you)</span>}
           </span>
         ))}
       </div>
