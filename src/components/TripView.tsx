@@ -298,11 +298,13 @@ function Budget() {
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
   const [paidBy, setPaidBy] = useState('');
-  const [mode, setMode] = useState<'even' | 'custom'>('even');
+  const [mode, setMode] = useState<'even' | 'custom' | 'percent'>('even');
   // Empty set = "everyone". Otherwise only these collaborators split the cost.
   const [splitAmong, setSplitAmong] = useState<string[]>([]);
   // Custom mode: per-collaborator dollar inputs (id -> string).
   const [shares, setShares] = useState<Record<string, string>>({});
+  // Percent mode: per-collaborator percentage inputs (id -> string).
+  const [percents, setPercents] = useState<Record<string, string>>({});
 
   const allIds = useMemo(() => collaborators.map((c) => c.id), [collaborators]);
   const total = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);
@@ -338,8 +340,14 @@ function Budget() {
     setSplitAmong((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   const customTotal = Object.values(shares).reduce((s, v) => s + (Number(v) || 0), 0);
+  const percentTotal = Object.values(percents).reduce((s, v) => s + (Number(v) || 0), 0);
   const canSubmit =
-    label.trim().length > 0 && (mode === 'even' ? Number(amount) > 0 : customTotal > 0);
+    label.trim().length > 0 &&
+    (mode === 'custom'
+      ? customTotal > 0
+      : mode === 'percent'
+        ? Number(amount) > 0 && percentTotal > 0
+        : Number(amount) > 0);
 
   return (
     <section className="space-y-3">
@@ -454,6 +462,20 @@ function Budget() {
             const sum = Object.values(map).reduce((s, v) => s + v, 0);
             if (sum <= 0) return;
             addExpense({ label, amount: sum, paidBy: paidBy || undefined, shares: map });
+          } else if (mode === 'percent') {
+            const tot = Number(amount);
+            const pctSum = collaborators.reduce((s, c) => s + (Number(percents[c.id]) || 0), 0);
+            if (!(tot > 0) || pctSum <= 0) return;
+            const map: Record<string, number> = {};
+            for (const c of collaborators) {
+              const pct = Number(percents[c.id]) || 0;
+              // Normalize by the entered total so shares always sum to `amount`,
+              // even if the percentages don't add to exactly 100.
+              if (pct > 0) map[c.id] = Math.round(((tot * pct) / pctSum) * 100) / 100;
+            }
+            const sum = Object.values(map).reduce((s, v) => s + v, 0);
+            if (sum <= 0) return;
+            addExpense({ label, amount: sum, paidBy: paidBy || undefined, shares: map });
           } else {
             addExpense({
               label,
@@ -468,6 +490,7 @@ function Budget() {
           setAmount('');
           setSplitAmong([]);
           setShares({});
+          setPercents({});
         }}
       >
         <input
@@ -477,14 +500,14 @@ function Budget() {
           className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
         />
         <div className="flex flex-wrap gap-2">
-          {mode === 'even' && (
+          {mode !== 'custom' && (
             <input
               type="number"
               min={0}
               step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="$ amount"
+              placeholder="$ total"
               className="w-28 rounded border border-slate-300 px-2 py-1.5 text-sm"
             />
           )}
@@ -503,7 +526,7 @@ function Budget() {
         </div>
 
         <div className="flex rounded-lg bg-slate-100 p-0.5 text-xs">
-          {(['even', 'custom'] as const).map((m) => (
+          {(['even', 'custom', 'percent'] as const).map((m) => (
             <button
               type="button"
               key={m}
@@ -512,7 +535,7 @@ function Budget() {
                 mode === m ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
               }`}
             >
-              {m === 'even' ? 'Split evenly' : 'Custom amounts'}
+              {m === 'even' ? 'Evenly' : m === 'custom' ? 'Amounts' : 'Percent'}
             </button>
           ))}
         </div>
@@ -576,6 +599,45 @@ function Budget() {
                 />
               </div>
             ))}
+          </div>
+        )}
+
+        {collaborators.length > 0 && mode === 'percent' && (
+          <div className="space-y-1">
+            <p className="text-[11px] text-slate-500">
+              Enter each person's percentage. Percentages total:{' '}
+              <span
+                className={`font-semibold ${
+                  Math.abs(percentTotal - 100) < 0.01 ? 'text-emerald-600' : 'text-amber-600'
+                }`}
+              >
+                {percentTotal}%
+              </span>
+              {Math.abs(percentTotal - 100) >= 0.01 && ' (will be normalized to the total)'}
+            </p>
+            {collaborators.map((c) => {
+              const pct = Number(percents[c.id]) || 0;
+              const dollars = percentTotal > 0 ? (Number(amount) || 0) * (pct / percentTotal) : 0;
+              return (
+                <div key={c.id} className="flex items-center gap-2">
+                  <span className="flex min-w-0 flex-1 items-center gap-1.5 text-sm">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: c.color }} />
+                    <span className="truncate">{c.name}</span>
+                  </span>
+                  {pct > 0 && <span className="text-[11px] text-slate-400">{money(dollars)}</span>}
+                  <input
+                    type="number"
+                    min={0}
+                    step="1"
+                    value={percents[c.id] ?? ''}
+                    onChange={(e) => setPercents((p) => ({ ...p, [c.id]: e.target.value }))}
+                    placeholder="0"
+                    className="w-20 rounded border border-slate-300 px-2 py-1 text-right text-sm"
+                  />
+                  <span className="text-xs text-slate-400">%</span>
+                </div>
+              );
+            })}
           </div>
         )}
 
