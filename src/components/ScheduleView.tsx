@@ -1,6 +1,7 @@
 import { EVENT_LABELS, PARKS } from '../data';
 import { useActiveDay, useStore } from '../store/useStore';
 import { DayMealsCard } from './DayMealsCard';
+import { DayReservationsCard } from './DayReservationsCard';
 import { DayTabs } from './DayTabs';
 import { EstimatorControls } from './EstimatorControls';
 import { PlanBuilder } from './PlanBuilder';
@@ -41,6 +42,7 @@ export function ScheduleView() {
       {isOther ? (
         // Off-park days are lightly scheduled: just a clock + free-form blocks.
         <div className="mx-auto max-w-xl space-y-4">
+          <DayReservationsCard date={day.date} />
           <DayMealsCard date={day.date} />
           <EstimatorControls light />
           <PlanBuilder />
@@ -52,6 +54,7 @@ export function ScheduleView() {
             <TodoList />
           </main>
           <aside className="order-1 space-y-4 lg:order-2 lg:sticky lg:top-4 lg:self-start">
+            <DayReservationsCard date={day.date} />
             <DayMealsCard date={day.date} />
             <EstimatorControls />
             <PlanBuilder />

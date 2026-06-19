@@ -199,6 +199,48 @@ export interface PlanDoc {
   groupItems: GroupItem[];
   /** Home meal plan + auto-generated grocery list. */
   meals: MealPlan;
+  /** Shared trip info: confirmation numbers, addresses, contacts. */
+  tripInfo: InfoItem[];
+  /** Dining reservations (ADRs), surfaced on their matching schedule day. */
+  dining: DiningReservation[];
+  /** Shared trip expenses, split among collaborators. */
+  expenses: Expense[];
+}
+
+export type InfoCategory = 'lodging' | 'tickets' | 'dining' | 'travel' | 'contact' | 'other';
+
+/** One shared piece of trip info (a confirmation number, address, contact…). */
+export interface InfoItem {
+  id: string;
+  label: string;
+  value: string;
+  category: InfoCategory;
+  addedBy?: string;
+}
+
+/** A dining reservation (ADR). */
+export interface DiningReservation {
+  id: string;
+  name: string;
+  /** ISO date "YYYY-MM-DD". */
+  date: string;
+  /** Reservation time, "HH:MM" 24h. */
+  time: string;
+  partySize?: number;
+  confirmation?: string;
+  note?: string;
+}
+
+/** A shared trip expense, split equally among collaborators. */
+export interface Expense {
+  id: string;
+  label: string;
+  /** Amount in dollars. */
+  amount: number;
+  /** Collaborator id who paid. */
+  paidBy?: string;
+  /** ISO date "YYYY-MM-DD" (optional). */
+  date?: string;
 }
 
 /** A single ingredient and how much is needed per adult serving. */

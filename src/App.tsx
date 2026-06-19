@@ -5,10 +5,11 @@ import { MapView } from './components/MapView';
 import { MealsView } from './components/MealsView';
 import { ScheduleView } from './components/ScheduleView';
 import { TagView } from './components/TagView';
+import { TripView } from './components/TripView';
 import { UserBar } from './components/UserBar';
 import { useStore } from './store/useStore';
 
-type View = 'tag' | 'schedule' | 'map' | 'lists' | 'meals';
+type View = 'tag' | 'schedule' | 'map' | 'lists' | 'meals' | 'trip';
 
 export default function App() {
   const init = useStore((s) => s.init);
@@ -77,6 +78,9 @@ export default function App() {
           <ViewTab active={effectiveView === 'meals'} onClick={() => setView('meals')}>
             Meals
           </ViewTab>
+          <ViewTab active={effectiveView === 'trip'} onClick={() => setView('trip')}>
+            Trip
+          </ViewTab>
         </nav>
 
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
@@ -113,6 +117,7 @@ export default function App() {
       {effectiveView === 'map' && <MapView />}
       {effectiveView === 'lists' && <ListsView />}
       {effectiveView === 'meals' && <MealsView />}
+      {effectiveView === 'trip' && <TripView />}
 
       <footer className="mt-8 text-center text-[11px] text-slate-400">
         Tag attractions per park, then schedule them onto specific days. Wait times

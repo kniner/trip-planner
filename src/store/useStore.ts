@@ -6,7 +6,10 @@ import type {
   Collaborator,
   CustomEntry,
   Day,
+  DiningReservation,
   EventType,
+  Expense,
+  InfoCategory,
   LiveWaits,
   MealCategory,
   Pace,
@@ -107,6 +110,9 @@ function emptyDoc(): PlanDoc {
     personalChecks: {},
     groupItems: [...SUGGESTED_GROUP],
     meals: emptyMealPlan(),
+    tripInfo: [],
+    dining: [],
+    expenses: [],
   };
 }
 
@@ -192,6 +198,9 @@ function migrate(raw: unknown): PlanDoc {
     personalChecks: doc.personalChecks ?? {},
     groupItems: Array.isArray(doc.groupItems) ? doc.groupItems : [...SUGGESTED_GROUP],
     meals: doc.meals ? { ...emptyMealPlan(), ...doc.meals } : emptyMealPlan(),
+    tripInfo: Array.isArray(doc.tripInfo) ? doc.tripInfo : [],
+    dining: Array.isArray(doc.dining) ? doc.dining : [],
+    expenses: Array.isArray(doc.expenses) ? doc.expenses : [],
   };
 }
 
@@ -220,7 +229,7 @@ interface StoreState {
 
   // Route (operates on the active day)
   addStop: (attractionId: string) => void;
-  addCustomStop: (entry: CustomEntry) => void;
+  addCustomStop: (entry: CustomEntry, fixedTime?: string) => void;
   removeStop: (stopId: string) => void;
   moveStop: (stopId: string, dir: -1 | 1) => void;
   setArrival: (stopId: string, arrival: string | undefined) => void;
@@ -281,6 +290,18 @@ interface StoreState {
   setGroceryStore: (key: string, store: string) => void;
   /** Add a claimed "from home" grocery item to the claimer's packing list. */
   addHomePackItem: (name: string) => void;
+
+  // Trip info hub
+  addInfoItem: (label: string, value: string, category: InfoCategory) => void;
+  removeInfoItem: (id: string) => void;
+
+  // Dining reservations
+  addDining: (res: Omit<DiningReservation, 'id'>) => void;
+  removeDining: (id: string) => void;
+
+  // Expenses
+  addExpense: (exp: Omit<Expense, 'id'>) => void;
+  removeExpense: (id: string) => void;
 
   refreshLive: () => Promise<void>;
 }
@@ -484,10 +505,13 @@ export const useStore = create<StoreState>((set, get) => {
       });
     },
 
-    addCustomStop(entry) {
+    addCustomStop(entry, fixedTime) {
       updateActiveDay((day) => ({
         ...day,
-        stops: [...day.stops, { id: uid(), kind: 'custom', custom: entry }],
+        stops: [
+          ...day.stops,
+          { id: uid(), kind: 'custom', custom: entry, ...(fixedTime ? { fixedTime } : {}) },
+        ],
       }));
     },
 
@@ -1023,6 +1047,44 @@ export const useStore = create<StoreState>((set, get) => {
           { id: uid(), text, addedBy: meId, private: true },
         ],
       });
+    },
+
+    addInfoItem(label, value, category) {
+      const l = label.trim();
+      const v = value.trim();
+      if (!l || !v) return;
+      const doc = get().doc;
+      commit({
+        ...doc,
+        tripInfo: [...doc.tripInfo, { id: uid(), label: l, value: v, category, addedBy: me() ?? undefined }],
+      });
+    },
+
+    removeInfoItem(id) {
+      const doc = get().doc;
+      commit({ ...doc, tripInfo: doc.tripInfo.filter((i) => i.id !== id) });
+    },
+
+    addDining(res) {
+      if (!res.name.trim() || !res.date) return;
+      const doc = get().doc;
+      commit({ ...doc, dining: [...doc.dining, { ...res, name: res.name.trim(), id: uid() }] });
+    },
+
+    removeDining(id) {
+      const doc = get().doc;
+      commit({ ...doc, dining: doc.dining.filter((d) => d.id !== id) });
+    },
+
+    addExpense(exp) {
+      if (!exp.label.trim() || !(exp.amount > 0)) return;
+      const doc = get().doc;
+      commit({ ...doc, expenses: [...doc.expenses, { ...exp, label: exp.label.trim(), id: uid() }] });
+    },
+
+    removeExpense(id) {
+      const doc = get().doc;
+      commit({ ...doc, expenses: doc.expenses.filter((e) => e.id !== id) });
     },
 
     async refreshLive() {
