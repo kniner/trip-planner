@@ -167,6 +167,8 @@ export interface ChecklistItem {
   private?: boolean;
   /** Optional free-text note shown under the item. */
   note?: string;
+  /** Optional quantity to pack (e.g. 5 shirts). */
+  qty?: number;
 }
 
 /** A shared group task people can sign up for. */

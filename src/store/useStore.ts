@@ -259,6 +259,7 @@ interface StoreState {
   addPersonalItem: (text: string, isPrivate?: boolean) => void;
   removePersonalItem: (id: string) => void;
   setPersonalItemNote: (id: string, note: string) => void;
+  setPersonalItemQty: (id: string, qty: number | undefined) => void;
   toggleChecked: (id: string) => void;
   addGroupItem: (text: string) => void;
   removeGroupItem: (id: string) => void;
@@ -747,6 +748,15 @@ export const useStore = create<StoreState>((set, get) => {
         personalItems: doc.personalItems.map((i) =>
           i.id === id ? { ...i, note: clean || undefined } : i,
         ),
+      });
+    },
+
+    setPersonalItemQty(id, qty) {
+      const clean = typeof qty === 'number' && Number.isFinite(qty) && qty > 0 ? Math.round(qty) : undefined;
+      const doc = get().doc;
+      commit({
+        ...doc,
+        personalItems: doc.personalItems.map((i) => (i.id === id ? { ...i, qty: clean } : i)),
       });
     },
 
