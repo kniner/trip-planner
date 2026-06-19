@@ -15,6 +15,30 @@ function money(n: number): string {
   return `$${n.toFixed(2)}`;
 }
 
+/** Render a trip-info value: links and phone numbers become tappable. */
+function InfoValue({ value }: { value: string }) {
+  const v = value.trim();
+  const isUrl = /^(https?:\/\/|www\.)/i.test(v);
+  const isPhone = /^[+(]?[\d][\d\s().-]{6,}$/.test(v);
+  const cls = 'break-words text-sm font-semibold';
+  if (isUrl) {
+    const href = v.startsWith('http') ? v : `https://${v}`;
+    return (
+      <a href={href} target="_blank" rel="noreferrer" className={`${cls} text-indigo-600 underline`}>
+        {v}
+      </a>
+    );
+  }
+  if (isPhone) {
+    return (
+      <a href={`tel:${v.replace(/[^\d+]/g, '')}`} className={`${cls} text-indigo-600 underline`}>
+        {v}
+      </a>
+    );
+  }
+  return <p className={cls}>{v}</p>;
+}
+
 export function TripView() {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -71,7 +95,7 @@ function InfoHub() {
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-slate-500">{it.label}</p>
-                  <p className="break-words text-sm font-semibold">{it.value}</p>
+                  <InfoValue value={it.value} />
                 </div>
                 <button
                   onClick={() => removeInfoItem(it.id)}
@@ -123,7 +147,7 @@ function InfoHub() {
           <input
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder="Value (number, address, phone…)"
+            placeholder="Value (link, number, address, phone…)"
             className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm"
           />
           <button
