@@ -65,12 +65,16 @@ export function NowNext({ isOwner }: { isOwner: boolean }) {
   if (stops.length === 0) {
     body = <span className="text-slate-500">No stops planned for {target.name} yet.</span>;
   } else if (mode === 'live') {
-    const now = nowMinutes();
-    const withTimes = stops.map((es) => ({
-      es,
-      arrive: parseClock(es.arriveClock),
-      leave: parseClock(es.leaveClock),
-    }));
+    // Compare against absolute minutes-from-start (arriveOffset is monotonic and
+    // never wraps), so stops that run past midnight still order correctly. The
+    // displayed clock strings stay wrapped for readability.
+    const startAbs = parseClock(target.settings.startTime);
+    let now = nowMinutes();
+    if (now < startAbs) now += 1440; // wall clock has ticked past midnight
+    const withTimes = stops.map((es) => {
+      const arrive = startAbs + es.arriveOffset;
+      return { es, arrive, leave: arrive + es.wait + es.duration + es.buffer };
+    });
     const current = withTimes.find((w) => w.arrive <= now && now < w.leave);
     const next = withTimes.find((w) => w.arrive > now);
     if (now < withTimes[0].arrive) {
