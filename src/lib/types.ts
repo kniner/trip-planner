@@ -233,7 +233,7 @@ export interface DiningReservation {
   note?: string;
 }
 
-/** A shared trip expense, split equally among collaborators. */
+/** A shared trip expense, split among the chosen people (default: everyone). */
 export interface Expense {
   id: string;
   label: string;
@@ -243,6 +243,8 @@ export interface Expense {
   paidBy?: string;
   /** ISO date "YYYY-MM-DD" (optional). */
   date?: string;
+  /** Collaborator ids who share this cost. Empty/undefined = split among all. */
+  splitAmong?: string[];
 }
 
 /** A single ingredient and how much is needed per adult serving. */

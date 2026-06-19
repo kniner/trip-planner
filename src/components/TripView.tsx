@@ -267,7 +267,8 @@ function DiningList() {
 interface Balance {
   collaborator: Collaborator;
   paid: number;
-  net: number; // paid - share; positive = owed money, negative = owes
+  owed: number;
+  net: number; // paid - owed; positive = owed money, negative = owes
 }
 
 /** Greedy settle-up: who pays whom to zero everyone out. */
@@ -297,29 +298,44 @@ function Budget() {
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
   const [paidBy, setPaidBy] = useState('');
+  // Empty set = "everyone". Otherwise only these collaborators split the cost.
+  const [splitAmong, setSplitAmong] = useState<string[]>([]);
 
+  const allIds = useMemo(() => collaborators.map((c) => c.id), [collaborators]);
   const total = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);
-  const share = collaborators.length > 0 ? total / collaborators.length : 0;
+
+  /** Who actually shares an expense (falls back to everyone). */
+  const participantsOf = (e: Expense): string[] => {
+    const chosen = (e.splitAmong ?? []).filter((id) => allIds.includes(id));
+    return chosen.length > 0 ? chosen : allIds;
+  };
 
   const balances = useMemo<Balance[]>(
     () =>
       collaborators.map((c) => {
         const paid = expenses.filter((e) => e.paidBy === c.id).reduce((s, e) => s + e.amount, 0);
-        return { collaborator: c, paid, net: paid - share };
+        const owed = expenses.reduce((s, e) => {
+          const p = participantsOf(e);
+          return p.includes(c.id) ? s + e.amount / p.length : s;
+        }, 0);
+        return { collaborator: c, paid, owed, net: paid - owed };
       }),
-    [collaborators, expenses, share],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [collaborators, expenses, allIds],
   );
 
   const settlements = useMemo(() => settleUp(balances), [balances]);
   const nameOf = (id?: string) => collaborators.find((c) => c.id === id)?.name ?? 'Someone';
+  const toggleSplit = (id: string) =>
+    setSplitAmong((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   return (
     <section className="space-y-3">
       <div>
         <h2 className="text-lg font-bold">Group budget</h2>
         <p className="text-xs text-slate-500">
-          Shared costs split equally among the {collaborators.length} people in the
-          app. Add what you paid; see who owes whom.
+          Add what you paid and pick who shares each cost (default: everyone).
+          Balances and settle-up update automatically.
         </p>
       </div>
 
@@ -329,8 +345,8 @@ function Budget() {
           <p className="text-lg font-bold">{money(total)}</p>
         </div>
         <div>
-          <p className="text-[11px] uppercase tracking-wide text-slate-400">Per person</p>
-          <p className="text-lg font-bold">{money(share)}</p>
+          <p className="text-[11px] uppercase tracking-wide text-slate-400">Expenses</p>
+          <p className="text-lg font-bold">{expenses.length}</p>
         </div>
       </div>
 
@@ -343,7 +359,9 @@ function Budget() {
                 <span className="flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full" style={{ background: b.collaborator.color }} />
                   {b.collaborator.name}
-                  <span className="text-[11px] text-slate-400">paid {money(b.paid)}</span>
+                  <span className="text-[11px] text-slate-400">
+                    paid {money(b.paid)} · share {money(b.owed)}
+                  </span>
                 </span>
                 <span
                   className={`font-semibold ${
@@ -375,25 +393,32 @@ function Budget() {
       )}
 
       <ul className="space-y-1.5">
-        {expenses.map((e: Expense) => (
-          <li
-            key={e.id}
-            className="flex items-center gap-2 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold">{e.label}</p>
-              <p className="text-[11px] text-slate-500">paid by {nameOf(e.paidBy)}</p>
-            </div>
-            <span className="shrink-0 text-sm font-semibold">{money(e.amount)}</span>
-            <button
-              onClick={() => removeExpense(e.id)}
-              className="shrink-0 text-xs text-slate-300 hover:text-red-500"
-              title="Remove"
+        {expenses.map((e: Expense) => {
+          const p = participantsOf(e);
+          const splitLabel =
+            p.length === allIds.length ? 'everyone' : p.map((id) => nameOf(id)).join(', ');
+          return (
+            <li
+              key={e.id}
+              className="flex items-center gap-2 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100"
             >
-              ✕
-            </button>
-          </li>
-        ))}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">{e.label}</p>
+                <p className="text-[11px] text-slate-500">
+                  paid by {nameOf(e.paidBy)} · split {p.length} way{p.length === 1 ? '' : 's'} ({splitLabel})
+                </p>
+              </div>
+              <span className="shrink-0 text-sm font-semibold">{money(e.amount)}</span>
+              <button
+                onClick={() => removeExpense(e.id)}
+                className="shrink-0 text-xs text-slate-300 hover:text-red-500"
+                title="Remove"
+              >
+                ✕
+              </button>
+            </li>
+          );
+        })}
         {expenses.length === 0 && (
           <li className="rounded-lg bg-white p-4 text-center text-sm text-slate-400 shadow-sm">
             No expenses logged yet.
@@ -405,9 +430,17 @@ function Budget() {
         className="space-y-2 rounded-lg bg-white p-3 shadow-sm ring-1 ring-slate-100"
         onSubmit={(e) => {
           e.preventDefault();
-          addExpense({ label, amount: Number(amount), paidBy: paidBy || undefined });
+          addExpense({
+            label,
+            amount: Number(amount),
+            paidBy: paidBy || undefined,
+            // Only store a subset; full selection (or none) means "everyone".
+            splitAmong:
+              splitAmong.length > 0 && splitAmong.length < allIds.length ? splitAmong : undefined,
+          });
           setLabel('');
           setAmount('');
+          setSplitAmong([]);
         }}
       >
         <input
@@ -438,14 +471,50 @@ function Budget() {
               </option>
             ))}
           </select>
-          <button
-            type="submit"
-            disabled={!label.trim() || !(Number(amount) > 0)}
-            className="rounded bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
-          >
-            Add
-          </button>
         </div>
+
+        {collaborators.length > 0 && (
+          <div>
+            <p className="mb-1 text-[11px] text-slate-500">
+              Split between{' '}
+              {splitAmong.length === 0 ? <span className="font-medium">everyone</span> : `${splitAmong.length} selected`}:
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {collaborators.map((c) => {
+                const on = splitAmong.includes(c.id);
+                return (
+                  <button
+                    type="button"
+                    key={c.id}
+                    onClick={() => toggleSplit(c.id)}
+                    className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+                      on ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 text-slate-600'
+                    }`}
+                  >
+                    {c.name}
+                  </button>
+                );
+              })}
+              {splitAmong.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSplitAmong([])}
+                  className="rounded-full px-2 py-0.5 text-[11px] text-slate-400 underline"
+                >
+                  reset to everyone
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={!label.trim() || !(Number(amount) > 0)}
+          className="w-full rounded bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+        >
+          Add expense
+        </button>
       </form>
     </section>
   );
