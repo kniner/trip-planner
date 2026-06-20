@@ -321,6 +321,7 @@ interface StoreState {
 
   // Expenses
   addExpense: (exp: Omit<Expense, 'id'>) => void;
+  updateExpense: (id: string, patch: Partial<Omit<Expense, 'id'>>) => void;
   removeExpense: (id: string) => void;
 
   refreshLive: () => Promise<void>;
@@ -1157,6 +1158,12 @@ export const useStore = create<StoreState>((set, get) => {
       if (!exp.label.trim() || !(exp.amount > 0)) return;
       const doc = get().doc;
       commit({ ...doc, expenses: [...doc.expenses, { ...exp, label: exp.label.trim(), id: uid() }] });
+    },
+
+    updateExpense(id, patch) {
+      const doc = get().doc;
+      const expenses = doc.expenses.map((e) => (e.id === id ? { ...e, ...patch } : e));
+      commit({ ...doc, expenses });
     },
 
     removeExpense(id) {

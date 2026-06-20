@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { formatShortDate } from '../lib/dates';
 import type { Collaborator, DiningReservation, Expense, InfoCategory } from '../lib/types';
 import { useStore } from '../store/useStore';
+import { SplitPicker } from './SplitPicker';
 
 const INFO_CATEGORIES: { value: InfoCategory; label: string }[] = [
   { value: 'lodging', label: '🏨 Lodging' },
@@ -300,13 +301,6 @@ function ReservationRow({ reservation: r }: { reservation: DiningReservation }) 
   const hasCost = !!r.cost && r.cost > 0;
 
   const [open, setOpen] = useState(false);
-  const [paidBy, setPaidBy] = useState('');
-  const [splitAmong, setSplitAmong] = useState<string[]>([]);
-
-  const toggle = (id: string) =>
-    setSplitAmong((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-
-  const perPerson = hasCost ? r.cost! / (splitAmong.length || 1) : 0;
 
   return (
     <li className="rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100">
@@ -355,75 +349,21 @@ function ReservationRow({ reservation: r }: { reservation: DiningReservation }) 
             <p className="text-[11px] text-slate-400">Add people to the group to split this.</p>
           ) : !open ? (
             <button
-              onClick={() => {
-                setOpen(true);
-                setSplitAmong(collaborators.map((c) => c.id));
-              }}
+              onClick={() => setOpen(true)}
               className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-500"
             >
               Request split →
             </button>
           ) : (
-            <div className="space-y-2">
-              <label className="block text-[11px] text-slate-500">
-                Paid by
-                <select
-                  value={paidBy}
-                  onChange={(e) => setPaidBy(e.target.value)}
-                  className="mt-0.5 block rounded border border-slate-300 px-2 py-1 text-xs"
-                >
-                  <option value="">— who paid —</option>
-                  {collaborators.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div>
-                <p className="mb-1 text-[11px] text-slate-500">
-                  Split among{splitAmong.length ? ` · ${money(perPerson)} each` : ''}
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {collaborators.map((c) => {
-                    const on = splitAmong.includes(c.id);
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => toggle(c.id)}
-                        className="rounded-full border px-2 py-0.5 text-[11px] font-medium"
-                        style={
-                          on
-                            ? { background: c.color, color: 'white', borderColor: c.color }
-                            : { color: c.color, borderColor: '#cbd5e1' }
-                        }
-                      >
-                        {c.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => {
-                    splitDiningCost(r.id, { paidBy: paidBy || undefined, splitAmong });
-                    setOpen(false);
-                  }}
-                  disabled={splitAmong.length === 0}
-                  className="rounded bg-indigo-600 px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-40"
-                >
-                  Add split to budget
-                </button>
-                <button
-                  onClick={() => setOpen(false)}
-                  className="text-[11px] text-slate-400 hover:text-slate-600"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
+            <SplitPicker
+              total={r.cost!}
+              submitLabel="Add split to budget"
+              onSubmit={(opts) => {
+                splitDiningCost(r.id, opts);
+                setOpen(false);
+              }}
+              onCancel={() => setOpen(false)}
+            />
           )}
         </div>
       )}
@@ -462,12 +402,11 @@ function Budget() {
   const expenses = useStore((s) => s.doc.expenses);
   const collaborators = useStore((s) => s.doc.collaborators);
   const addExpense = useStore((s) => s.addExpense);
-  const removeExpense = useStore((s) => s.removeExpense);
 
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
   const [paidBy, setPaidBy] = useState('');
-  const [mode, setMode] = useState<'even' | 'custom' | 'percent'>('even');
+  const [mode, setMode] = useState<'even' | 'custom' | 'percent' | 'later'>('even');
   // Empty set = "everyone". Otherwise only these collaborators split the cost.
   const [splitAmong, setSplitAmong] = useState<string[]>([]);
   // Custom mode: per-collaborator dollar inputs (id -> string).
@@ -504,7 +443,6 @@ function Budget() {
   );
 
   const settlements = useMemo(() => settleUp(balances), [balances]);
-  const nameOf = (id?: string) => collaborators.find((c) => c.id === id)?.name ?? 'Someone';
   const toggleSplit = (id: string) =>
     setSplitAmong((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
@@ -516,7 +454,9 @@ function Budget() {
       ? customTotal > 0
       : mode === 'percent'
         ? Number(amount) > 0 && percentTotal > 0
-        : Number(amount) > 0);
+        : mode === 'later'
+          ? Number(amount) > 0 && !!paidBy
+          : Number(amount) > 0);
 
   return (
     <section className="space-y-3">
@@ -582,35 +522,9 @@ function Budget() {
       )}
 
       <ul className="space-y-1.5">
-        {expenses.map((e: Expense) => {
-          const p = participantsOf(e);
-          const splitLabel = e.shares
-            ? `custom — ${p.map((id) => `${nameOf(id)} ${money(e.shares![id] ?? 0)}`).join(', ')}`
-            : p.length === allIds.length
-              ? `split evenly — everyone`
-              : `split evenly — ${p.map((id) => nameOf(id)).join(', ')}`;
-          return (
-            <li
-              key={e.id}
-              className="flex items-center gap-2 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">{e.label}</p>
-                <p className="text-[11px] text-slate-500">
-                  paid by {nameOf(e.paidBy)} · {splitLabel}
-                </p>
-              </div>
-              <span className="shrink-0 text-sm font-semibold">{money(e.amount)}</span>
-              <button
-                onClick={() => removeExpense(e.id)}
-                className="shrink-0 text-xs text-slate-300 hover:text-red-500"
-                title="Remove"
-              >
-                ✕
-              </button>
-            </li>
-          );
-        })}
+        {expenses.map((e: Expense) => (
+          <ExpenseRow key={e.id} expense={e} />
+        ))}
         {expenses.length === 0 && (
           <li className="rounded-lg bg-white p-4 text-center text-sm text-slate-400 shadow-sm">
             No expenses logged yet.
@@ -645,6 +559,9 @@ function Budget() {
             const sum = Object.values(map).reduce((s, v) => s + v, 0);
             if (sum <= 0) return;
             addExpense({ label, amount: sum, paidBy: paidBy || undefined, shares: map });
+          } else if (mode === 'later') {
+            // Record under the payer alone; split it from the list whenever.
+            addExpense({ label, amount: Number(amount), paidBy, splitAmong: [paidBy] });
           } else {
             addExpense({
               label,
@@ -695,7 +612,7 @@ function Budget() {
         </div>
 
         <div className="flex rounded-lg bg-slate-100 p-0.5 text-xs">
-          {(['even', 'custom', 'percent'] as const).map((m) => (
+          {(['even', 'custom', 'percent', 'later'] as const).map((m) => (
             <button
               type="button"
               key={m}
@@ -704,7 +621,13 @@ function Budget() {
                 mode === m ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
               }`}
             >
-              {m === 'even' ? 'Evenly' : m === 'custom' ? 'Amounts' : 'Percent'}
+              {m === 'even'
+                ? 'Evenly'
+                : m === 'custom'
+                  ? 'Amounts'
+                  : m === 'percent'
+                    ? 'Percent'
+                    : 'Later'}
             </button>
           ))}
         </div>
@@ -810,6 +733,13 @@ function Budget() {
           </div>
         )}
 
+        {mode === 'later' && (
+          <p className="text-[11px] text-slate-500">
+            Recorded under the payer for now — open it in the list above to split it
+            among the group whenever you're ready.
+          </p>
+        )}
+
         <button
           type="submit"
           disabled={!canSubmit}
@@ -819,5 +749,94 @@ function Budget() {
         </button>
       </form>
     </section>
+  );
+}
+
+/**
+ * A single budget expense. Shows who paid and how it's split, and lets you edit
+ * the split (or finish a "split later" one) anytime via the shared SplitPicker.
+ */
+function ExpenseRow({ expense: e }: { expense: Expense }) {
+  const collaborators = useStore((s) => s.doc.collaborators);
+  const removeExpense = useStore((s) => s.removeExpense);
+  const updateExpense = useStore((s) => s.updateExpense);
+  const [editing, setEditing] = useState(false);
+
+  const allIds = collaborators.map((c) => c.id);
+  const nameOf = (id?: string) => collaborators.find((c) => c.id === id)?.name ?? 'Someone';
+  const chosen = (e.splitAmong ?? []).filter((id) => allIds.includes(id));
+  const participants = e.shares
+    ? Object.keys(e.shares).filter((id) => allIds.includes(id))
+    : chosen.length > 0
+      ? chosen
+      : allIds;
+  // "Split later": recorded under the payer alone while others exist.
+  const isLater =
+    !e.shares && chosen.length === 1 && chosen[0] === e.paidBy && allIds.length > 1;
+
+  const splitLabel = e.shares
+    ? `custom — ${participants.map((id) => `${nameOf(id)} ${money(e.shares![id] ?? 0)}`).join(', ')}`
+    : isLater
+      ? 'not split yet'
+      : participants.length === allIds.length
+        ? 'split evenly — everyone'
+        : `split evenly — ${participants.map((id) => nameOf(id)).join(', ')}`;
+
+  return (
+    <li className="rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100">
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">{e.label}</p>
+          <p className="text-[11px] text-slate-500">
+            paid by {nameOf(e.paidBy)} · {splitLabel}
+          </p>
+        </div>
+        {isLater && (
+          <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+            Split later
+          </span>
+        )}
+        <span className="shrink-0 text-sm font-semibold">{money(e.amount)}</span>
+        <button
+          onClick={() => removeExpense(e.id)}
+          className="shrink-0 text-xs text-slate-300 hover:text-red-500"
+          title="Remove"
+        >
+          ✕
+        </button>
+      </div>
+
+      {collaborators.length > 0 && (
+        <div className="mt-1.5 border-t border-slate-100 pt-1.5">
+          {editing ? (
+            <SplitPicker
+              total={e.amount}
+              initialPaidBy={e.paidBy}
+              initialSplitAmong={isLater ? chosen : undefined}
+              submitLabel="Save split"
+              onSubmit={({ paidBy, splitAmong }) => {
+                updateExpense(e.id, {
+                  paidBy: paidBy || undefined,
+                  splitAmong:
+                    splitAmong.length > 0 && splitAmong.length < allIds.length
+                      ? splitAmong
+                      : undefined,
+                  shares: undefined,
+                });
+                setEditing(false);
+              }}
+              onCancel={() => setEditing(false)}
+            />
+          ) : (
+            <button
+              onClick={() => setEditing(true)}
+              className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-500"
+            >
+              {isLater ? 'Request split →' : 'Edit split'}
+            </button>
+          )}
+        </div>
+      )}
+    </li>
   );
 }
