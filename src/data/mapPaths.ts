@@ -81,4 +81,5 @@ export const PARK_PATHS: Record<ParkId, { x: number; y: number }[][]> = {
   ],
   // No schematic map for the LEGOLAND water park.
   legoland: [],
+  resort: [],
 };

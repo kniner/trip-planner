@@ -22,6 +22,7 @@ const PARK_BADGE: Record<ParkId, string> = {
   mk: 'MK',
   epcot: 'EPCOT',
   legoland: 'LEGOLAND',
+  resort: 'Resort',
 };
 
 const EVENT_BADGE: Record<EventType, string> = {

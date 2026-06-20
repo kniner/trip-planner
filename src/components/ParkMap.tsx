@@ -80,8 +80,9 @@ const ZONES: Record<ParkId, { label: string; color: string; match: (land: string
     { label: 'World Nature', color: '#bbf7d0', match: (l) => l === 'World Nature' },
     { label: 'World Showcase', color: '#fbcfe8', match: (l) => l.startsWith('World Showcase') },
   ],
-  // No schematic map for the LEGOLAND water park.
+  // No schematic map for the LEGOLAND water park or resort dining.
   legoland: [],
+  resort: [],
 };
 
 /**

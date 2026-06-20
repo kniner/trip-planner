@@ -128,7 +128,7 @@ export const MAGIC_KINGDOM: Attraction[] = [
     maxWait: 0,
     duration: 90,
     coords: { x: 300, y: 270 },
-    note: 'Inside the castle • Disney Princesses • reservation required',
+    note: 'Characters: Disney Princesses (Cinderella, Ariel, Aurora, Jasmine & Snow White) • breakfast, lunch & dinner inside the castle • reservation required',
   },
   {
     id: 'mk-crystal-palace',
@@ -140,7 +140,7 @@ export const MAGIC_KINGDOM: Attraction[] = [
     maxWait: 0,
     duration: 90,
     coords: { x: 250, y: 350 },
-    note: 'Winnie the Pooh & friends • buffet • reservation required',
+    note: 'Characters: Winnie the Pooh, Tigger, Piglet & Eeyore • breakfast, lunch & dinner buffet • reservation required',
   },
 
   // Bookable experiences.

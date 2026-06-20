@@ -48,7 +48,7 @@ export const EPCOT: Attraction[] = [
     maxWait: 0,
     duration: 90,
     coords: { x: 155, y: 210 },
-    note: 'Mickey, Pluto, Chip & Dale • rotating restaurant in The Land • reservation required',
+    note: 'Characters: Mickey, Pluto, Chip & Dale • breakfast, lunch & dinner • rotating restaurant in The Land • reservation required',
   },
   {
     id: 'epcot-akershus',
@@ -60,7 +60,7 @@ export const EPCOT: Attraction[] = [
     maxWait: 0,
     duration: 90,
     coords: { x: 445, y: 445 },
-    note: 'Disney Princesses • Norway pavilion • reservation required',
+    note: 'Characters: Disney Princesses (Belle, Ariel, Aurora, Snow White & more) • breakfast, lunch & dinner • Norway pavilion • reservation required',
   },
 
   // International Food & Wine Festival — Global Marketplaces (recurring in

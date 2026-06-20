@@ -1,4 +1,4 @@
-export type ParkId = 'mk' | 'epcot' | 'legoland';
+export type ParkId = 'mk' | 'epcot' | 'legoland' | 'resort';
 
 /**
  * The kind of "day" being planned. Regular park days show standard attractions;

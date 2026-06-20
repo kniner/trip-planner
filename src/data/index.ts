@@ -3,6 +3,7 @@ import { DESCRIPTIONS } from './descriptions';
 import { EPCOT } from './epcot';
 import { LEGOLAND_WATER_PARK } from './legolandWaterPark';
 import { MAGIC_KINGDOM } from './magicKingdom';
+import { RESORT_DINING } from './resortDining';
 
 export interface ParkMeta {
   id: ParkId;
@@ -65,9 +66,27 @@ export const PARKS: Record<ParkId, ParkMeta> = {
       'Dining',
     ],
   },
+  resort: {
+    id: 'resort',
+    name: 'Resort Character Meals',
+    shortName: 'Resorts',
+    queueTimesId: 0, // hotels have no live wait feed
+    lands: [
+      "Disney's Contemporary Resort",
+      "Disney's Polynesian Village Resort",
+      "Disney's Grand Floridian Resort & Spa",
+      "Disney's Riviera Resort",
+      "Disney's Beach Club Resort",
+      'Walt Disney World Swan',
+    ],
+  },
 };
 
+/** Parks you can schedule a day at (excludes resort dining). */
 export const PARK_IDS: ParkId[] = ['mk', 'epcot', 'legoland'];
+
+/** Parks shown in the wishlist picker (adds resort character meals). */
+export const WISHLIST_PARK_IDS: ParkId[] = ['mk', 'epcot', 'resort', 'legoland'];
 
 export const EVENT_LABELS: Record<EventType, string> = {
   regular: 'Regular day',
@@ -82,9 +101,12 @@ export const EVENT_SHORT: Record<EventType, string> = {
   'food-and-wine': 'Food & Wine',
 };
 
-export const ITEMS: Attraction[] = [...MAGIC_KINGDOM, ...EPCOT, ...LEGOLAND_WATER_PARK].map(
-  (a) => (DESCRIPTIONS[a.id] ? { ...a, description: DESCRIPTIONS[a.id] } : a),
-);
+export const ITEMS: Attraction[] = [
+  ...MAGIC_KINGDOM,
+  ...EPCOT,
+  ...LEGOLAND_WATER_PARK,
+  ...RESORT_DINING,
+].map((a) => (DESCRIPTIONS[a.id] ? { ...a, description: DESCRIPTIONS[a.id] } : a));
 
 export const ITEMS_BY_ID: Record<string, Attraction> = Object.fromEntries(
   ITEMS.map((a) => [a.id, a]),

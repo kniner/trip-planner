@@ -44,6 +44,8 @@ export function ItemList({ items, lands, showAddToRoute = true }: Props) {
     });
   }, [items, filter, query, doc.tags, doc.collaborators, meId]);
 
+  const diningItems = useMemo(() => visible.filter((a) => a.kind === 'dining'), [visible]);
+
   return (
     <section className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -79,7 +81,8 @@ export function ItemList({ items, lands, showAddToRoute = true }: Props) {
       </div>
 
       {lands.map((land) => {
-        const landItems = visible.filter((a) => a.land === land);
+        // Character meals get their own dedicated section below.
+        const landItems = visible.filter((a) => a.land === land && a.kind !== 'dining');
         if (landItems.length === 0) return null;
         return (
           <div key={land}>
@@ -94,6 +97,30 @@ export function ItemList({ items, lands, showAddToRoute = true }: Props) {
           </div>
         );
       })}
+
+      {diningItems.length > 0 && (
+        <div>
+          <h3 className="mb-2 mt-6 text-sm font-bold uppercase tracking-wide text-rose-500">
+            🍽 Character Meals
+          </h3>
+          {lands.map((land) => {
+            const meals = diningItems.filter((a) => a.land === land);
+            if (meals.length === 0) return null;
+            return (
+              <div key={land}>
+                <h4 className="mb-2 mt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  {land}
+                </h4>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {meals.map((a) => (
+                    <AttractionCard key={a.id} attraction={a} showAddToRoute={showAddToRoute} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {visible.length === 0 && (
         <p className="py-8 text-center text-sm text-slate-400">

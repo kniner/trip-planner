@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { itemsForPark, landsForPark, PARK_IDS, PARKS } from '../data';
+import { itemsForPark, landsForPark, PARKS, WISHLIST_PARK_IDS } from '../data';
 import type { ParkId } from '../lib/types';
 import { ItemList } from './ItemList';
 import { RideKey } from './RideKey';
@@ -19,7 +19,7 @@ export function TagView() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex rounded-lg bg-slate-100 p-0.5">
-          {PARK_IDS.map((p) => (
+          {WISHLIST_PARK_IDS.map((p) => (
             <button
               key={p}
               onClick={() => setPark(p)}
