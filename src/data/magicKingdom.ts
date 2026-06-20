@@ -117,32 +117,6 @@ export const MAGIC_KINGDOM: Attraction[] = [
     note: 'Short character cavalcade down the parade route a few times a day',
   },
 
-  // Character dining (table-service; book in advance). Duration assumes 90 min.
-  {
-    id: 'mk-cinderellas-royal-table',
-    name: "Cinderella's Royal Table",
-    land: 'Character Dining',
-    park: 'mk',
-    kind: 'dining',
-    avgWait: 0,
-    maxWait: 0,
-    duration: 90,
-    coords: { x: 300, y: 270 },
-    note: 'Characters: Disney Princesses (Cinderella, Ariel, Aurora, Jasmine & Snow White) • breakfast, lunch & dinner inside the castle • reservation required',
-  },
-  {
-    id: 'mk-crystal-palace',
-    name: 'The Crystal Palace',
-    land: 'Character Dining',
-    park: 'mk',
-    kind: 'dining',
-    avgWait: 0,
-    maxWait: 0,
-    duration: 90,
-    coords: { x: 250, y: 350 },
-    note: 'Characters: Winnie the Pooh, Tigger, Piglet & Eeyore • breakfast, lunch & dinner buffet • reservation required',
-  },
-
   // Bookable experiences.
   {
     id: 'mk-bibbidi-bobbidi-boutique',

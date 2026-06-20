@@ -37,32 +37,6 @@ export const EPCOT: Attraction[] = [
   { id: 'beauty-beast-sing-along', name: 'Beauty and the Beast Sing-Along', land: 'World Showcase — France', park: 'epcot', kind: 'show', avgWait: 15, maxWait: 30, duration: 13, coords: { x: 210, y: 448 } },
   { id: 'canada-far-and-wide', name: 'Canada Far and Wide', land: 'World Showcase — Canada', park: 'epcot', kind: 'show', avgWait: 5, maxWait: 15, duration: 14, coords: { x: 290, y: 380 } },
 
-  // Character dining (table-service; book in advance). Duration assumes 90 min.
-  {
-    id: 'epcot-garden-grill',
-    name: 'Garden Grill Restaurant',
-    land: 'Character Dining',
-    park: 'epcot',
-    kind: 'dining',
-    avgWait: 0,
-    maxWait: 0,
-    duration: 90,
-    coords: { x: 155, y: 210 },
-    note: 'Characters: Mickey, Pluto, Chip & Dale • breakfast, lunch & dinner • rotating restaurant in The Land • reservation required',
-  },
-  {
-    id: 'epcot-akershus',
-    name: 'Akershus Royal Banquet Hall',
-    land: 'Character Dining',
-    park: 'epcot',
-    kind: 'dining',
-    avgWait: 0,
-    maxWait: 0,
-    duration: 90,
-    coords: { x: 445, y: 445 },
-    note: 'Characters: Disney Princesses (Belle, Ariel, Aurora, Snow White & more) • breakfast, lunch & dinner • Norway pavilion • reservation required',
-  },
-
   // International Food & Wine Festival — Global Marketplaces (recurring in
   // recent years). Each is a walk-up booth; duration assumes a short stop.
   ...foodAndWineBooth('fw-shimmering-sips', 'Shimmering Sips', 'Champagne & sparkling, near the entrance', 320, 250),
