@@ -6,6 +6,7 @@ import type {
   Collaborator,
   CustomEntry,
   Day,
+  DayHours,
   DiningReservation,
   EventType,
   Expense,
@@ -150,6 +151,19 @@ function normalizeDay(d: Partial<Day> | undefined): Day {
     ...(typeof raw.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.date)
       ? { date: raw.date }
       : {}),
+    ...(raw.hours ? { hours: normalizeHours(raw.hours) } : {}),
+  };
+}
+
+/** Keep only well-formed "HH:MM" times and boolean perk flags. */
+function normalizeHours(h: Partial<DayHours>): DayHours {
+  const time = (v: unknown): string | undefined =>
+    typeof v === 'string' && /^\d{2}:\d{2}$/.test(v) ? v : undefined;
+  return {
+    ...(time(h.open) ? { open: time(h.open) } : {}),
+    ...(time(h.close) ? { close: time(h.close) } : {}),
+    ...(h.earlyEntry ? { earlyEntry: true } : {}),
+    ...(h.extendedEvening ? { extendedEvening: true } : {}),
   };
 }
 
@@ -224,6 +238,7 @@ interface StoreState {
   removeDay: (dayId: string) => void;
   renameDay: (dayId: string, name: string) => void;
   setDayDate: (dayId: string, date: string | undefined) => void;
+  setDayHours: (dayId: string, hours: DayHours) => void;
 
   setTag: (attractionId: string, tag: Tag | null) => void;
 
@@ -299,6 +314,10 @@ interface StoreState {
   // Dining reservations
   addDining: (res: Omit<DiningReservation, 'id'>) => void;
   removeDining: (id: string) => void;
+  /** Push a reservation's cost to the budget as a split expense ("request split"). */
+  splitDiningCost: (id: string, opts: { paidBy?: string; splitAmong?: string[] }) => void;
+  /** Undo a requested split: remove the linked expense and mark it "split later". */
+  unlinkDiningCost: (id: string) => void;
 
   // Expenses
   addExpense: (exp: Omit<Expense, 'id'>) => void;
@@ -482,6 +501,16 @@ export const useStore = create<StoreState>((set, get) => {
       const valid = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined;
       const doc = get().doc;
       const days = sortDays(doc.days.map((d) => (d.id === dayId ? { ...d, date: valid } : d)));
+      commit({ ...doc, days });
+    },
+
+    setDayHours(dayId, hours) {
+      const h = normalizeHours(hours);
+      const hasAny = h.open || h.close || h.earlyEntry || h.extendedEvening;
+      const doc = get().doc;
+      const days = doc.days.map((d) =>
+        d.id === dayId ? { ...d, hours: hasAny ? h : undefined } : d,
+      );
       commit({ ...doc, days });
     },
 
@@ -1083,7 +1112,45 @@ export const useStore = create<StoreState>((set, get) => {
 
     removeDining(id) {
       const doc = get().doc;
-      commit({ ...doc, dining: doc.dining.filter((d) => d.id !== id) });
+      const r = doc.dining.find((d) => d.id === id);
+      // Also drop any expense this reservation pushed to the budget.
+      const expenses = r?.expenseId
+        ? doc.expenses.filter((e) => e.id !== r.expenseId)
+        : doc.expenses;
+      commit({ ...doc, dining: doc.dining.filter((d) => d.id !== id), expenses });
+    },
+
+    splitDiningCost(id, opts) {
+      const doc = get().doc;
+      const r = doc.dining.find((d) => d.id === id);
+      if (!r || !(r.cost && r.cost > 0) || r.expenseId) return;
+      const allIds = doc.collaborators.map((c) => c.id);
+      const chosen = (opts.splitAmong ?? []).filter((cid) => allIds.includes(cid));
+      const expenseId = uid();
+      const expense: Expense = {
+        id: expenseId,
+        label: `🍽 ${r.name}`,
+        amount: r.cost,
+        paidBy: opts.paidBy || undefined,
+        // Store a subset only; full selection (or none) means "everyone".
+        splitAmong: chosen.length > 0 && chosen.length < allIds.length ? chosen : undefined,
+        ...(r.date ? { date: r.date } : {}),
+      };
+      const dining = doc.dining.map((d) => (d.id === id ? { ...d, expenseId } : d));
+      commit({ ...doc, dining, expenses: [...doc.expenses, expense] });
+    },
+
+    unlinkDiningCost(id) {
+      const doc = get().doc;
+      const r = doc.dining.find((d) => d.id === id);
+      if (!r) return;
+      const expenses = r.expenseId
+        ? doc.expenses.filter((e) => e.id !== r.expenseId)
+        : doc.expenses;
+      const dining = doc.dining.map((d) =>
+        d.id === id ? { ...d, expenseId: undefined } : d,
+      );
+      commit({ ...doc, dining, expenses });
     },
 
     addExpense(exp) {

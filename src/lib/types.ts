@@ -142,6 +142,20 @@ export interface Day {
    * hold free-form time blocks — no attractions, map, or wait estimates.
    */
   kind?: 'park' | 'other';
+  /** Park operating hours & guest-perk windows for this day. */
+  hours?: DayHours;
+}
+
+/** Park operating hours and resort-guest perk windows for a single day. */
+export interface DayHours {
+  /** Park open time, "HH:MM" 24h. */
+  open?: string;
+  /** Park close time, "HH:MM" 24h. */
+  close?: string;
+  /** Early Theme Park Entry — resort guests enter ~30 min early. */
+  earlyEntry?: boolean;
+  /** Extended Evening hours — deluxe/club guests stay late on select nights. */
+  extendedEvening?: boolean;
 }
 
 export interface Collaborator {
@@ -233,6 +247,10 @@ export interface DiningReservation {
   partySize?: number;
   confirmation?: string;
   note?: string;
+  /** Estimated total cost in dollars (for the whole party). */
+  cost?: number;
+  /** Set once pushed to the budget — links to the created Expense. */
+  expenseId?: string;
 }
 
 /** A shared trip expense, split among the chosen people (default: everyone). */

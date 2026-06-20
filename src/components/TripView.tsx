@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { formatShortDate } from '../lib/dates';
-import type { Collaborator, Expense, InfoCategory } from '../lib/types';
+import type { Collaborator, DiningReservation, Expense, InfoCategory } from '../lib/types';
 import { useStore } from '../store/useStore';
 
 const INFO_CATEGORIES: { value: InfoCategory; label: string }[] = [
@@ -173,13 +173,13 @@ function InfoHub() {
 function DiningList() {
   const dining = useStore((s) => s.doc.dining);
   const addDining = useStore((s) => s.addDining);
-  const removeDining = useStore((s) => s.removeDining);
 
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [partySize, setPartySize] = useState('');
   const [confirmation, setConfirmation] = useState('');
+  const [cost, setCost] = useState('');
 
   const sorted = useMemo(
     () => [...dining].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)),
@@ -191,32 +191,14 @@ function DiningList() {
       <div>
         <h2 className="text-lg font-bold">Dining reservations</h2>
         <p className="text-xs text-slate-500">
-          Log your ADRs — they show up on the matching day in the Schedule too.
+          Log your ADRs — they show up on the matching day in the Schedule too. Add a
+          cost to split it with the group now or later.
         </p>
       </div>
 
       <ul className="space-y-1.5">
         {sorted.map((r) => (
-          <li
-            key={r.id}
-            className="flex items-start gap-2 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold">{r.name}</p>
-              <p className="text-xs text-slate-500">
-                {formatShortDate(r.date) ?? r.date} · {r.time}
-                {r.partySize ? ` · party of ${r.partySize}` : ''}
-                {r.confirmation ? ` · #${r.confirmation}` : ''}
-              </p>
-            </div>
-            <button
-              onClick={() => removeDining(r.id)}
-              className="shrink-0 text-xs text-slate-300 hover:text-red-500"
-              title="Remove"
-            >
-              ✕
-            </button>
-          </li>
+          <ReservationRow key={r.id} reservation={r} />
         ))}
         {dining.length === 0 && (
           <li className="rounded-lg bg-white p-4 text-center text-sm text-slate-400 shadow-sm">
@@ -235,12 +217,14 @@ function DiningList() {
             time,
             partySize: partySize ? Number(partySize) : undefined,
             confirmation: confirmation.trim() || undefined,
+            cost: Number(cost) > 0 ? Number(cost) : undefined,
           });
           setName('');
           setDate('');
           setTime('');
           setPartySize('');
           setConfirmation('');
+          setCost('');
         }}
       >
         <input
@@ -278,6 +262,15 @@ function DiningList() {
             placeholder="Confirmation # (optional)"
             className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm"
           />
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            value={cost}
+            onChange={(e) => setCost(e.target.value)}
+            placeholder="$ cost"
+            className="w-24 rounded border border-slate-300 px-2 py-1.5 text-sm"
+          />
           <button
             type="submit"
             disabled={!name.trim() || !date || !time}
@@ -288,6 +281,153 @@ function DiningList() {
         </div>
       </form>
     </section>
+  );
+}
+
+/**
+ * A single dining reservation. Shows its cost and split status, and lets the
+ * owner "request a split" — pushing the cost to the group budget split among the
+ * chosen people. Defaults to "split later" (cost recorded, not yet in budget).
+ */
+function ReservationRow({ reservation: r }: { reservation: DiningReservation }) {
+  const collaborators = useStore((s) => s.doc.collaborators);
+  const expenses = useStore((s) => s.doc.expenses);
+  const removeDining = useStore((s) => s.removeDining);
+  const splitDiningCost = useStore((s) => s.splitDiningCost);
+  const unlinkDiningCost = useStore((s) => s.unlinkDiningCost);
+
+  const linked = r.expenseId ? expenses.find((e) => e.id === r.expenseId) : undefined;
+  const hasCost = !!r.cost && r.cost > 0;
+
+  const [open, setOpen] = useState(false);
+  const [paidBy, setPaidBy] = useState('');
+  const [splitAmong, setSplitAmong] = useState<string[]>([]);
+
+  const toggle = (id: string) =>
+    setSplitAmong((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const perPerson = hasCost ? r.cost! / (splitAmong.length || 1) : 0;
+
+  return (
+    <li className="rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100">
+      <div className="flex items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">{r.name}</p>
+          <p className="text-xs text-slate-500">
+            {formatShortDate(r.date) ?? r.date} · {r.time}
+            {r.partySize ? ` · party of ${r.partySize}` : ''}
+            {r.confirmation ? ` · #${r.confirmation}` : ''}
+          </p>
+          {hasCost && (
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+              <span className="font-semibold text-slate-700">{money(r.cost!)}</span>
+              {linked ? (
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700">
+                  ✓ Split in budget
+                </span>
+              ) : (
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-700">
+                  Split later
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={() => removeDining(r.id)}
+          className="shrink-0 text-xs text-slate-300 hover:text-red-500"
+          title="Remove"
+        >
+          ✕
+        </button>
+      </div>
+
+      {hasCost && (
+        <div className="mt-2 border-t border-slate-100 pt-2">
+          {linked ? (
+            <button
+              onClick={() => unlinkDiningCost(r.id)}
+              className="text-[11px] font-medium text-slate-500 hover:text-rose-600"
+            >
+              Undo split (remove from budget)
+            </button>
+          ) : collaborators.length === 0 ? (
+            <p className="text-[11px] text-slate-400">Add people to the group to split this.</p>
+          ) : !open ? (
+            <button
+              onClick={() => {
+                setOpen(true);
+                setSplitAmong(collaborators.map((c) => c.id));
+              }}
+              className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-500"
+            >
+              Request split →
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <label className="block text-[11px] text-slate-500">
+                Paid by
+                <select
+                  value={paidBy}
+                  onChange={(e) => setPaidBy(e.target.value)}
+                  className="mt-0.5 block rounded border border-slate-300 px-2 py-1 text-xs"
+                >
+                  <option value="">— who paid —</option>
+                  {collaborators.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div>
+                <p className="mb-1 text-[11px] text-slate-500">
+                  Split among{splitAmong.length ? ` · ${money(perPerson)} each` : ''}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {collaborators.map((c) => {
+                    const on = splitAmong.includes(c.id);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => toggle(c.id)}
+                        className="rounded-full border px-2 py-0.5 text-[11px] font-medium"
+                        style={
+                          on
+                            ? { background: c.color, color: 'white', borderColor: c.color }
+                            : { color: c.color, borderColor: '#cbd5e1' }
+                        }
+                      >
+                        {c.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    splitDiningCost(r.id, { paidBy: paidBy || undefined, splitAmong });
+                    setOpen(false);
+                  }}
+                  disabled={splitAmong.length === 0}
+                  className="rounded bg-indigo-600 px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-40"
+                >
+                  Add split to budget
+                </button>
+                <button
+                  onClick={() => setOpen(false)}
+                  className="text-[11px] text-slate-400 hover:text-slate-600"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </li>
   );
 }
 
