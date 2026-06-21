@@ -44,7 +44,7 @@ export const ONBOARDING_VERSION = 1;
  * new ones get merged once into existing trips (by id; deleted ones aren't
  * re-added past this version).
  */
-const SEEDED_GROUP_VERSION = 1;
+const SEEDED_GROUP_VERSION = 2;
 
 /**
  * The designated schedule owner, pinned by name so it can't be self-claimed.

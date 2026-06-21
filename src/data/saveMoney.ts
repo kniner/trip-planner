@@ -100,22 +100,6 @@ export const SAVE_MONEY_ITEMS: SaveMoneyItem[] = [
     qty: (_a, k, d) => Math.min(k, 2) * d,
   },
   {
-    label: 'Pain reliever & band-aids',
-    parkPrice: 'gift-shop prices',
-    tip: 'A small kit saves an expensive shop run for Advil and blister care.',
-    parkUnit: 10,
-    bringUnit: 0,
-    qty: () => 1,
-  },
-  {
-    label: 'Lanyard for pin trading',
-    parkPrice: '$10–15',
-    tip: 'Bring a lanyard and starter pins from home or online (kids who trade).',
-    parkUnit: 12,
-    bringUnit: 4,
-    qty: (_a, k) => k,
-  },
-  {
     label: 'Hats & sunglasses',
     parkPrice: '$25–30',
     tip: 'Bring your own; park-branded versions carry a big markup.',

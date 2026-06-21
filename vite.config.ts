@@ -39,5 +39,7 @@ export default defineConfig(({ command }) => ({
   ],
   test: {
     environment: 'node',
+    // Unit tests only; the Playwright e2e specs (e2e/*.spec.ts) run separately.
+    include: ['src/**/*.test.{ts,tsx}'],
   },
 }));

@@ -36,4 +36,5 @@ export const SUGGESTED_GROUP: GroupItem[] = [
   { id: 'gsug-snackbag', text: 'Backpack & snack carrier', signups: [] },
   { id: 'gsug-stroller', text: 'Stroller wrangler', signups: [] },
   { id: 'gsug-meetingspot', text: 'Meeting-spot lead & headcount keeper', signups: [] },
+  { id: 'gsug-lanyards', text: 'Bring lanyards & pins for pin trading', signups: [] },
 ];
