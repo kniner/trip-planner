@@ -23,37 +23,10 @@ export function FirstRunChecklist({ isOwner, onGoWishlist, onGoSchedule }: Props
   const hasDates = days.some((d) => !!d.date);
   const hasTags = tags.length > 0;
 
-  const allDone = hasGroup && hasDates && hasTags;
   // Dismissal is per account and synced across devices. Bumping ONBOARDING_VERSION
   // re-shows it to everyone, since older dismissals fall below the current one.
   const dismissed = meId != null && (dismissedVersions[meId] ?? 0) >= ONBOARDING_VERSION;
   if (dismissed) return null;
-
-  // Established trips: a light, wishlist-focused nudge instead of setup steps.
-  if (allDone) {
-    return (
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-indigo-100 bg-indigo-50/60 p-3">
-        <p className="text-sm text-indigo-900">
-          ✨ You're all set — keep your <strong>wishlist</strong> up to date so the
-          group's picks stay current.
-        </p>
-        <div className="flex shrink-0 items-center gap-2">
-          <button
-            onClick={onGoWishlist}
-            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500"
-          >
-            Open Wishlist →
-          </button>
-          <button
-            onClick={dismiss}
-            className="text-[11px] font-medium text-indigo-400 hover:text-indigo-600"
-          >
-            Dismiss
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 p-3">
@@ -68,20 +41,19 @@ export function FirstRunChecklist({ isOwner, onGoWishlist, onGoSchedule }: Props
       </div>
 
       {/* The wishlist is the main thing everyone should act on first. */}
-      {!hasTags && (
-        <div className="mb-2">
-          <p className="mb-2 text-xs text-indigo-800/80">
-            Tag the rides, shows and meals you each want to do — must, nice-to-do, or
-            avoid. It's how the whole group's picks come together.
-          </p>
-          <button
-            onClick={onGoWishlist}
-            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500"
-          >
-            Tag your wishlist →
-          </button>
-        </div>
-      )}
+      <div className="mb-2">
+        <p className="mb-2 text-xs text-indigo-800/80">
+          {hasTags
+            ? "Your wishlist is where the whole group's picks come together — keep it up to date as plans change."
+            : "Tag the rides, shows and meals you each want to do — must, nice-to-do, or avoid. It's how the whole group's picks come together."}
+        </p>
+        <button
+          onClick={onGoWishlist}
+          className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500"
+        >
+          {hasTags ? 'Open your wishlist →' : 'Tag your wishlist →'}
+        </button>
+      </div>
 
       <ul className="space-y-1.5">
         <Step done={hasTags} label="Tag your wishlist">
