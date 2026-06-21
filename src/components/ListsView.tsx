@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { suggestedPacking } from '../data/packingSuggestions';
-import { SAVE_MONEY_ITEMS } from '../data/saveMoney';
+import { SAVE_MONEY_ITEMS, itemSavings, totalSavings } from '../data/saveMoney';
 import type { ChecklistItem, Collaborator, GroupItem } from '../lib/types';
 import { useStore } from '../store/useStore';
 
@@ -401,8 +401,14 @@ function PackingSuggestions({ items }: { items: ChecklistItem[] }) {
  */
 function SaveMoneyList({ items }: { items: ChecklistItem[] }) {
   const meId = useStore((s) => s.meId);
+  const meals = useStore((s) => s.doc.meals);
   const addPersonalItem = useStore((s) => s.addPersonalItem);
   const [open, setOpen] = useState(false);
+
+  // Use the trip's meal headcount; default to 8 adults / 3 kids when unset.
+  const adults = meals.adults > 0 ? meals.adults : 8;
+  const kids = meals.kids > 0 ? meals.kids : 3;
+  const total = useMemo(() => Math.round(totalSavings(adults, kids)), [adults, kids]);
 
   // What's already on my list (mine or shared), case-insensitively.
   const have = useMemo(() => {
@@ -414,21 +420,27 @@ function SaveMoneyList({ items }: { items: ChecklistItem[] }) {
     <div className="rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between text-xs font-bold uppercase tracking-wide text-slate-500"
+        className="flex w-full items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-slate-500"
       >
         <span>💰 Bring it, don't buy it</span>
-        <span className="text-slate-400">{open ? '▾' : '▸'}</span>
+        <span className="flex items-center gap-2">
+          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold normal-case text-emerald-700">
+            save ~${total}
+          </span>
+          <span className="text-slate-400">{open ? '▾' : '▸'}</span>
+        </span>
       </button>
 
       {open && (
         <>
           <p className="mt-1 text-[10px] text-slate-400">
-            Sold in the parks at a markup — pack it instead to save money. Tap to add
-            to your list.
+            Sold in the parks at a markup — pack it instead. Estimated savings for{' '}
+            {adults} adults + {kids} kids; tap to add to your list.
           </p>
           <ul className="mt-2 space-y-2">
             {SAVE_MONEY_ITEMS.map((s) => {
               const added = have.has(s.label.trim().toLowerCase());
+              const saved = Math.round(itemSavings(s, adults, kids));
               return (
                 <li key={s.label} className="flex items-start gap-2">
                   <button
@@ -449,6 +461,11 @@ function SaveMoneyList({ items }: { items: ChecklistItem[] }) {
                       <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
                         Disney {s.parkPrice}
                       </span>
+                      {saved > 0 && (
+                        <span className="ml-1.5 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                          save ~${saved}
+                        </span>
+                      )}
                     </p>
                     <p className="text-[11px] leading-snug text-slate-500">{s.tip}</p>
                   </div>
