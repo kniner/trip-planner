@@ -38,6 +38,9 @@ export default function App() {
   const isOwner = meId != null && ownerId === meId;
   const ownerName = collaborators.find((c) => c.id === ownerId)?.name;
   const activeGroup: Group = group === 'schedule' && !isOwner ? 'wishlist' : group;
+  // Meals & Finances are owner-only; keep non-owners on a visible sub-tab.
+  const effectiveTripSub: TripSub =
+    !isOwner && (tripSub === 'meals' || tripSub === 'finances') ? 'lists' : tripSub;
 
   useEffect(() => {
     void init();
@@ -125,23 +128,31 @@ export default function App() {
       {activeGroup === 'trip' && (
         <div className="space-y-4">
           <SubNav>
-            <SubTab active={tripSub === 'info'} onClick={() => setTripSub('info')}>
+            <SubTab active={effectiveTripSub === 'info'} onClick={() => setTripSub('info')}>
               Info & dining
             </SubTab>
-            <SubTab active={tripSub === 'lists'} onClick={() => setTripSub('lists')}>
+            <SubTab active={effectiveTripSub === 'lists'} onClick={() => setTripSub('lists')}>
               Lists
             </SubTab>
-            <SubTab active={tripSub === 'meals'} onClick={() => setTripSub('meals')}>
-              Meals
-            </SubTab>
-            <SubTab active={tripSub === 'finances'} onClick={() => setTripSub('finances')}>
-              Finances
-            </SubTab>
+            {/* Meals & Finances are owner-only to keep it simple for everyone else. */}
+            {isOwner && (
+              <SubTab active={effectiveTripSub === 'meals'} onClick={() => setTripSub('meals')}>
+                Meals
+              </SubTab>
+            )}
+            {isOwner && (
+              <SubTab
+                active={effectiveTripSub === 'finances'}
+                onClick={() => setTripSub('finances')}
+              >
+                Finances
+              </SubTab>
+            )}
           </SubNav>
-          {tripSub === 'info' && <TripView />}
-          {tripSub === 'lists' && <ListsView />}
-          {tripSub === 'meals' && <MealsView />}
-          {tripSub === 'finances' && <FinancesView />}
+          {effectiveTripSub === 'info' && <TripView />}
+          {effectiveTripSub === 'lists' && <ListsView />}
+          {effectiveTripSub === 'meals' && isOwner && <MealsView />}
+          {effectiveTripSub === 'finances' && isOwner && <FinancesView />}
         </div>
       )}
 

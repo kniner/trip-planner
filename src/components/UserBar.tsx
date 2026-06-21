@@ -14,8 +14,19 @@ export function UserBar() {
   const ownerId = useStore((s) => s.doc.ownerId) ?? collaborators[0]?.id;
   const isOwner = meId != null && meId === ownerId;
   const [name, setName] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const me = collaborators.find((c) => c.id === meId);
+
+  const invite = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      // Clipboard may be blocked; the owner can still copy the URL manually.
+    }
+  };
 
   const remove = (id: string, name: string) => {
     if (
@@ -44,6 +55,17 @@ export function UserBar() {
           >
             switch
           </button>
+          {/* Owner can copy a link to share the trip; recipients open it and
+              add their own name. Only meaningful when the plan syncs to the cloud. */}
+          {isOwner && CLOUD_SYNC && (
+            <button
+              onClick={invite}
+              title="Copy a link to share with your group — they open it and add their name"
+              className="rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-indigo-500"
+            >
+              {copied ? '✓ Link copied — share it' : '🔗 Invite group'}
+            </button>
+          )}
         </>
       ) : (
         <form
