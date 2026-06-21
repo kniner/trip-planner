@@ -269,31 +269,35 @@ function PersonalList() {
         </button>
 
         {open && (
-          <ul className="mt-2 divide-y divide-slate-100">
-            {items.map((item) => (
-              <PersonalRow
-                key={item.id}
-                item={item}
-                isChecked={checked.has(item.id)}
-                who={addedByName(item.addedBy, collaborators)}
-                mine={item.addedBy === meId}
-                onToggle={() => toggleChecked(item.id)}
-                onRemove={() => removeItem(item)}
-                onSaveText={(t) => setPersonalItemText(item.id, t)}
-                onSaveNote={(n) => setPersonalItemNote(item.id, n)}
-                onSetQty={(q) => setPersonalItemQty(item.id, q)}
-              />
-            ))}
-            {items.length === 0 && (
-              <li className="py-2 text-center text-sm text-slate-400">
-                No items yet — add your first.
-              </li>
-            )}
-          </ul>
+          <>
+            <ul className="mt-2 divide-y divide-slate-100">
+              {items.map((item) => (
+                <PersonalRow
+                  key={item.id}
+                  item={item}
+                  isChecked={checked.has(item.id)}
+                  who={addedByName(item.addedBy, collaborators)}
+                  mine={item.addedBy === meId}
+                  onToggle={() => toggleChecked(item.id)}
+                  onRemove={() => removeItem(item)}
+                  onSaveText={(t) => setPersonalItemText(item.id, t)}
+                  onSaveNote={(n) => setPersonalItemNote(item.id, n)}
+                  onSetQty={(q) => setPersonalItemQty(item.id, q)}
+                />
+              ))}
+              {items.length === 0 && (
+                <li className="py-2 text-center text-sm text-slate-400">
+                  No items yet — add your first.
+                </li>
+              )}
+            </ul>
+
+            <div className="mt-2 border-t border-slate-100 pt-2">
+              <AddRow onAdd={addPersonalItem} withPrivacy placeholder="Add a packing item…" />
+            </div>
+          </>
         )}
       </div>
-
-      <AddRow onAdd={addPersonalItem} withPrivacy placeholder="Add a packing item…" />
     </section>
   );
 }
