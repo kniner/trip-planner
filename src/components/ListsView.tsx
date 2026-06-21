@@ -235,47 +235,49 @@ function PersonalList() {
 
   return (
     <section className="space-y-3">
+      <div>
+        <h2 className="text-lg font-bold">My checklist</h2>
+        <p className="text-xs text-slate-500">
+          Add shared suggestions (everyone sees them) or private items (just you).
+          Your checkmarks are your own, synced across your devices.
+        </p>
+      </div>
+
+      {/* The main checklist gets its own collapsible header. */}
       <button
         onClick={toggle}
-        className="flex w-full items-start justify-between gap-2 text-left"
+        className="flex w-full items-center justify-between gap-2 text-left"
       >
-        <div>
-          <h2 className="text-lg font-bold">My checklist</h2>
-          <p className="text-xs text-slate-500">
-            Add shared suggestions (everyone sees them) or private items (just you).
-            Your checkmarks are your own, synced across your devices.{' '}
-            {doneCount}/{items.length} done.
-          </p>
-        </div>
-        <span className="mt-1 shrink-0 text-slate-400">{open ? '▾' : '▸'}</span>
+        <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
+          Items · {doneCount}/{items.length} done
+        </span>
+        <span className="shrink-0 text-slate-400">{open ? '▾' : '▸'}</span>
       </button>
 
       {open && (
-        <>
-          <ul className="space-y-1.5">
-            {items.map((item) => (
-              <PersonalRow
-                key={item.id}
-                item={item}
-                isChecked={checked.has(item.id)}
-                who={addedByName(item.addedBy, collaborators)}
-                onToggle={() => toggleChecked(item.id)}
-                onRemove={() => removePersonalItem(item.id)}
-                onSaveText={(t) => setPersonalItemText(item.id, t)}
-                onSaveNote={(n) => setPersonalItemNote(item.id, n)}
-                onSetQty={(q) => setPersonalItemQty(item.id, q)}
-              />
-            ))}
-            {items.length === 0 && <Empty>No items yet — add your first.</Empty>}
-          </ul>
-
-          <PackingSuggestions items={allItems} />
-
-          <SaveMoneyList items={allItems} />
-
-          <AddRow onAdd={addPersonalItem} withPrivacy placeholder="Add a packing item…" />
-        </>
+        <ul className="space-y-1.5">
+          {items.map((item) => (
+            <PersonalRow
+              key={item.id}
+              item={item}
+              isChecked={checked.has(item.id)}
+              who={addedByName(item.addedBy, collaborators)}
+              onToggle={() => toggleChecked(item.id)}
+              onRemove={() => removePersonalItem(item.id)}
+              onSaveText={(t) => setPersonalItemText(item.id, t)}
+              onSaveNote={(n) => setPersonalItemNote(item.id, n)}
+              onSetQty={(q) => setPersonalItemQty(item.id, q)}
+            />
+          ))}
+          {items.length === 0 && <Empty>No items yet — add your first.</Empty>}
+        </ul>
       )}
+
+      <PackingSuggestions items={allItems} />
+
+      <SaveMoneyList items={allItems} />
+
+      <AddRow onAdd={addPersonalItem} withPrivacy placeholder="Add a packing item…" />
     </section>
   );
 }
