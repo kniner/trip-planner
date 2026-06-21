@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   DEFAULT_ANSWERS,
   recommendRides,
+  type Franchise,
   type QuizAnswers,
   type RideStyle,
   type ThrillPref,
@@ -29,6 +30,13 @@ const WAITS: { value: WaitPref; label: string }[] = [
   { value: 'short', label: 'Prefer short waits' },
 ];
 
+const FRANCHISES: { value: Franchise; label: string }[] = [
+  { value: 'princess', label: 'Princesses & Frozen' },
+  { value: 'pixar', label: 'Pixar' },
+  { value: 'space', label: 'Space & sci-fi' },
+  { value: 'adventure', label: 'Spooky & adventure' },
+];
+
 /**
  * A short quiz that recommends Magic Kingdom & EPCOT rides for the current
  * person. Results are shown as normal attraction cards, so the must/nice/avoid
@@ -53,6 +61,14 @@ export function RideQuiz() {
     setAns((p) => ({
       ...p,
       styles: p.styles.includes(s) ? p.styles.filter((x) => x !== s) : [...p.styles, s],
+    }));
+
+  const toggleFranchise = (f: Franchise) =>
+    setAns((p) => ({
+      ...p,
+      franchises: p.franchises.includes(f)
+        ? p.franchises.filter((x) => x !== f)
+        : [...p.franchises, f],
     }));
 
   return (
@@ -116,6 +132,23 @@ export function RideQuiz() {
             </div>
           </div>
 
+          <div>
+            <p className="mb-1 text-xs font-semibold text-indigo-900">
+              Favorite franchises (optional)
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {FRANCHISES.map((f) => (
+                <Chip
+                  key={f.value}
+                  active={ans.franchises.includes(f.value)}
+                  onClick={() => toggleFranchise(f.value)}
+                >
+                  {f.label}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
           <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-indigo-900">
             <label className="flex items-center gap-1.5">
               <input
@@ -132,6 +165,30 @@ export function RideQuiz() {
                 onChange={(e) => setAns((p) => ({ ...p, motionSensitive: e.target.checked }))}
               />
               I get motion sick easily
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={ans.avoidWater}
+                onChange={(e) => setAns((p) => ({ ...p, avoidWater: e.target.checked }))}
+              />
+              Don't want to get wet
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={ans.pregnant}
+                onChange={(e) => setAns((p) => ({ ...p, pregnant: e.target.checked }))}
+              />
+              Someone's pregnant
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={ans.indoor}
+                onChange={(e) => setAns((p) => ({ ...p, indoor: e.target.checked }))}
+              />
+              Prefer indoor / AC
             </label>
             <label className="flex items-center gap-1.5">
               <input

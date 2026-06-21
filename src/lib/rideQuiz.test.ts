@@ -37,6 +37,28 @@ describe('recommendRides', () => {
     expect(short).toBeLessThan(any);
   });
 
+  it('avoiding water drops water rides', () => {
+    const ids = idsOf({ ...DEFAULT_ANSWERS, thrill: 'moderate', styles: ['water'], avoidWater: true }, 12);
+    expect(ids).not.toContain('tianas');
+    expect(ids).not.toContain('frozen-ever-after');
+  });
+
+  it('pregnancy excludes advisory rides', () => {
+    const ids = idsOf({ ...DEFAULT_ANSWERS, thrill: 'thrill', pregnant: true }, 20);
+    expect(ids).not.toContain('space-mountain');
+    expect(ids).not.toContain('cosmic-rewind');
+  });
+
+  it('favoring a franchise surfaces its rides', () => {
+    const ids = idsOf({ ...DEFAULT_ANSWERS, thrill: 'chill', franchises: ['princess'] }, 8);
+    expect(ids).toContain('little-mermaid');
+  });
+
+  it('preferring indoor favors air-conditioned rides', () => {
+    const ids = idsOf({ ...DEFAULT_ANSWERS, thrill: 'chill', indoor: true }, 6);
+    expect(ids.filter((id) => RIDE_VIBES[id].indoor).length).toBeGreaterThanOrEqual(4);
+  });
+
   it('motion sensitivity demotes (or drops) motion rides', () => {
     const rank = (ids: string[], id: string) => {
       const i = ids.indexOf(id);

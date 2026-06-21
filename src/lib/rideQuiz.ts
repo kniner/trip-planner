@@ -1,11 +1,12 @@
 import { ITEMS } from '../data';
 import { RIDE_WARNINGS } from '../data/rideInfo';
-import { RIDE_VIBES } from '../data/rideVibes';
+import { RIDE_VIBES, type Franchise } from '../data/rideVibes';
 import type { Attraction } from './types';
 
 export type ThrillPref = 'chill' | 'moderate' | 'thrill';
 export type RideStyle = 'dark' | 'water' | 'classic' | 'immersive';
 export type WaitPref = 'short' | 'any';
+export type { Franchise };
 
 export interface QuizAnswers {
   thrill: ThrillPref;
@@ -15,6 +16,14 @@ export interface QuizAnswers {
   spectacle: boolean;
   /** 'short' favors low-wait rides; 'any' ignores wait time. */
   waits: WaitPref;
+  /** Penalize water rides (don't want to get soaked). */
+  avoidWater: boolean;
+  /** Exclude rides with a pregnancy advisory. */
+  pregnant: boolean;
+  /** Favor indoor / air-conditioned rides. */
+  indoor: boolean;
+  /** Boost rides from these franchises. */
+  franchises: Franchise[];
 }
 
 export const DEFAULT_ANSWERS: QuizAnswers = {
@@ -24,6 +33,10 @@ export const DEFAULT_ANSWERS: QuizAnswers = {
   styles: [],
   spectacle: false,
   waits: 'any',
+  avoidWater: false,
+  pregnant: false,
+  indoor: false,
+  franchises: [],
 };
 
 const THRILL_TARGET: Record<ThrillPref, number> = { chill: 0, moderate: 2, thrill: 3 };
@@ -42,10 +55,17 @@ export function recommendRides(ans: QuizAnswers, limit = 8): Attraction[] {
       const w = RIDE_WARNINGS[a.id] ?? {};
       // Thrill closeness: 4 (exact) → 2 → 0 → -2 (furthest).
       let score = 4 - Math.abs(v.thrill - target) * 2;
+      // Pregnancy advisory is a hard exclude.
+      if (ans.pregnant && w.pregnancy) score -= 100;
       if (ans.motionSensitive && w.motion) score -= 6;
       if (ans.littleKids) {
         if (v.kids) score += 3;
         if (w.heightMin && w.heightMin >= 40) score -= 4;
+      }
+      if (ans.avoidWater && v.water) score -= 6;
+      if (ans.indoor && v.indoor) score += 2;
+      if (ans.franchises.length && v.franchises) {
+        if (v.franchises.some((f) => ans.franchises.includes(f))) score += 3;
       }
       for (const s of ans.styles) if (v[s]) score += 2;
       if (ans.spectacle && v.spectacle) score += 2;
