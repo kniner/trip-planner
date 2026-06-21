@@ -17,13 +17,14 @@ export function TagView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex rounded-lg bg-slate-100 p-0.5">
+      {/* Sticky, horizontally-scrollable park picker so you keep context on mobile. */}
+      <div className="sticky top-0 z-20 -mx-4 bg-white/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6">
+        <div className="flex gap-1 overflow-x-auto rounded-lg bg-slate-100 p-0.5">
           {WISHLIST_PARK_IDS.map((p) => (
             <button
               key={p}
               onClick={() => setPark(p)}
-              className={`rounded-md px-4 py-1.5 text-sm font-semibold transition ${
+              className={`shrink-0 rounded-md px-4 py-2 text-sm font-semibold transition ${
                 park === p ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
               }`}
             >
@@ -31,11 +32,12 @@ export function TagView() {
             </button>
           ))}
         </div>
-        <p className="text-xs text-slate-500">
-          Tag what you want to do at {PARKS[park].name}. Halloween-party and Food &
-          Wine items are included too — schedule them onto specific days next.
-        </p>
       </div>
+
+      <p className="text-xs text-slate-500">
+        Tag what you want to do at {PARKS[park].name}. Halloween-party and Food & Wine
+        items are included too — schedule them onto specific days next.
+      </p>
 
       <RideKey />
 

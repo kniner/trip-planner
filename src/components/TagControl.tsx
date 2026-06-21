@@ -23,7 +23,7 @@ export function TagControl({ attractionId, summary }: Props) {
               key={tag}
               disabled={!meId}
               onClick={() => setTag(attractionId, active ? null : tag)}
-              className="flex-1 rounded-md border px-2 py-1 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex-1 rounded-md border px-2 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40"
               style={
                 active
                   ? { background: meta.color, color: 'white', borderColor: meta.color }
