@@ -69,7 +69,20 @@ export default function App() {
         <UserBar />
         <TripCountdown />
         <NowNext isOwner={isOwner} />
-        <FirstRunChecklist onGoWishlist={() => setGroup('wishlist')} />
+        <FirstRunChecklist
+          onGoWishlist={() => {
+            setGroup('wishlist');
+            // Switch tab (if needed), then scroll to the first taggable item so
+            // the button visibly does something even when already on Wishlist.
+            setTimeout(
+              () =>
+                document
+                  .getElementById('wishlist-items')
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+              50,
+            );
+          }}
+        />
 
         <nav className="flex flex-wrap rounded-lg bg-slate-100 p-1">
           <ViewTab active={activeGroup === 'wishlist'} onClick={() => setGroup('wishlist')}>

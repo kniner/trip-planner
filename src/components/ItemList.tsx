@@ -108,6 +108,9 @@ export function ItemList({ items, lands, showAddToRoute = true }: Props) {
         </div>
       </div>
 
+      {/* Scroll target for the onboarding "Tag your wishlist" button. */}
+      {!showAddToRoute && <div id="wishlist-items" className="scroll-mt-4" aria-hidden />}
+
       {lands.map((land) => {
         // Character meals get their own dedicated section below.
         const landItems = visible.filter((a) => a.land === land && a.kind !== 'dining');
