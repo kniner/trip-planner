@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { suggestedPacking } from '../data/packingSuggestions';
+import { SAVE_MONEY_ITEMS } from '../data/saveMoney';
 import type { ChecklistItem, Collaborator, GroupItem } from '../lib/types';
 import { useStore } from '../store/useStore';
 
@@ -248,6 +249,8 @@ function PersonalList() {
 
       <PackingSuggestions items={allItems} />
 
+      <SaveMoneyList items={allItems} />
+
       <AddRow
         onAdd={addPersonalItem}
         withPrivacy
@@ -387,6 +390,73 @@ function PackingSuggestions({ items }: { items: ChecklistItem[] }) {
           Tap to add to your private list. Suggestions come from your trip's days
           (water park, party nights), kids and gluten-free needs.
         </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * "Bring it, don't buy it": curated things sold in the parks at a markup you
+ * can pack from home. Tapping one adds it to your private packing list.
+ */
+function SaveMoneyList({ items }: { items: ChecklistItem[] }) {
+  const meId = useStore((s) => s.meId);
+  const addPersonalItem = useStore((s) => s.addPersonalItem);
+  const [open, setOpen] = useState(false);
+
+  // What's already on my list (mine or shared), case-insensitively.
+  const have = useMemo(() => {
+    const mine = items.filter((i) => !i.private || i.addedBy === meId);
+    return new Set(mine.map((i) => i.text.trim().toLowerCase()));
+  }, [items, meId]);
+
+  return (
+    <div className="rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between text-xs font-bold uppercase tracking-wide text-slate-500"
+      >
+        <span>💰 Bring it, don't buy it</span>
+        <span className="text-slate-400">{open ? '▾' : '▸'}</span>
+      </button>
+
+      {open && (
+        <>
+          <p className="mt-1 text-[10px] text-slate-400">
+            Sold in the parks at a markup — pack it instead to save money. Tap to add
+            to your list.
+          </p>
+          <ul className="mt-2 space-y-2">
+            {SAVE_MONEY_ITEMS.map((s) => {
+              const added = have.has(s.label.trim().toLowerCase());
+              return (
+                <li key={s.label} className="flex items-start gap-2">
+                  <button
+                    disabled={added}
+                    onClick={() => addPersonalItem(s.label, true)}
+                    title={added ? 'On your list' : 'Add to your packing list'}
+                    className={`mt-0.5 shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                      added
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
+                        : 'border-slate-300 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {added ? '✓' : '+'}
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-slate-700">
+                      {s.label}
+                      <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                        Disney {s.parkPrice}
+                      </span>
+                    </p>
+                    <p className="text-[11px] leading-snug text-slate-500">{s.tip}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
     </div>
   );
