@@ -46,8 +46,36 @@ export function ItemList({ items, lands, showAddToRoute = true }: Props) {
 
   const diningItems = useMemo(() => visible.filter((a) => a.kind === 'dining'), [visible]);
 
+  // On the tagging page, nudge intentional action: how many have I tagged here?
+  const myTagged = useMemo(() => {
+    if (showAddToRoute) return 0;
+    const mine = new Set(
+      doc.tags.filter((t) => t.userId === meId).map((t) => t.attractionId),
+    );
+    return items.filter((a) => mine.has(a.id)).length;
+  }, [items, doc.tags, meId, showAddToRoute]);
+
   return (
     <section className="space-y-3">
+      {!showAddToRoute && (
+        <div className="flex items-center justify-between rounded-lg bg-slate-900 px-3 py-2 text-xs text-white">
+          <span>
+            You've tagged{' '}
+            <strong>
+              {myTagged} of {items.length}
+            </strong>{' '}
+            here
+          </span>
+          {myTagged < items.length && (
+            <button
+              onClick={() => setFilter(filter === 'untagged' ? 'all' : 'untagged')}
+              className="rounded-full bg-white/15 px-2 py-0.5 font-semibold hover:bg-white/25"
+            >
+              {filter === 'untagged' ? 'Show all' : 'Show untagged'}
+            </button>
+          )}
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2">
         <input
           value={query}

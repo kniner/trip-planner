@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { FirstRunChecklist } from './components/FirstRunChecklist';
 import { JoinGate } from './components/JoinGate';
 import { ListsView } from './components/ListsView';
 import { MapView } from './components/MapView';
@@ -69,6 +70,11 @@ export default function App() {
         <UserBar />
         <TripCountdown />
         <NowNext isOwner={isOwner} />
+        <FirstRunChecklist
+          isOwner={isOwner}
+          onGoWishlist={() => setGroup('wishlist')}
+          onGoSchedule={() => setGroup('schedule')}
+        />
 
         <nav className="flex flex-wrap rounded-lg bg-slate-100 p-1">
           <ViewTab active={activeGroup === 'wishlist'} onClick={() => setGroup('wishlist')}>
