@@ -223,6 +223,8 @@ export interface PlanDoc {
   dining: DiningReservation[];
   /** Shared trip expenses, split among collaborators. */
   expenses: Expense[];
+  /** Collaborator ids who dismissed the first-run checklist (per account, synced). */
+  onboardingDismissed: string[];
 }
 
 export type InfoCategory = 'lodging' | 'tickets' | 'dining' | 'travel' | 'contact' | 'other';

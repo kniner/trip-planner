@@ -1,7 +1,4 @@
-import { useState } from 'react';
 import { useStore } from '../store/useStore';
-
-const HIDE_KEY = 'mk-planner:hide-firstrun';
 
 interface Props {
   isOwner: boolean;
@@ -18,21 +15,18 @@ export function FirstRunChecklist({ isOwner, onGoWishlist, onGoSchedule }: Props
   const collaborators = useStore((s) => s.doc.collaborators);
   const days = useStore((s) => s.doc.days);
   const tags = useStore((s) => s.doc.tags);
-  const [dismissed, setDismissed] = useState(() => localStorage.getItem(HIDE_KEY) === '1');
+  const meId = useStore((s) => s.meId);
+  const dismissedIds = useStore((s) => s.doc.onboardingDismissed);
+  const dismiss = useStore((s) => s.dismissOnboarding);
 
   const hasGroup = collaborators.length >= 2;
   const hasDates = days.some((d) => !!d.date);
   const hasTags = tags.length > 0;
 
   const allDone = hasGroup && hasDates && hasTags;
-  // Show until the user dismisses it — including returning users whose trip is
-  // already set up (they get the "all set" nudge below).
-  if (dismissed) return null;
-
-  const dismiss = () => {
-    localStorage.setItem(HIDE_KEY, '1');
-    setDismissed(true);
-  };
+  // Dismissal is per account and synced across devices: show until this user
+  // dismisses it — including returning users whose trip is already set up.
+  if (meId != null && dismissedIds.includes(meId)) return null;
 
   // Established trips: a light, wishlist-focused nudge instead of setup steps.
   if (allDone) {

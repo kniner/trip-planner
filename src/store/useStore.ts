@@ -114,6 +114,7 @@ function emptyDoc(): PlanDoc {
     tripInfo: [],
     dining: [],
     expenses: [],
+    onboardingDismissed: [],
   };
 }
 
@@ -215,6 +216,7 @@ function migrate(raw: unknown): PlanDoc {
     tripInfo: Array.isArray(doc.tripInfo) ? doc.tripInfo : [],
     dining: Array.isArray(doc.dining) ? doc.dining : [],
     expenses: Array.isArray(doc.expenses) ? doc.expenses : [],
+    onboardingDismissed: Array.isArray(doc.onboardingDismissed) ? doc.onboardingDismissed : [],
   };
 }
 
@@ -228,6 +230,8 @@ interface StoreState {
   init: () => Promise<void>;
   join: (name: string) => void;
   leave: () => void;
+  /** Dismiss the first-run checklist for the current account (synced). */
+  dismissOnboarding: () => void;
   removeCollaborator: (userId: string) => void;
 
   // Days
@@ -411,6 +415,14 @@ export const useStore = create<StoreState>((set, get) => {
     leave() {
       localStorage.removeItem(ME_KEY);
       set({ meId: null });
+    },
+
+    dismissOnboarding() {
+      const meId = me();
+      if (!meId) return;
+      const doc = get().doc;
+      if (doc.onboardingDismissed.includes(meId)) return;
+      commit({ ...doc, onboardingDismissed: [...doc.onboardingDismissed, meId] });
     },
 
     removeCollaborator(userId) {
