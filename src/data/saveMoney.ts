@@ -9,8 +9,8 @@ export interface SaveMoneyItem {
   parkUnit: number;
   /** Cost to bring per unit (cheap alternative / already owned). */
   bringUnit: number;
-  /** How many units the group needs, given the headcount. */
-  qty: (adults: number, kids: number) => number;
+  /** How many units the group needs, given the headcount and park-day count. */
+  qty: (adults: number, kids: number, days: number) => number;
 }
 
 /**
@@ -30,10 +30,10 @@ export const SAVE_MONEY_ITEMS: SaveMoneyItem[] = [
   {
     label: 'Refillable water bottles',
     parkPrice: 'bottled water ~$3.50',
-    tip: 'Bring bottles and ask any quick-service counter for free cups of ice water (skips ~3 bottle buys each).',
+    tip: 'Bring bottles and ask any quick-service counter for free ice water (skips ~1 bottle buy per person per day).',
     parkUnit: 3.5,
     bringUnit: 0,
-    qty: (a, k) => (a + k) * 3,
+    qty: (a, k, d) => (a + k) * d,
   },
   {
     label: 'Sunscreen',
@@ -86,18 +86,18 @@ export const SAVE_MONEY_ITEMS: SaveMoneyItem[] = [
   {
     label: 'Snacks (granola bars, chips)',
     parkPrice: '$4–6 each',
-    tip: 'Outside snacks are allowed — pack a couple each to skip pricey kiosks.',
+    tip: 'Outside snacks are allowed — pack ~1 per person per day to skip pricey kiosks.',
     parkUnit: 5,
     bringUnit: 1,
-    qty: (a, k) => (a + k) * 2,
+    qty: (a, k, d) => (a + k) * d,
   },
   {
     label: 'Stroller',
     parkPrice: 'in-park rental ~$15–31/day',
-    tip: 'Bring your own or rent off-site — far less than a multi-day in-park rental.',
-    parkUnit: 70,
-    bringUnit: 0,
-    qty: (_a, k) => Math.min(k, 2),
+    tip: 'Bring your own (free) or rent off-site (~$12/day) vs ~$31/day in-park — adds up each day.',
+    parkUnit: 31,
+    bringUnit: 12,
+    qty: (_a, k, d) => Math.min(k, 2) * d,
   },
   {
     label: 'Pain reliever & band-aids',
@@ -133,12 +133,17 @@ export const SAVE_MONEY_ITEMS: SaveMoneyItem[] = [
   },
 ];
 
-/** Estimated savings for one item at a given headcount (never negative). */
-export function itemSavings(item: SaveMoneyItem, adults: number, kids: number): number {
-  return Math.max(0, (item.parkUnit - item.bringUnit) * item.qty(adults, kids));
+/** Estimated savings for one item at a given headcount + park days (never negative). */
+export function itemSavings(
+  item: SaveMoneyItem,
+  adults: number,
+  kids: number,
+  days: number,
+): number {
+  return Math.max(0, (item.parkUnit - item.bringUnit) * item.qty(adults, kids, days));
 }
 
-/** Estimated total savings from bringing everything, at a given headcount. */
-export function totalSavings(adults: number, kids: number): number {
-  return SAVE_MONEY_ITEMS.reduce((sum, i) => sum + itemSavings(i, adults, kids), 0);
+/** Estimated total savings from bringing everything, at a headcount + park days. */
+export function totalSavings(adults: number, kids: number, days: number): number {
+  return SAVE_MONEY_ITEMS.reduce((sum, i) => sum + itemSavings(i, adults, kids, days), 0);
 }

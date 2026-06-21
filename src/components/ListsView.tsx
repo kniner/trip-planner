@@ -402,13 +402,20 @@ function PackingSuggestions({ items }: { items: ChecklistItem[] }) {
 function SaveMoneyList({ items }: { items: ChecklistItem[] }) {
   const meId = useStore((s) => s.meId);
   const meals = useStore((s) => s.doc.meals);
+  const days = useStore((s) => s.doc.days);
   const addPersonalItem = useStore((s) => s.addPersonalItem);
   const [open, setOpen] = useState(false);
 
-  // Use the trip's meal headcount; default to 8 adults / 3 kids when unset.
+  // Use the trip's meal headcount + park-day count; default to 8 adults /
+  // 3 kids / 4 park days when those aren't meaningfully set up yet.
   const adults = meals.adults > 0 ? meals.adults : 8;
   const kids = meals.kids > 0 ? meals.kids : 3;
-  const total = useMemo(() => Math.round(totalSavings(adults, kids)), [adults, kids]);
+  const realParkDays = days.filter((d) => d.kind !== 'other').length;
+  const parkDays = realParkDays >= 2 ? realParkDays : 4;
+  const total = useMemo(
+    () => Math.round(totalSavings(adults, kids, parkDays)),
+    [adults, kids, parkDays],
+  );
 
   // What's already on my list (mine or shared), case-insensitively.
   const have = useMemo(() => {
@@ -435,12 +442,13 @@ function SaveMoneyList({ items }: { items: ChecklistItem[] }) {
         <>
           <p className="mt-1 text-[10px] text-slate-400">
             Sold in the parks at a markup — pack it instead. Estimated savings for{' '}
-            {adults} adults + {kids} kids; tap to add to your list.
+            {adults} adults + {kids} kids over {parkDays} park days; tap to add to your
+            list.
           </p>
           <ul className="mt-2 space-y-2">
             {SAVE_MONEY_ITEMS.map((s) => {
               const added = have.has(s.label.trim().toLowerCase());
-              const saved = Math.round(itemSavings(s, adults, kids));
+              const saved = Math.round(itemSavings(s, adults, kids, parkDays));
               return (
                 <li key={s.label} className="flex items-start gap-2">
                   <button
