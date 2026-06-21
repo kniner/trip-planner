@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { PACK_EXTRAS } from '../data/packExtras';
 import { SAVE_MONEY_ITEMS, itemSavings, totalSavings } from '../data/saveMoney';
 import type { ChecklistItem, Collaborator, GroupItem } from '../lib/types';
 import { useStore } from '../store/useStore';
@@ -13,6 +14,7 @@ export function ListsView() {
         <PersonalList />
       </div>
       <SaveMoneyList />
+      <ExtraPackList />
     </div>
   );
 }
@@ -464,6 +466,59 @@ function SaveMoneyList() {
             })}
           </ul>
         </>
+      )}
+    </div>
+  );
+}
+
+/** Useful, easy-to-forget things to pack (no in-park markup, so no savings). */
+function ExtraPackList() {
+  const meId = useStore((s) => s.meId);
+  const items = useStore((s) => s.doc.personalItems);
+  const addPersonalItem = useStore((s) => s.addPersonalItem);
+  const [open, setOpen] = useState(false);
+
+  const have = useMemo(() => {
+    const mine = items.filter((i) => !i.private || i.addedBy === meId);
+    return new Set(mine.map((i) => i.text.trim().toLowerCase()));
+  }, [items, meId]);
+
+  return (
+    <div className="rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-slate-500"
+      >
+        <span>🧳 Also worth packing</span>
+        <span className="text-slate-400">{open ? '▾' : '▸'}</span>
+      </button>
+
+      {open && (
+        <ul className="mt-2 space-y-2">
+          {PACK_EXTRAS.map((e) => {
+            const added = have.has(e.label.trim().toLowerCase());
+            return (
+              <li key={e.label} className="flex items-start gap-2">
+                <button
+                  disabled={added}
+                  onClick={() => addPersonalItem(e.label, true)}
+                  title={added ? 'On your list' : 'Add to your packing list'}
+                  className={`mt-0.5 shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                    added
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
+                      : 'border-slate-300 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {added ? '✓' : '+'}
+                </button>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-slate-700">{e.label}</p>
+                  <p className="text-[11px] leading-snug text-slate-500">{e.reason}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );
