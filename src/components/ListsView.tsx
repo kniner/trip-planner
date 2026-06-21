@@ -258,35 +258,40 @@ function PersonalList() {
         </p>
       </div>
 
-      {/* The main checklist gets its own collapsible title, styled like the
-          other section titles (e.g. "Bring it, don't buy it"). */}
-      <button
-        onClick={toggle}
-        className="flex w-full items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-slate-500"
-      >
-        <span>🎒 Items · {doneCount}/{items.length} done</span>
-        <span className="shrink-0 text-slate-400">{open ? '▾' : '▸'}</span>
-      </button>
+      {/* The main checklist is its own block, like "Bring it, don't buy it". */}
+      <div className="rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100">
+        <button
+          onClick={toggle}
+          className="flex w-full items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-slate-500"
+        >
+          <span>🎒 Items · {doneCount}/{items.length} done</span>
+          <span className="shrink-0 text-slate-400">{open ? '▾' : '▸'}</span>
+        </button>
 
-      {open && (
-        <ul className="space-y-1.5">
-          {items.map((item) => (
-            <PersonalRow
-              key={item.id}
-              item={item}
-              isChecked={checked.has(item.id)}
-              who={addedByName(item.addedBy, collaborators)}
-              mine={item.addedBy === meId}
-              onToggle={() => toggleChecked(item.id)}
-              onRemove={() => removeItem(item)}
-              onSaveText={(t) => setPersonalItemText(item.id, t)}
-              onSaveNote={(n) => setPersonalItemNote(item.id, n)}
-              onSetQty={(q) => setPersonalItemQty(item.id, q)}
-            />
-          ))}
-          {items.length === 0 && <Empty>No items yet — add your first.</Empty>}
-        </ul>
-      )}
+        {open && (
+          <ul className="mt-2 divide-y divide-slate-100">
+            {items.map((item) => (
+              <PersonalRow
+                key={item.id}
+                item={item}
+                isChecked={checked.has(item.id)}
+                who={addedByName(item.addedBy, collaborators)}
+                mine={item.addedBy === meId}
+                onToggle={() => toggleChecked(item.id)}
+                onRemove={() => removeItem(item)}
+                onSaveText={(t) => setPersonalItemText(item.id, t)}
+                onSaveNote={(n) => setPersonalItemNote(item.id, n)}
+                onSetQty={(q) => setPersonalItemQty(item.id, q)}
+              />
+            ))}
+            {items.length === 0 && (
+              <li className="py-2 text-center text-sm text-slate-400">
+                No items yet — add your first.
+              </li>
+            )}
+          </ul>
+        )}
+      </div>
 
       <AddRow onAdd={addPersonalItem} withPrivacy placeholder="Add a packing item…" />
     </section>
@@ -317,7 +322,7 @@ function PersonalRow({
 }) {
   const [noteEditing, setNoteEditing] = useState(false);
   return (
-    <li className="space-y-1 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100">
+    <li className="space-y-1 py-2 first:pt-0 last:pb-0">
       <div className="flex items-center gap-2">
         <input
           type="checkbox"
