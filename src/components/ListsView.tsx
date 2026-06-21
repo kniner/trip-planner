@@ -472,11 +472,26 @@ function SaveMoneyList() {
 function GroupList() {
   const items = useStore((s) => s.doc.groupItems);
   const addGroupItem = useStore((s) => s.addGroupItem);
+  const meId = useStore((s) => s.meId);
 
   // Keep tasks that still need a volunteer up top: open items first, then ones
   // someone's signed up for, then done items at the very bottom. Stable sort
   // preserves the existing order within each group.
   const sorted = [...items].sort((a, b) => groupRank(a) - groupRank(b));
+  const openCount = items.filter((i) => groupRank(i) === 0).length;
+
+  // Collapsed by default; the choice is remembered per person across reloads.
+  const prefKey = meId ? `mk-planner:group-open:${meId}` : null;
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    setOpen(prefKey ? localStorage.getItem(prefKey) === '1' : false);
+  }, [prefKey]);
+  const toggle = () =>
+    setOpen((prev) => {
+      const next = !prev;
+      if (prefKey) localStorage.setItem(prefKey, next ? '1' : '0');
+      return next;
+    });
 
   return (
     <section className="space-y-3">
@@ -489,14 +504,26 @@ function GroupList() {
         </p>
       </div>
 
-      <ul className="space-y-1.5">
-        {sorted.map((item) => (
-          <GroupRow key={item.id} item={item} />
-        ))}
-        {items.length === 0 && <Empty>No group tasks yet — add one.</Empty>}
-      </ul>
+      <button
+        onClick={toggle}
+        className="flex w-full items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-slate-500"
+      >
+        <span>🙋 Sign-ups · {openCount} open</span>
+        <span className="shrink-0 text-slate-400">{open ? '▾' : '▸'}</span>
+      </button>
 
-      <AddRow onAdd={addGroupItem} placeholder="Add a group task to sign up for…" />
+      {open && (
+        <>
+          <ul className="space-y-1.5">
+            {sorted.map((item) => (
+              <GroupRow key={item.id} item={item} />
+            ))}
+            {items.length === 0 && <Empty>No group tasks yet — add one.</Empty>}
+          </ul>
+
+          <AddRow onAdd={addGroupItem} placeholder="Add a group task to sign up for…" />
+        </>
+      )}
     </section>
   );
 }
