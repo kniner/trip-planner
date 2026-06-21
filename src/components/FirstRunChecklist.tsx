@@ -1,4 +1,4 @@
-import { useStore } from '../store/useStore';
+import { ONBOARDING_VERSION, useStore } from '../store/useStore';
 
 interface Props {
   isOwner: boolean;
@@ -16,7 +16,7 @@ export function FirstRunChecklist({ isOwner, onGoWishlist, onGoSchedule }: Props
   const days = useStore((s) => s.doc.days);
   const tags = useStore((s) => s.doc.tags);
   const meId = useStore((s) => s.meId);
-  const dismissedIds = useStore((s) => s.doc.onboardingDismissed);
+  const dismissedVersions = useStore((s) => s.doc.onboardingDismissed);
   const dismiss = useStore((s) => s.dismissOnboarding);
 
   const hasGroup = collaborators.length >= 2;
@@ -24,9 +24,10 @@ export function FirstRunChecklist({ isOwner, onGoWishlist, onGoSchedule }: Props
   const hasTags = tags.length > 0;
 
   const allDone = hasGroup && hasDates && hasTags;
-  // Dismissal is per account and synced across devices: show until this user
-  // dismisses it — including returning users whose trip is already set up.
-  if (meId != null && dismissedIds.includes(meId)) return null;
+  // Dismissal is per account and synced across devices. Bumping ONBOARDING_VERSION
+  // re-shows it to everyone, since older dismissals fall below the current one.
+  const dismissed = meId != null && (dismissedVersions[meId] ?? 0) >= ONBOARDING_VERSION;
+  if (dismissed) return null;
 
   // Established trips: a light, wishlist-focused nudge instead of setup steps.
   if (allDone) {

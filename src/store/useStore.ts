@@ -33,6 +33,12 @@ const ME_KEY = 'mk-planner:me';
 /** Legacy local checked status — migrated into the synced doc per user. */
 const CHECKED_KEY = 'mk-planner:checked';
 
+/**
+ * First-run onboarding version. Bump this to re-show the onboarding to everyone
+ * (accounts that dismissed an older version fall below the current one).
+ */
+export const ONBOARDING_VERSION = 1;
+
 /** Case-insensitive, whitespace-normalized key for matching names. */
 function nameKey(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -114,7 +120,7 @@ function emptyDoc(): PlanDoc {
     tripInfo: [],
     dining: [],
     expenses: [],
-    onboardingDismissed: [],
+    onboardingDismissed: {},
   };
 }
 
@@ -216,7 +222,14 @@ function migrate(raw: unknown): PlanDoc {
     tripInfo: Array.isArray(doc.tripInfo) ? doc.tripInfo : [],
     dining: Array.isArray(doc.dining) ? doc.dining : [],
     expenses: Array.isArray(doc.expenses) ? doc.expenses : [],
-    onboardingDismissed: Array.isArray(doc.onboardingDismissed) ? doc.onboardingDismissed : [],
+    // Anything not already a version-map (e.g. the old string[] form) resets to
+    // {} — which restarts onboarding for everyone.
+    onboardingDismissed:
+      doc.onboardingDismissed &&
+      typeof doc.onboardingDismissed === 'object' &&
+      !Array.isArray(doc.onboardingDismissed)
+        ? (doc.onboardingDismissed as Record<string, number>)
+        : {},
   };
 }
 
@@ -421,8 +434,11 @@ export const useStore = create<StoreState>((set, get) => {
       const meId = me();
       if (!meId) return;
       const doc = get().doc;
-      if (doc.onboardingDismissed.includes(meId)) return;
-      commit({ ...doc, onboardingDismissed: [...doc.onboardingDismissed, meId] });
+      if (doc.onboardingDismissed[meId] === ONBOARDING_VERSION) return;
+      commit({
+        ...doc,
+        onboardingDismissed: { ...doc.onboardingDismissed, [meId]: ONBOARDING_VERSION },
+      });
     },
 
     removeCollaborator(userId) {

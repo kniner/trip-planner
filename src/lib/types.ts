@@ -223,8 +223,12 @@ export interface PlanDoc {
   dining: DiningReservation[];
   /** Shared trip expenses, split among collaborators. */
   expenses: Expense[];
-  /** Collaborator ids who dismissed the first-run checklist (per account, synced). */
-  onboardingDismissed: string[];
+  /**
+   * Onboarding dismissal per account (synced): collaborator id → the onboarding
+   * version they dismissed. Showing again for everyone is a matter of bumping
+   * ONBOARDING_VERSION; users below the current version see it again.
+   */
+  onboardingDismissed: Record<string, number>;
 }
 
 export type InfoCategory = 'lodging' | 'tickets' | 'dining' | 'travel' | 'contact' | 'other';
