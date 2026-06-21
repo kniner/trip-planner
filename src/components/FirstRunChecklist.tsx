@@ -25,12 +25,40 @@ export function FirstRunChecklist({ isOwner, onGoWishlist, onGoSchedule }: Props
   const hasTags = tags.length > 0;
 
   const allDone = hasGroup && hasDates && hasTags;
-  if (dismissed || allDone) return null;
+  // Show until the user dismisses it — including returning users whose trip is
+  // already set up (they get the "all set" nudge below).
+  if (dismissed) return null;
 
   const dismiss = () => {
     localStorage.setItem(HIDE_KEY, '1');
     setDismissed(true);
   };
+
+  // Established trips: a light, wishlist-focused nudge instead of setup steps.
+  if (allDone) {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-indigo-100 bg-indigo-50/60 p-3">
+        <p className="text-sm text-indigo-900">
+          ✨ You're all set — keep your <strong>wishlist</strong> up to date so the
+          group's picks stay current.
+        </p>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            onClick={onGoWishlist}
+            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500"
+          >
+            Open Wishlist →
+          </button>
+          <button
+            onClick={dismiss}
+            className="text-[11px] font-medium text-indigo-400 hover:text-indigo-600"
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 p-3">
