@@ -223,6 +223,8 @@ export interface PlanDoc {
   groupItems: GroupItem[];
   /** Highest seeded-group-task version merged in (so new defaults appear once). */
   seededGroupVersion?: number;
+  /** Highest seeded grocery-extras version merged in. */
+  seededExtrasVersion?: number;
   /** Home meal plan + auto-generated grocery list. */
   meals: MealPlan;
   /** Shared trip info: confirmation numbers, addresses, contacts. */

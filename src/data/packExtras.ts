@@ -10,10 +10,6 @@ export interface PackExtra {
  */
 export const PACK_EXTRAS: PackExtra[] = [
   {
-    label: 'Ziploc / gallon bags',
-    reason: 'Phones in the rain, wet swimsuits, snacks, and loose pins.',
-  },
-  {
     label: 'Small blanket or seat pads',
     reason: 'For curb-sitting at the parade & fireworks.',
   },

@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { ITEMS_BY_ID, PARKS } from '../data';
-import { SUGGESTED_GROUP, SUGGESTED_PERSONAL } from '../data/checklist';
+import {
+  SUGGESTED_GROCERY_EXTRAS,
+  SUGGESTED_GROUP,
+  SUGGESTED_PERSONAL,
+} from '../data/checklist';
 import { distanceMeters } from '../lib/walking';
 import type {
   Collaborator,
@@ -45,6 +49,9 @@ export const ONBOARDING_VERSION = 1;
  * re-added past this version).
  */
 const SEEDED_GROUP_VERSION = 3;
+
+/** Seeded grocery-extras version. Bump to merge new shopping-list defaults. */
+const SEEDED_EXTRAS_VERSION = 1;
 
 /**
  * The designated schedule owner, pinned by name so it can't be self-claimed.
@@ -126,7 +133,7 @@ function emptyMealPlan(): PlanDoc['meals'] {
     entries: [],
     customRecipes: [],
     groceryChecked: [],
-    extras: [],
+    extras: [...SUGGESTED_GROCERY_EXTRAS],
     groceryOverrides: {},
     groceryMeta: {},
   };
@@ -144,6 +151,7 @@ function emptyDoc(): PlanDoc {
     personalHides: {},
     groupItems: [...SUGGESTED_GROUP],
     seededGroupVersion: SEEDED_GROUP_VERSION,
+    seededExtrasVersion: SEEDED_EXTRAS_VERSION,
     meals: emptyMealPlan(),
     tripInfo: [],
     dining: [],
@@ -247,6 +255,22 @@ function migrate(raw: unknown): PlanDoc {
     seededGroupVersion < SEEDED_GROUP_VERSION
       ? [...baseGroup, ...SUGGESTED_GROUP.filter((s) => !baseGroup.some((g) => g.id === s.id))]
       : baseGroup;
+  // Same one-time merge for seeded grocery-list extras (e.g. Ziploc bags).
+  const baseMeals = doc.meals ? { ...emptyMealPlan(), ...doc.meals } : emptyMealPlan();
+  const seededExtrasVersion =
+    typeof doc.seededExtrasVersion === 'number' ? doc.seededExtrasVersion : 0;
+  const meals =
+    seededExtrasVersion < SEEDED_EXTRAS_VERSION
+      ? {
+          ...baseMeals,
+          extras: [
+            ...baseMeals.extras,
+            ...SUGGESTED_GROCERY_EXTRAS.filter(
+              (s) => !baseMeals.extras.some((e) => e.id === s.id),
+            ),
+          ],
+        }
+      : baseMeals;
   return {
     collaborators,
     ownerId: resolveOwnerId(collaborators, doc.ownerId),
@@ -258,7 +282,8 @@ function migrate(raw: unknown): PlanDoc {
     personalHides: doc.personalHides ?? {},
     groupItems,
     seededGroupVersion: SEEDED_GROUP_VERSION,
-    meals: doc.meals ? { ...emptyMealPlan(), ...doc.meals } : emptyMealPlan(),
+    seededExtrasVersion: SEEDED_EXTRAS_VERSION,
+    meals,
     tripInfo: Array.isArray(doc.tripInfo) ? doc.tripInfo : [],
     dining: Array.isArray(doc.dining) ? doc.dining : [],
     expenses: Array.isArray(doc.expenses) ? doc.expenses : [],
@@ -432,10 +457,15 @@ export const useStore = create<StoreState>((set, get) => {
       const doc = migrate(remote);
       set({ doc, meId: storedMe, ready: true });
 
-      // Persist a one-time seed merge (e.g. new default group tasks) so it sticks
-      // for the whole trip instead of re-merging on every load.
-      const rawSeedVersion = (remote as Partial<PlanDoc> | null)?.seededGroupVersion;
-      if (typeof rawSeedVersion !== 'number' || rawSeedVersion < SEEDED_GROUP_VERSION) {
+      // Persist a one-time seed merge (new default group tasks / grocery extras)
+      // so it sticks for the whole trip instead of re-merging on every load.
+      const raw = remote as Partial<PlanDoc> | null;
+      const groupBehind =
+        typeof raw?.seededGroupVersion !== 'number' || raw.seededGroupVersion < SEEDED_GROUP_VERSION;
+      const extrasBehind =
+        typeof raw?.seededExtrasVersion !== 'number' ||
+        raw.seededExtrasVersion < SEEDED_EXTRAS_VERSION;
+      if (groupBehind || extrasBehind) {
         commit(doc);
       }
 

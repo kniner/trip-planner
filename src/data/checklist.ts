@@ -1,4 +1,4 @@
-import type { ChecklistItem, GroupItem } from '../lib/types';
+import type { ChecklistItem, GroceryExtra, GroupItem } from '../lib/types';
 
 /**
  * Seeded suggestions so the lists are useful out of the box. Ids are stable so
@@ -38,4 +38,9 @@ export const SUGGESTED_GROUP: GroupItem[] = [
   { id: 'gsug-meetingspot', text: 'Meeting-spot lead & headcount keeper', signups: [] },
   { id: 'gsug-lanyards', text: 'Bring lanyards & pins for pin trading', signups: [] },
   { id: 'gsug-autographs', text: 'Bring autograph books & pens', signups: [] },
+];
+
+/** Seeded extras for the grocery/shopping list (stable ids for merging). */
+export const SUGGESTED_GROCERY_EXTRAS: GroceryExtra[] = [
+  { id: 'gx-ziploc', text: 'Ziploc / gallon bags' },
 ];
