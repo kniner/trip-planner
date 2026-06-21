@@ -3,6 +3,7 @@ import { itemsForPark, landsForPark, PARKS, WISHLIST_PARK_IDS } from '../data';
 import type { ParkId } from '../lib/types';
 import { ItemList } from './ItemList';
 import { RideKey } from './RideKey';
+import { RideQuiz } from './RideQuiz';
 
 /**
  * The tagging page: pick a park and tag its attractions as must / nice / avoid.
@@ -38,6 +39,8 @@ export function TagView() {
         Tag what you want to do at {PARKS[park].name}. Halloween-party and Food & Wine
         items are included too — schedule them onto specific days next.
       </p>
+
+      <RideQuiz />
 
       <RideKey />
 
