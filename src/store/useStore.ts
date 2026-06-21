@@ -228,7 +228,6 @@ interface StoreState {
   init: () => Promise<void>;
   join: (name: string) => void;
   leave: () => void;
-  claimOwnership: () => void;
   removeCollaborator: (userId: string) => void;
 
   // Days
@@ -412,13 +411,6 @@ export const useStore = create<StoreState>((set, get) => {
     leave() {
       localStorage.removeItem(ME_KEY);
       set({ meId: null });
-    },
-
-    claimOwnership() {
-      const meId = me();
-      if (!meId) return;
-      const doc = get().doc;
-      commit({ ...doc, ownerId: meId });
     },
 
     removeCollaborator(userId) {

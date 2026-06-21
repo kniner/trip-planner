@@ -35,7 +35,6 @@ export default function App() {
   // The schedule owner (explicitly claimed, else the trip's first member) is the
   // only one who can see the Schedule group for now.
   const ownerId = useStore((s) => s.doc.ownerId) ?? collaborators[0]?.id;
-  const claimOwnership = useStore((s) => s.claimOwnership);
   const isOwner = meId != null && ownerId === meId;
   const ownerName = collaborators.find((c) => c.id === ownerId)?.name;
   const activeGroup: Group = group === 'schedule' && !isOwner ? 'wishlist' : group;
@@ -90,29 +89,10 @@ export default function App() {
           </ViewTab>
         </nav>
 
-        {/* Non-owners get the ownership claim here; owners don't need the row. */}
-        {!isOwner && (
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
-            <span>
-              Schedule owner:{' '}
-              <span className="font-semibold text-slate-700">{ownerName ?? 'unclaimed'}</span>
-            </span>
-            <button
-              onClick={() => {
-                if (
-                  window.confirm(
-                    ownerName
-                      ? `Take over schedule ownership from ${ownerName}? Only you will see the Schedule page.`
-                      : 'Claim schedule ownership? Only you will see the Schedule page.',
-                  )
-                ) {
-                  claimOwnership();
-                }
-              }}
-              className="rounded-md bg-indigo-600 px-3 py-1 font-semibold text-white hover:bg-indigo-500"
-            >
-              Make me the owner
-            </button>
+        {/* Non-owners just see who owns the schedule; ownership can't be claimed. */}
+        {!isOwner && ownerName && (
+          <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
+            Schedule owner: <span className="font-semibold text-slate-700">{ownerName}</span>
           </div>
         )}
       </div>
