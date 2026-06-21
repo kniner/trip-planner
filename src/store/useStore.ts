@@ -141,6 +141,7 @@ function emptyDoc(): PlanDoc {
     activeDayId: day.id,
     personalItems: [...SUGGESTED_PERSONAL],
     personalChecks: {},
+    personalHides: {},
     groupItems: [...SUGGESTED_GROUP],
     seededGroupVersion: SEEDED_GROUP_VERSION,
     meals: emptyMealPlan(),
@@ -254,6 +255,7 @@ function migrate(raw: unknown): PlanDoc {
     activeDayId,
     personalItems: Array.isArray(doc.personalItems) ? doc.personalItems : [...SUGGESTED_PERSONAL],
     personalChecks: doc.personalChecks ?? {},
+    personalHides: doc.personalHides ?? {},
     groupItems,
     seededGroupVersion: SEEDED_GROUP_VERSION,
     meals: doc.meals ? { ...emptyMealPlan(), ...doc.meals } : emptyMealPlan(),
@@ -327,6 +329,8 @@ interface StoreState {
   // Checklist & group sign-up lists
   addPersonalItem: (text: string, isPrivate?: boolean) => void;
   removePersonalItem: (id: string) => void;
+  /** Hide a shared item just for the current user (they didn't add it). */
+  hidePersonalItem: (id: string) => void;
   setPersonalItemText: (id: string, text: string) => void;
   setPersonalItemNote: (id: string, note: string) => void;
   setPersonalItemQty: (id: string, qty: number | undefined) => void;
@@ -492,9 +496,12 @@ export const useStore = create<StoreState>((set, get) => {
       const doc = get().doc;
       const { [userId]: _removed, ...personalChecks } = doc.personalChecks;
       void _removed;
+      const { [userId]: _removedHides, ...personalHides } = doc.personalHides;
+      void _removedHides;
       commit({
         ...doc,
         collaborators: doc.collaborators.filter((c) => c.id !== userId),
+        personalHides,
         tags: doc.tags.filter((t) => t.userId !== userId),
         groupItems: doc.groupItems.map((i) => ({
           ...i,
@@ -835,6 +842,15 @@ export const useStore = create<StoreState>((set, get) => {
     removePersonalItem(id) {
       const doc = get().doc;
       commit({ ...doc, personalItems: doc.personalItems.filter((i) => i.id !== id) });
+    },
+
+    hidePersonalItem(id) {
+      const meId = me();
+      if (!meId) return;
+      const doc = get().doc;
+      const cur = doc.personalHides[meId] ?? [];
+      if (cur.includes(id)) return;
+      commit({ ...doc, personalHides: { ...doc.personalHides, [meId]: [...cur, id] } });
     },
 
     setPersonalItemText(id, text) {

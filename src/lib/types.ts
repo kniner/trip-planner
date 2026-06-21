@@ -213,6 +213,12 @@ export interface PlanDoc {
   personalItems: ChecklistItem[];
   /** Per-user checked item ids for the personal list, keyed by collaborator id. */
   personalChecks: Record<string, string[]>;
+  /**
+   * Per-user hidden item ids: when someone removes a shared item they didn't
+   * add, it's hidden just for them rather than deleted for everyone. Keyed by
+   * collaborator id.
+   */
+  personalHides: Record<string, string[]>;
   /** Shared group tasks people sign up for. */
   groupItems: GroupItem[];
   /** Highest seeded-group-task version merged in (so new defaults appear once). */

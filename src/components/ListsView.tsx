@@ -208,15 +208,27 @@ function PersonalList() {
   const toggleChecked = useStore((s) => s.toggleChecked);
   const addPersonalItem = useStore((s) => s.addPersonalItem);
   const removePersonalItem = useStore((s) => s.removePersonalItem);
+  const hidePersonalItem = useStore((s) => s.hidePersonalItem);
   const setPersonalItemText = useStore((s) => s.setPersonalItemText);
   const setPersonalItemNote = useStore((s) => s.setPersonalItemNote);
   const setPersonalItemQty = useStore((s) => s.setPersonalItemQty);
+  const myHides = useStore((s) => (s.meId ? s.doc.personalHides[s.meId] : undefined));
 
   // Private items only show for the person who added them; shared items show
-  // for everyone.
-  const items = allItems.filter((i) => !i.private || i.addedBy === meId);
+  // for everyone, minus anything this user has hidden for themselves.
+  const hidden = new Set(myHides ?? []);
+  const items = allItems.filter(
+    (i) => (!i.private || i.addedBy === meId) && !hidden.has(i.id),
+  );
   const checked = new Set(myChecks ?? []);
   const doneCount = items.filter((i) => checked.has(i.id)).length;
+
+  // You can delete an item for everyone only if you added it; otherwise removing
+  // just hides it from your own list.
+  const removeItem = (item: ChecklistItem) => {
+    if (item.addedBy === meId) removePersonalItem(item.id);
+    else hidePersonalItem(item.id);
+  };
 
   // Collapsed by default to keep the page tidy; the open/closed choice is
   // remembered per person (keyed by their account id) across reloads.
@@ -242,14 +254,13 @@ function PersonalList() {
         </p>
       </div>
 
-      {/* The main checklist gets its own collapsible header. */}
+      {/* The main checklist gets its own collapsible title, styled like the
+          other section titles (e.g. "Bring it, don't buy it"). */}
       <button
         onClick={toggle}
-        className="flex w-full items-center justify-between gap-2 text-left"
+        className="flex w-full items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-slate-500"
       >
-        <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
-          Items · {doneCount}/{items.length} done
-        </span>
+        <span>🎒 Items · {doneCount}/{items.length} done</span>
         <span className="shrink-0 text-slate-400">{open ? '▾' : '▸'}</span>
       </button>
 
@@ -261,8 +272,9 @@ function PersonalList() {
               item={item}
               isChecked={checked.has(item.id)}
               who={addedByName(item.addedBy, collaborators)}
+              mine={item.addedBy === meId}
               onToggle={() => toggleChecked(item.id)}
-              onRemove={() => removePersonalItem(item.id)}
+              onRemove={() => removeItem(item)}
               onSaveText={(t) => setPersonalItemText(item.id, t)}
               onSaveNote={(n) => setPersonalItemNote(item.id, n)}
               onSetQty={(q) => setPersonalItemQty(item.id, q)}
@@ -283,6 +295,7 @@ function PersonalRow({
   item,
   isChecked,
   who,
+  mine,
   onToggle,
   onRemove,
   onSaveText,
@@ -292,6 +305,8 @@ function PersonalRow({
   item: ChecklistItem;
   isChecked: boolean;
   who: string | null;
+  /** True if the current user added this item (can delete it for everyone). */
+  mine: boolean;
   onToggle: () => void;
   onRemove: () => void;
   onSaveText: (t: string) => void;
@@ -335,7 +350,7 @@ function PersonalRow({
         <button
           onClick={onRemove}
           className="shrink-0 text-xs text-slate-300 hover:text-red-500"
-          title={item.private ? 'Remove' : 'Remove for everyone'}
+          title={mine ? 'Remove' : 'Hide from my list'}
         >
           ✕
         </button>
