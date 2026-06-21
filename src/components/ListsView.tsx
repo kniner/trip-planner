@@ -3,12 +3,16 @@ import { SAVE_MONEY_ITEMS, itemSavings, totalSavings } from '../data/saveMoney';
 import type { ChecklistItem, Collaborator, GroupItem } from '../lib/types';
 import { useStore } from '../store/useStore';
 
-/** Two collaborative lists: a personal checklist and a group sign-up sheet. */
+/** Two collaborative lists: a personal checklist and a group sign-up sheet,
+ * plus the save-money section as its own block. */
 export function ListsView() {
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <GroupList />
-      <PersonalList />
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <GroupList />
+        <PersonalList />
+      </div>
+      <SaveMoneyList />
     </div>
   );
 }
@@ -284,8 +288,6 @@ function PersonalList() {
         </ul>
       )}
 
-      <SaveMoneyList items={allItems} />
-
       <AddRow onAdd={addPersonalItem} withPrivacy placeholder="Add a packing item…" />
     </section>
   );
@@ -369,8 +371,9 @@ function PersonalRow({
  * "Bring it, don't buy it": curated things sold in the parks at a markup you
  * can pack from home. Tapping one adds it to your private packing list.
  */
-function SaveMoneyList({ items }: { items: ChecklistItem[] }) {
+function SaveMoneyList() {
   const meId = useStore((s) => s.meId);
+  const items = useStore((s) => s.doc.personalItems);
   const meals = useStore((s) => s.doc.meals);
   const days = useStore((s) => s.doc.days);
   const addPersonalItem = useStore((s) => s.addPersonalItem);
