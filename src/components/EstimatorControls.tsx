@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Pace, WaitMode } from '../lib/types';
 import { PACE_LABELS } from '../lib/walking';
 import { useActiveDay, useStore } from '../store/useStore';
@@ -44,6 +45,7 @@ export function EstimatorControls({ light = false }: { light?: boolean } = {}) {
   const setStartTime = useStore((s) => s.setStartTime);
   const setBuffer = useStore((s) => s.setBuffer);
   const refreshLive = useStore((s) => s.refreshLive);
+  const [showMore, setShowMore] = useState(false);
 
   // Off-park days don't involve queues or park walking, so only the day's start
   // time is relevant — hide the wait model, pace and buffer controls.
@@ -97,17 +99,6 @@ export function EstimatorControls({ light = false }: { light?: boolean } = {}) {
 
       <div>
         <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-          Group pace
-        </label>
-        <Segmented
-          value={settings.pace}
-          onChange={setPace}
-          options={PACES.map((p) => ({ value: p, label: PACE_LABELS[p] }))}
-        />
-      </div>
-
-      <div>
-        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
           Day starts
         </label>
         <input
@@ -118,24 +109,46 @@ export function EstimatorControls({ light = false }: { light?: boolean } = {}) {
         />
       </div>
 
-      <div>
-        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
-          Buffer per stop
-        </label>
-        <Segmented
-          value={String(settings.bufferPerStop ?? 0)}
-          onChange={(v) => setBuffer(Number(v))}
-          options={[
-            { value: '0', label: 'None' },
-            { value: '5', label: '5m' },
-            { value: '10', label: '10m' },
-            { value: '15', label: '15m' },
-          ]}
-        />
-        <p className="mt-1 text-[11px] text-slate-400">
-          Slack added to every attraction for bathroom breaks, snacks and dawdling.
-        </p>
-      </div>
+      <button
+        onClick={() => setShowMore((o) => !o)}
+        className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+      >
+        {showMore ? 'Fewer settings ▾' : 'More settings ▸'}
+      </button>
+
+      {showMore && (
+        <>
+          <div>
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+              Group pace
+            </label>
+            <Segmented
+              value={settings.pace}
+              onChange={setPace}
+              options={PACES.map((p) => ({ value: p, label: PACE_LABELS[p] }))}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+              Buffer per stop
+            </label>
+            <Segmented
+              value={String(settings.bufferPerStop ?? 0)}
+              onChange={(v) => setBuffer(Number(v))}
+              options={[
+                { value: '0', label: 'None' },
+                { value: '5', label: '5m' },
+                { value: '10', label: '10m' },
+                { value: '15', label: '15m' },
+              ]}
+            />
+            <p className="mt-1 text-[11px] text-slate-400">
+              Slack added to every attraction for bathroom breaks, snacks and dawdling.
+            </p>
+          </div>
+        </>
+      )}
     </div>
   );
 }

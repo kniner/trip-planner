@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { EVENT_LABELS, PARKS } from '../data';
 import type { DayHours } from '../lib/types';
 import { useActiveDay, useStore } from '../store/useStore';
@@ -68,54 +69,76 @@ export function ScheduleView() {
   );
 }
 
-/** Editor for a park day's operating hours and resort-guest perk windows. */
+/** Collapsible editor for a park day's operating hours and perk windows. */
 function ParkHoursCard() {
   const day = useActiveDay();
   const setDayHours = useStore((s) => s.setDayHours);
   const h = day.hours ?? {};
+  const [open, setOpen] = useState(false);
 
   const patch = (next: Partial<DayHours>) => setDayHours(day.id, { ...h, ...next });
 
+  const perks = [h.earlyEntry && 'Early Entry', h.extendedEvening && 'Extended Evening']
+    .filter(Boolean)
+    .join(' · ');
+  const summary =
+    h.open || h.close
+      ? `${h.open ?? '—'}–${h.close ?? '—'}${perks ? ` · ${perks}` : ''}`
+      : perks || 'Not set';
+
   return (
-    <div className="flex flex-wrap items-end gap-4 rounded-lg bg-white p-3 shadow-sm">
-      <div>
-        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Park hours</h3>
-        <p className="text-[11px] text-slate-400">Helps plan rope-drop and late nights.</p>
-      </div>
-      <label className="text-xs text-slate-500">
-        Open
-        <input
-          type="time"
-          value={h.open ?? ''}
-          onChange={(e) => patch({ open: e.target.value || undefined })}
-          className="mt-0.5 block rounded border border-slate-300 px-2 py-1 text-sm"
-        />
-      </label>
-      <label className="text-xs text-slate-500">
-        Close
-        <input
-          type="time"
-          value={h.close ?? ''}
-          onChange={(e) => patch({ close: e.target.value || undefined })}
-          className="mt-0.5 block rounded border border-slate-300 px-2 py-1 text-sm"
-        />
-      </label>
-      <label className="flex items-center gap-1.5 text-xs text-slate-600">
-        <input
-          type="checkbox"
-          checked={!!h.earlyEntry}
-          onChange={(e) => patch({ earlyEntry: e.target.checked || undefined })}
-        />
-        Early Entry
-      </label>
-      <label className="flex items-center gap-1.5 text-xs text-slate-600">
-        <input
-          type="checkbox"
-          checked={!!h.extendedEvening}
-          onChange={(e) => patch({ extendedEvening: e.target.checked || undefined })}
-        />
-        Extended Evening
-      </label>
+    <div className="rounded-lg bg-white p-3 shadow-sm">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-2 text-left"
+      >
+        <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Park hours</span>
+        <span className="flex items-center gap-2 text-xs">
+          <span className={summary === 'Not set' ? 'text-slate-400' : 'font-medium text-slate-700'}>
+            {summary}
+          </span>
+          <span className="text-slate-400">{open ? '▾' : '▸'}</span>
+        </span>
+      </button>
+
+      {open && (
+        <div className="mt-3 flex flex-wrap items-end gap-4">
+          <label className="text-xs text-slate-500">
+            Open
+            <input
+              type="time"
+              value={h.open ?? ''}
+              onChange={(e) => patch({ open: e.target.value || undefined })}
+              className="mt-0.5 block rounded border border-slate-300 px-2 py-1 text-sm"
+            />
+          </label>
+          <label className="text-xs text-slate-500">
+            Close
+            <input
+              type="time"
+              value={h.close ?? ''}
+              onChange={(e) => patch({ close: e.target.value || undefined })}
+              className="mt-0.5 block rounded border border-slate-300 px-2 py-1 text-sm"
+            />
+          </label>
+          <label className="flex items-center gap-1.5 text-xs text-slate-600">
+            <input
+              type="checkbox"
+              checked={!!h.earlyEntry}
+              onChange={(e) => patch({ earlyEntry: e.target.checked || undefined })}
+            />
+            Early Entry
+          </label>
+          <label className="flex items-center gap-1.5 text-xs text-slate-600">
+            <input
+              type="checkbox"
+              checked={!!h.extendedEvening}
+              onChange={(e) => patch({ extendedEvening: e.target.checked || undefined })}
+            />
+            Extended Evening
+          </label>
+        </div>
+      )}
     </div>
   );
 }
