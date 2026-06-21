@@ -10,9 +10,22 @@ export function UserBar() {
   const meId = useStore((s) => s.meId);
   const join = useStore((s) => s.join);
   const leave = useStore((s) => s.leave);
+  const removeCollaborator = useStore((s) => s.removeCollaborator);
+  const ownerId = useStore((s) => s.doc.ownerId) ?? collaborators[0]?.id;
+  const isOwner = meId != null && meId === ownerId;
   const [name, setName] = useState('');
 
   const me = collaborators.find((c) => c.id === meId);
+
+  const remove = (id: string, name: string) => {
+    if (
+      window.confirm(
+        `Remove ${name} from the trip? This also deletes their tags and sign-ups.`,
+      )
+    ) {
+      removeCollaborator(id);
+    }
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-lg bg-white p-3 shadow-sm">
@@ -91,6 +104,16 @@ export function UserBar() {
             </span>
             {c.name}
             {c.id === meId && <span className="text-[10px] font-normal text-slate-400">(you)</span>}
+            {/* Only the owner can remove others (not themselves). */}
+            {isOwner && c.id !== meId && (
+              <button
+                onClick={() => remove(c.id, c.name)}
+                className="-mr-1 ml-0.5 text-slate-300 hover:text-red-500"
+                title={`Remove ${c.name}`}
+              >
+                ✕
+              </button>
+            )}
           </span>
         ))}
       </div>
