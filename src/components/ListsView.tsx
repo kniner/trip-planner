@@ -8,8 +8,8 @@ import { useStore } from '../store/useStore';
 export function ListsView() {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <PersonalList />
       <GroupList />
+      <PersonalList />
     </div>
   );
 }
