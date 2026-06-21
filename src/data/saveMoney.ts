@@ -76,14 +76,6 @@ export const SAVE_MONEY_ITEMS: SaveMoneyItem[] = [
     qty: (_a, k) => k,
   },
   {
-    label: 'Autograph book & pen',
-    parkPrice: '~$15',
-    tip: 'A cheap notebook and a fat marker work great for character signatures (kids).',
-    parkUnit: 15,
-    bringUnit: 3,
-    qty: (_a, k) => k,
-  },
-  {
     label: 'Snacks (granola bars, chips)',
     parkPrice: '$4–6 each',
     tip: 'Outside snacks are allowed — pack ~1 per person per day to skip pricey kiosks.',
