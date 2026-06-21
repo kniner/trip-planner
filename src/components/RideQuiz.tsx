@@ -31,7 +31,7 @@ const WAITS: { value: WaitPref; label: string }[] = [
 ];
 
 const FRANCHISES: { value: Franchise; label: string }[] = [
-  { value: 'princess', label: 'Princesses & Frozen' },
+  { value: 'princess', label: 'Princesses' },
   { value: 'pixar', label: 'Pixar' },
   { value: 'space', label: 'Space & sci-fi' },
   { value: 'adventure', label: 'Spooky & adventure' },
