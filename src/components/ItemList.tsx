@@ -14,6 +14,28 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'untagged', label: 'Untagged' },
 ];
 
+type KindFilter = 'all' | 'ride' | 'show' | 'dining';
+
+const KIND_FILTERS: { value: KindFilter; label: string }[] = [
+  { value: 'all', label: 'All types' },
+  { value: 'ride', label: 'Rides' },
+  { value: 'show', label: 'Shows' },
+  { value: 'dining', label: 'Dining' },
+];
+
+function matchesKind(a: Attraction, k: KindFilter): boolean {
+  switch (k) {
+    case 'all':
+      return true;
+    case 'ride':
+      return a.kind === 'ride';
+    case 'show':
+      return a.kind === 'show' || a.kind === 'entertainment';
+    case 'dining':
+      return a.kind === 'dining' || a.kind === 'food';
+  }
+}
+
 interface Props {
   items: Attraction[];
   lands: string[];
@@ -26,11 +48,13 @@ export function ItemList({ items, lands, showAddToRoute = true }: Props) {
   const doc = useStore((s) => s.doc);
   const meId = useStore((s) => s.meId);
   const [filter, setFilter] = useState<Filter>('all');
+  const [kindFilter, setKindFilter] = useState<KindFilter>('all');
   const [query, setQuery] = useState('');
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items.filter((a) => {
+      if (!matchesKind(a, kindFilter)) return false;
       if (
         q &&
         !a.name.toLowerCase().includes(q) &&
@@ -42,7 +66,18 @@ export function ItemList({ items, lands, showAddToRoute = true }: Props) {
       if (filter === 'untagged') return summary.consensus === null;
       return summary.consensus === filter;
     });
-  }, [items, filter, query, doc.tags, doc.collaborators, meId]);
+  }, [items, filter, kindFilter, query, doc.tags, doc.collaborators, meId]);
+
+  // Who in the group has started tagging anything yet (tagging page only).
+  const groupProgress = useMemo(() => {
+    if (showAddToRoute) return null;
+    const tagged = new Set(doc.tags.map((t) => t.userId));
+    return {
+      started: doc.collaborators.filter((c) => tagged.has(c.id)),
+      notStarted: doc.collaborators.filter((c) => !tagged.has(c.id)),
+      total: doc.collaborators.length,
+    };
+  }, [showAddToRoute, doc.tags, doc.collaborators]);
 
   const diningItems = useMemo(() => visible.filter((a) => a.kind === 'dining'), [visible]);
 
@@ -76,6 +111,40 @@ export function ItemList({ items, lands, showAddToRoute = true }: Props) {
           )}
         </div>
       )}
+
+      {groupProgress && groupProgress.total > 1 && (
+        <div className="rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600">
+          <span className="font-semibold text-slate-700">
+            {groupProgress.started.length} of {groupProgress.total}
+          </span>{' '}
+          in the group have started tagging
+          {groupProgress.notStarted.length > 0 && (
+            <span className="text-slate-400">
+              {' '}
+              · waiting on {groupProgress.notStarted.map((c) => c.name).join(', ')}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Quick filter by type, alongside Search + tag filters below. */}
+      <div className="flex flex-wrap gap-1.5">
+        {KIND_FILTERS.map((k) => {
+          const active = kindFilter === k.value;
+          return (
+            <button
+              key={k.value}
+              onClick={() => setKindFilter(k.value)}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                active ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              }`}
+            >
+              {k.label}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="flex flex-wrap items-center gap-2">
         <input
           value={query}
