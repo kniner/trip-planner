@@ -56,8 +56,8 @@ export default function App() {
   if (!joined) return <JoinGate />;
 
   return (
-    <div className="mx-auto max-w-7xl p-4">
-      <header className="mb-4">
+    <div className="mx-auto max-w-7xl p-4 sm:p-6">
+      <header className="mb-5">
         <h1 className="text-2xl font-extrabold tracking-tight">
           ✨ Walt Disney World Planner
         </h1>
@@ -156,11 +156,9 @@ export default function App() {
         </div>
       )}
 
-      <footer className="mt-8 text-center text-[11px] text-slate-400">
-        Tag attractions per park, then schedule them onto specific days. Wait times
-        are planning estimates; character dining assumes a 90-minute seating. Live
-        data via queue-times.com when available. Plans sync across browser tabs on
-        this device; swap the sync provider for cross-device collaboration.
+      <footer className="mt-10 text-center text-[11px] text-slate-400">
+        Wait times are planning estimates; live data via queue-times.com when
+        available.
       </footer>
     </div>
   );

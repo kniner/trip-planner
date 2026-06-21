@@ -117,7 +117,7 @@ export function ItemList({ items, lands, showAddToRoute = true }: Props) {
             <h3 className="mb-2 mt-4 text-sm font-bold uppercase tracking-wide text-slate-500">
               {land}
             </h3>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {landItems.map((a) => (
                 <AttractionCard key={a.id} attraction={a} showAddToRoute={showAddToRoute} />
               ))}
@@ -139,7 +139,7 @@ export function ItemList({ items, lands, showAddToRoute = true }: Props) {
                 <h4 className="mb-2 mt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
                   {land}
                 </h4>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {meals.map((a) => (
                     <AttractionCard key={a.id} attraction={a} showAddToRoute={showAddToRoute} />
                   ))}
