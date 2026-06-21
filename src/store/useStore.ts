@@ -39,6 +39,25 @@ const CHECKED_KEY = 'mk-planner:checked';
  */
 export const ONBOARDING_VERSION = 1;
 
+/**
+ * The designated schedule owner, pinned by name so it can't be self-claimed.
+ * Whoever joins under this name is the owner regardless of join order; change
+ * this to hand the role to a different person.
+ */
+const OWNER_NAME = 'Brian Stone';
+
+/** Resolve the owner id: the designated owner by name, else the stored owner,
+ * else the first member. */
+function resolveOwnerId(
+  collaborators: Collaborator[],
+  storedOwnerId: string | undefined,
+): string | undefined {
+  const designated = collaborators.find((c) => nameKey(c.name) === nameKey(OWNER_NAME));
+  if (designated) return designated.id;
+  if (storedOwnerId && collaborators.some((c) => c.id === storedOwnerId)) return storedOwnerId;
+  return collaborators[0]?.id;
+}
+
 /** Case-insensitive, whitespace-normalized key for matching names. */
 function nameKey(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -209,9 +228,10 @@ function migrate(raw: unknown): PlanDoc {
   const activeDayId = days.some((d) => d.id === doc.activeDayId)
     ? doc.activeDayId!
     : days[0].id;
+  const collaborators = Array.isArray(doc.collaborators) ? doc.collaborators : [];
   return {
-    collaborators: Array.isArray(doc.collaborators) ? doc.collaborators : [],
-    ownerId: doc.ownerId,
+    collaborators,
+    ownerId: resolveOwnerId(collaborators, doc.ownerId),
     tags: Array.isArray(doc.tags) ? doc.tags : [],
     days,
     activeDayId,
