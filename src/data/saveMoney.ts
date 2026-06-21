@@ -107,6 +107,30 @@ export const SAVE_MONEY_ITEMS: SaveMoneyItem[] = [
     bringUnit: 1,
     qty: () => 2,
   },
+  {
+    label: 'Misting / handheld fans',
+    parkPrice: 'misting fan ~$25',
+    tip: 'Florida heat is brutal — a clip-on or misting fan from home beats the $25 park version.',
+    parkUnit: 25,
+    bringUnit: 6,
+    qty: (a, k) => Math.ceil((a + k) / 2),
+  },
+  {
+    label: 'Cooling towels',
+    parkPrice: '~$15',
+    tip: 'Soak and wear to beat the heat — cheap online, marked up in the parks.',
+    parkUnit: 15,
+    bringUnit: 5,
+    qty: (a, k) => Math.ceil((a + k) / 2),
+  },
+  {
+    label: 'Mickey ears / headbands',
+    parkPrice: '$35+',
+    tip: 'Buy ears online or make them; park headbands run $35+. (Skip if buying a pair is part of the fun.)',
+    parkUnit: 35,
+    bringUnit: 12,
+    qty: (a, k) => Math.ceil((a + k) / 3),
+  },
 ];
 
 /** Estimated savings for one item at a given headcount + park days (never negative). */
