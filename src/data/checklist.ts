@@ -21,8 +21,19 @@ export const SUGGESTED_PERSONAL: ChecklistItem[] = [
 ];
 
 export const SUGGESTED_GROUP: GroupItem[] = [
+  // Pre-trip prep
+  { id: 'gsug-tickets', text: 'Buy & link park tickets in My Disney Experience', signups: [] },
+  { id: 'gsug-mde', text: 'Set up My Disney Experience & link everyone', signups: [] },
   { id: 'gsug-dining', text: 'Make dining reservations', signups: [] },
-  { id: 'gsug-genie', text: 'Set up Lightning Lane / Genie+', signups: [] },
+  { id: 'gsug-character-meals', text: 'Book character meals (60-day window)', signups: [] },
+  { id: 'gsug-grocery', text: 'Grocery / Amazon order for the rental', signups: [] },
+  { id: 'gsug-budget', text: 'Collect money / manage the group budget', signups: [] },
   { id: 'gsug-transport', text: 'Coordinate transportation to parks', signups: [] },
   { id: 'gsug-firstaid', text: 'Pack a shared first-aid kit', signups: [] },
+  // Day-of roles
+  { id: 'gsug-mobileorder', text: 'Mobile-order point person for meals', signups: [] },
+  { id: 'gsug-photos', text: 'PhotoPass / group photographer', signups: [] },
+  { id: 'gsug-snackbag', text: 'Backpack & snack carrier', signups: [] },
+  { id: 'gsug-stroller', text: 'Stroller wrangler', signups: [] },
+  { id: 'gsug-meetingspot', text: 'Meeting-spot lead & headcount keeper', signups: [] },
 ];

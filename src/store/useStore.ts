@@ -40,6 +40,13 @@ const CHECKED_KEY = 'mk-planner:checked';
 export const ONBOARDING_VERSION = 1;
 
 /**
+ * Seeded group-task version. Bump when adding new default group sign-ups so the
+ * new ones get merged once into existing trips (by id; deleted ones aren't
+ * re-added past this version).
+ */
+const SEEDED_GROUP_VERSION = 1;
+
+/**
  * The designated schedule owner, pinned by name so it can't be self-claimed.
  * Whoever joins under this name is the owner regardless of join order; change
  * this to hand the role to a different person.
@@ -135,6 +142,7 @@ function emptyDoc(): PlanDoc {
     personalItems: [...SUGGESTED_PERSONAL],
     personalChecks: {},
     groupItems: [...SUGGESTED_GROUP],
+    seededGroupVersion: SEEDED_GROUP_VERSION,
     meals: emptyMealPlan(),
     tripInfo: [],
     dining: [],
@@ -229,6 +237,15 @@ function migrate(raw: unknown): PlanDoc {
     ? doc.activeDayId!
     : days[0].id;
   const collaborators = Array.isArray(doc.collaborators) ? doc.collaborators : [];
+  // Merge in any newly-seeded group tasks (by id) once per seed version, so new
+  // defaults reach existing trips without re-adding ones a user has deleted.
+  const baseGroup = Array.isArray(doc.groupItems) ? doc.groupItems : [...SUGGESTED_GROUP];
+  const seededGroupVersion =
+    typeof doc.seededGroupVersion === 'number' ? doc.seededGroupVersion : 0;
+  const groupItems =
+    seededGroupVersion < SEEDED_GROUP_VERSION
+      ? [...baseGroup, ...SUGGESTED_GROUP.filter((s) => !baseGroup.some((g) => g.id === s.id))]
+      : baseGroup;
   return {
     collaborators,
     ownerId: resolveOwnerId(collaborators, doc.ownerId),
@@ -237,7 +254,8 @@ function migrate(raw: unknown): PlanDoc {
     activeDayId,
     personalItems: Array.isArray(doc.personalItems) ? doc.personalItems : [...SUGGESTED_PERSONAL],
     personalChecks: doc.personalChecks ?? {},
-    groupItems: Array.isArray(doc.groupItems) ? doc.groupItems : [...SUGGESTED_GROUP],
+    groupItems,
+    seededGroupVersion: SEEDED_GROUP_VERSION,
     meals: doc.meals ? { ...emptyMealPlan(), ...doc.meals } : emptyMealPlan(),
     tripInfo: Array.isArray(doc.tripInfo) ? doc.tripInfo : [],
     dining: Array.isArray(doc.dining) ? doc.dining : [],
@@ -409,6 +427,13 @@ export const useStore = create<StoreState>((set, get) => {
       const storedMe = localStorage.getItem(ME_KEY);
       const doc = migrate(remote);
       set({ doc, meId: storedMe, ready: true });
+
+      // Persist a one-time seed merge (e.g. new default group tasks) so it sticks
+      // for the whole trip instead of re-merging on every load.
+      const rawSeedVersion = (remote as Partial<PlanDoc> | null)?.seededGroupVersion;
+      if (typeof rawSeedVersion !== 'number' || rawSeedVersion < SEEDED_GROUP_VERSION) {
+        commit(doc);
+      }
 
       // One-time migration: fold any legacy device-local checkmarks into this
       // user's cloud-backed checks, then drop the local copy.

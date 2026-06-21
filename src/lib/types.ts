@@ -215,6 +215,8 @@ export interface PlanDoc {
   personalChecks: Record<string, string[]>;
   /** Shared group tasks people sign up for. */
   groupItems: GroupItem[];
+  /** Highest seeded-group-task version merged in (so new defaults appear once). */
+  seededGroupVersion?: number;
   /** Home meal plan + auto-generated grocery list. */
   meals: MealPlan;
   /** Shared trip info: confirmation numbers, addresses, contacts. */
