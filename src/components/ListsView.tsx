@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { suggestedPacking } from '../data/packingSuggestions';
 import { SAVE_MONEY_ITEMS, itemSavings, totalSavings } from '../data/saveMoney';
 import type { ChecklistItem, Collaborator, GroupItem } from '../lib/types';
 import { useStore } from '../store/useStore';
@@ -273,8 +272,6 @@ function PersonalList() {
         </ul>
       )}
 
-      <PackingSuggestions items={allItems} />
-
       <SaveMoneyList items={allItems} />
 
       <AddRow onAdd={addPersonalItem} withPrivacy placeholder="Add a packing item…" />
@@ -350,70 +347,6 @@ function PersonalRow({
         onSave={onSaveNote}
       />
     </li>
-  );
-}
-
-/**
- * Trip-aware packing suggestions: tap a chip to add it to your own (private)
- * packing list. Already-added items are marked. Derived from the trip's days
- * and headcount (water park, party night, kids, GF…).
- */
-function PackingSuggestions({ items }: { items: ChecklistItem[] }) {
-  const days = useStore((s) => s.doc.days);
-  const meals = useStore((s) => s.doc.meals);
-  const meId = useStore((s) => s.meId);
-  const addPersonalItem = useStore((s) => s.addPersonalItem);
-  const [open, setOpen] = useState(false);
-
-  const suggestions = useMemo(() => suggestedPacking(days, meals), [days, meals]);
-
-  // What's already on my list (mine or shared), case-insensitively.
-  const have = useMemo(() => {
-    const mine = items.filter((i) => !i.private || i.addedBy === meId);
-    return new Set(mine.map((i) => i.text.trim().toLowerCase()));
-  }, [items, meId]);
-
-  if (suggestions.length === 0) return null;
-
-  return (
-    <div className="rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between text-xs font-bold uppercase tracking-wide text-slate-500"
-      >
-        <span>🎒 Suggested for your trip</span>
-        <span className="text-slate-400">{open ? '▾' : '▸'}</span>
-      </button>
-      {open && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {suggestions.map((s) => {
-            const added = have.has(s.label.trim().toLowerCase());
-            return (
-              <button
-                key={s.label}
-                disabled={added}
-                onClick={() => addPersonalItem(s.label, true)}
-                title={s.reason}
-                className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
-                  added
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
-                    : 'border-slate-300 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                {added ? '✓ ' : '+ '}
-                {s.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-      {open && (
-        <p className="mt-1.5 text-[10px] text-slate-400">
-          Tap to add to your private list. Suggestions come from your trip's days
-          (water park, party nights), kids and gluten-free needs.
-        </p>
-      )}
-    </div>
   );
 }
 
