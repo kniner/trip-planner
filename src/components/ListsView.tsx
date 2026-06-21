@@ -85,9 +85,10 @@ function NoteAddButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="shrink-0 text-[11px] text-slate-400 active:text-slate-600"
+      title="Add a note"
+      className="shrink-0 rounded border border-slate-200 px-1.5 py-0.5 text-[11px] text-slate-500 hover:bg-slate-50 active:text-slate-700"
     >
-      + note
+      📝 Note
     </button>
   );
 }
