@@ -21,7 +21,10 @@ export function FirstRunChecklist({ isOwner, onGoWishlist, onGoSchedule }: Props
 
   const hasGroup = collaborators.length >= 2;
   const hasDates = days.some((d) => !!d.date);
-  const hasTags = tags.length > 0;
+  // Personal, not shared: the wishlist is each person's own intentional action,
+  // so this step should reflect whether *I* have tagged anything — not whether
+  // anyone in the group has.
+  const hasTags = meId != null && tags.some((t) => t.userId === meId);
 
   // Dismissal is per account and synced across devices. Bumping ONBOARDING_VERSION
   // re-shows it to everyone, since older dismissals fall below the current one.
