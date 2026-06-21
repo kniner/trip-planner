@@ -504,26 +504,34 @@ function GroupList() {
         </p>
       </div>
 
-      <button
-        onClick={toggle}
-        className="flex w-full items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-slate-500"
-      >
-        <span>🙋 Sign-ups · {openCount} open</span>
-        <span className="shrink-0 text-slate-400">{open ? '▾' : '▸'}</span>
-      </button>
+      <div className="rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100">
+        <button
+          onClick={toggle}
+          className="flex w-full items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-slate-500"
+        >
+          <span>🙋 Sign-ups · {openCount} open</span>
+          <span className="shrink-0 text-slate-400">{open ? '▾' : '▸'}</span>
+        </button>
 
-      {open && (
-        <>
-          <ul className="space-y-1.5">
-            {sorted.map((item) => (
-              <GroupRow key={item.id} item={item} />
-            ))}
-            {items.length === 0 && <Empty>No group tasks yet — add one.</Empty>}
-          </ul>
+        {open && (
+          <>
+            <ul className="mt-2 divide-y divide-slate-100">
+              {sorted.map((item) => (
+                <GroupRow key={item.id} item={item} />
+              ))}
+              {items.length === 0 && (
+                <li className="py-2 text-center text-sm text-slate-400">
+                  No group tasks yet — add one.
+                </li>
+              )}
+            </ul>
 
-          <AddRow onAdd={addGroupItem} placeholder="Add a group task to sign up for…" />
-        </>
-      )}
+            <div className="mt-2 border-t border-slate-100 pt-2">
+              <AddRow onAdd={addGroupItem} placeholder="Add a group task to sign up for…" />
+            </div>
+          </>
+        )}
+      </div>
     </section>
   );
 }
@@ -549,7 +557,7 @@ function GroupRow({ item }: { item: GroupItem }) {
   const manual = item.manualSignups ?? [];
 
   return (
-    <li className="space-y-1.5 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-100">
+    <li className="space-y-1.5 py-2 first:pt-0 last:pb-0">
       <div className="flex items-center gap-2">
         <input
           type="checkbox"
@@ -641,14 +649,6 @@ function GroupRow({ item }: { item: GroupItem }) {
           </button>
         )}
       </form>
-    </li>
-  );
-}
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="rounded-lg bg-white p-4 text-center text-sm text-slate-400 shadow-sm">
-      {children}
     </li>
   );
 }
