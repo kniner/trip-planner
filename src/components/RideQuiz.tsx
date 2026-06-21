@@ -7,6 +7,7 @@ import {
   type ThrillPref,
 } from '../lib/rideQuiz';
 import type { Attraction } from '../lib/types';
+import { useStore } from '../store/useStore';
 import { AttractionCard } from './AttractionCard';
 
 const THRILLS: { value: ThrillPref; label: string }[] = [
@@ -28,9 +29,19 @@ const STYLES: { value: RideStyle; label: string }[] = [
  * tag buttons are right there — recommend, then tap to tag your wishlist.
  */
 export function RideQuiz() {
+  const meId = useStore((s) => s.meId);
+  const tags = useStore((s) => s.doc.tags);
+  const setTag = useStore((s) => s.setTag);
   const [open, setOpen] = useState(false);
   const [ans, setAns] = useState<QuizAnswers>(DEFAULT_ANSWERS);
   const [results, setResults] = useState<Attraction[] | null>(null);
+
+  // Tag every recommended ride I haven't already tagged as "nice" (don't
+  // clobber a must/avoid I've already set).
+  const tagAllNice = () => {
+    const mine = new Set(tags.filter((t) => t.userId === meId).map((t) => t.attractionId));
+    for (const a of results ?? []) if (!mine.has(a.id)) setTag(a.id, 'nice');
+  };
 
   const toggleStyle = (s: RideStyle) =>
     setAns((p) => ({
@@ -133,9 +144,19 @@ export function RideQuiz() {
 
           {results && (
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-indigo-900">
-                Your top matches — tap must / nice / avoid to add them to your wishlist:
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-indigo-900">
+                  Your top matches — tap must / nice / avoid to tag them:
+                </p>
+                {meId && results.length > 0 && (
+                  <button
+                    onClick={tagAllNice}
+                    className="rounded-md border border-indigo-300 bg-white px-2.5 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+                  >
+                    + Tag all as Nice
+                  </button>
+                )}
+              </div>
               {results.length === 0 ? (
                 <p className="text-xs text-indigo-700/70">
                   No strong matches — try different answers.
