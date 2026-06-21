@@ -44,7 +44,7 @@ export const ONBOARDING_VERSION = 1;
  * Whoever joins under this name is the owner regardless of join order; change
  * this to hand the role to a different person.
  */
-const OWNER_NAME = 'Brian Stone';
+const OWNER_NAME = 'Kate';
 
 /** Resolve the owner id: the designated owner by name, else the stored owner,
  * else the first member. */
