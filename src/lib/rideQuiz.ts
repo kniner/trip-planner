@@ -51,10 +51,11 @@ export function recommendRides(ans: QuizAnswers, limit = 8): Attraction[] {
       if (ans.spectacle && v.spectacle) score += 2;
       // Don't crowd results with shows unless spectacle was asked for.
       if (!ans.spectacle && v.spectacle && a.kind === 'show') score -= 1;
-      // Wait-time preference: favor shorter typical waits.
+      // Wait-time preference: strongly favor shorter typical waits, so
+      // long-wait headliners (e.g. Tiana ~50m) drop out of "short waits" picks.
       if (ans.waits === 'short') {
-        if (a.avgWait >= 45) score -= 3;
-        else if (a.avgWait >= 30) score -= 1;
+        if (a.avgWait >= 45) score -= 6;
+        else if (a.avgWait >= 30) score -= 2;
         else score += 1;
       }
       return { a, score };
