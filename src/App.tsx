@@ -25,7 +25,7 @@ export default function App() {
   const collaborators = useStore((s) => s.doc.collaborators);
   const [group, setGroup] = useState<Group>('wishlist');
   const [scheduleSub, setScheduleSub] = useState<ScheduleSub>('schedule');
-  const [tripSub, setTripSub] = useState<TripSub>('info');
+  const [tripSub, setTripSub] = useState<TripSub>('lists');
 
   // "Joined" requires an identity that still exists in the shared plan. If the
   // plan was reset/cleared, a stale stored id no longer matches anyone, so the
