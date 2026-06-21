@@ -11,14 +11,20 @@ import { FinancesView, TripView } from './components/TripView';
 import { UserBar } from './components/UserBar';
 import { useStore } from './store/useStore';
 
-type View = 'tag' | 'schedule' | 'map' | 'lists' | 'meals' | 'trip' | 'finances';
+/** Top-level groups. Schedule (owner-only) folds in the day Map; Trip folds in
+ * the trip info, packing lists, meal plan and finances as sub-tabs. */
+type Group = 'wishlist' | 'schedule' | 'trip';
+type ScheduleSub = 'schedule' | 'map';
+type TripSub = 'info' | 'lists' | 'meals' | 'finances';
 
 export default function App() {
   const init = useStore((s) => s.init);
   const ready = useStore((s) => s.ready);
   const meId = useStore((s) => s.meId);
   const collaborators = useStore((s) => s.doc.collaborators);
-  const [view, setView] = useState<View>('tag');
+  const [group, setGroup] = useState<Group>('wishlist');
+  const [scheduleSub, setScheduleSub] = useState<ScheduleSub>('schedule');
+  const [tripSub, setTripSub] = useState<TripSub>('info');
 
   // "Joined" requires an identity that still exists in the shared plan. If the
   // plan was reset/cleared, a stale stored id no longer matches anyone, so the
@@ -26,13 +32,12 @@ export default function App() {
   const joined = meId != null && collaborators.some((c) => c.id === meId);
 
   // The schedule owner (explicitly claimed, else the trip's first member) is the
-  // only one who can see the Schedule page for now.
+  // only one who can see the Schedule group for now.
   const ownerId = useStore((s) => s.doc.ownerId) ?? collaborators[0]?.id;
   const claimOwnership = useStore((s) => s.claimOwnership);
   const isOwner = meId != null && ownerId === meId;
   const ownerName = collaborators.find((c) => c.id === ownerId)?.name;
-  const effectiveView =
-    (view === 'schedule' || view === 'map') && !isOwner ? 'tag' : view;
+  const activeGroup: Group = group === 'schedule' && !isOwner ? 'wishlist' : group;
 
   useEffect(() => {
     void init();
@@ -66,42 +71,26 @@ export default function App() {
         <NowNext isOwner={isOwner} />
 
         <nav className="flex flex-wrap rounded-lg bg-slate-100 p-1">
-          <ViewTab active={effectiveView === 'tag'} onClick={() => setView('tag')}>
+          <ViewTab active={activeGroup === 'wishlist'} onClick={() => setGroup('wishlist')}>
             Wishlist
           </ViewTab>
           {isOwner && (
-            <ViewTab active={effectiveView === 'schedule'} onClick={() => setView('schedule')}>
+            <ViewTab active={activeGroup === 'schedule'} onClick={() => setGroup('schedule')}>
               Schedule
             </ViewTab>
           )}
-          {isOwner && (
-            <ViewTab active={effectiveView === 'map'} onClick={() => setView('map')}>
-              Map
-            </ViewTab>
-          )}
-          <ViewTab active={effectiveView === 'lists'} onClick={() => setView('lists')}>
-            Lists
-          </ViewTab>
-          <ViewTab active={effectiveView === 'meals'} onClick={() => setView('meals')}>
-            Meals
-          </ViewTab>
-          <ViewTab active={effectiveView === 'trip'} onClick={() => setView('trip')}>
+          <ViewTab active={activeGroup === 'trip'} onClick={() => setGroup('trip')}>
             Trip
-          </ViewTab>
-          <ViewTab active={effectiveView === 'finances'} onClick={() => setView('finances')}>
-            Finances
           </ViewTab>
         </nav>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
-          <span>
-            Schedule owner:{' '}
-            <span className="font-semibold text-slate-700">
-              {ownerName ?? 'unclaimed'}
+        {/* Non-owners get the ownership claim here; owners don't need the row. */}
+        {!isOwner && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
+            <span>
+              Schedule owner:{' '}
+              <span className="font-semibold text-slate-700">{ownerName ?? 'unclaimed'}</span>
             </span>
-            {isOwner && ' (you)'}
-          </span>
-          {!isOwner && (
             <button
               onClick={() => {
                 if (
@@ -118,17 +107,48 @@ export default function App() {
             >
               Make me the owner
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      {effectiveView === 'tag' && <TagView />}
-      {effectiveView === 'schedule' && isOwner && <ScheduleView />}
-      {effectiveView === 'map' && isOwner && <MapView />}
-      {effectiveView === 'lists' && <ListsView />}
-      {effectiveView === 'meals' && <MealsView />}
-      {effectiveView === 'trip' && <TripView />}
-      {effectiveView === 'finances' && <FinancesView />}
+      {activeGroup === 'wishlist' && <TagView />}
+
+      {activeGroup === 'schedule' && isOwner && (
+        <div className="space-y-4">
+          <SubNav>
+            <SubTab active={scheduleSub === 'schedule'} onClick={() => setScheduleSub('schedule')}>
+              Schedule
+            </SubTab>
+            <SubTab active={scheduleSub === 'map'} onClick={() => setScheduleSub('map')}>
+              Park map
+            </SubTab>
+          </SubNav>
+          {scheduleSub === 'schedule' ? <ScheduleView /> : <MapView />}
+        </div>
+      )}
+
+      {activeGroup === 'trip' && (
+        <div className="space-y-4">
+          <SubNav>
+            <SubTab active={tripSub === 'info'} onClick={() => setTripSub('info')}>
+              Info & dining
+            </SubTab>
+            <SubTab active={tripSub === 'lists'} onClick={() => setTripSub('lists')}>
+              Lists
+            </SubTab>
+            <SubTab active={tripSub === 'meals'} onClick={() => setTripSub('meals')}>
+              Meals
+            </SubTab>
+            <SubTab active={tripSub === 'finances'} onClick={() => setTripSub('finances')}>
+              Finances
+            </SubTab>
+          </SubNav>
+          {tripSub === 'info' && <TripView />}
+          {tripSub === 'lists' && <ListsView />}
+          {tripSub === 'meals' && <MealsView />}
+          {tripSub === 'finances' && <FinancesView />}
+        </div>
+      )}
 
       <footer className="mt-8 text-center text-[11px] text-slate-400">
         Tag attractions per park, then schedule them onto specific days. Wait times
@@ -154,6 +174,32 @@ function ViewTab({
       onClick={onClick}
       className={`flex-1 rounded-md px-4 py-2 text-sm font-semibold transition ${
         active ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Lighter secondary tab row used inside a group. */
+function SubNav({ children }: { children: ReactNode }) {
+  return <div className="flex flex-wrap gap-1.5">{children}</div>;
+}
+
+function SubTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-full px-3 py-1 text-sm font-medium transition ${
+        active ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100'
       }`}
     >
       {children}
