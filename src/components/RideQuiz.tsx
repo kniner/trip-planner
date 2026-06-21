@@ -5,6 +5,7 @@ import {
   type QuizAnswers,
   type RideStyle,
   type ThrillPref,
+  type WaitPref,
 } from '../lib/rideQuiz';
 import type { Attraction } from '../lib/types';
 import { useStore } from '../store/useStore';
@@ -21,6 +22,11 @@ const STYLES: { value: RideStyle; label: string }[] = [
   { value: 'water', label: 'Water rides' },
   { value: 'classic', label: 'Classic & nostalgic' },
   { value: 'immersive', label: 'Big & immersive' },
+];
+
+const WAITS: { value: WaitPref; label: string }[] = [
+  { value: 'any', label: "Don't mind waits" },
+  { value: 'short', label: 'Prefer short waits' },
 ];
 
 /**
@@ -73,6 +79,21 @@ export function RideQuiz() {
                   onClick={() => setAns((p) => ({ ...p, thrill: t.value }))}
                 >
                   {t.label}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-1 text-xs font-semibold text-indigo-900">Wait times?</p>
+            <div className="flex gap-1.5">
+              {WAITS.map((w) => (
+                <Chip
+                  key={w.value}
+                  active={ans.waits === w.value}
+                  onClick={() => setAns((p) => ({ ...p, waits: w.value }))}
+                >
+                  {w.label}
                 </Chip>
               ))}
             </div>

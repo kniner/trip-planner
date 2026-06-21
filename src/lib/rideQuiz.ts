@@ -5,6 +5,7 @@ import type { Attraction } from './types';
 
 export type ThrillPref = 'chill' | 'moderate' | 'thrill';
 export type RideStyle = 'dark' | 'water' | 'classic' | 'immersive';
+export type WaitPref = 'short' | 'any';
 
 export interface QuizAnswers {
   thrill: ThrillPref;
@@ -12,6 +13,8 @@ export interface QuizAnswers {
   littleKids: boolean;
   styles: RideStyle[];
   spectacle: boolean;
+  /** 'short' favors low-wait rides; 'any' ignores wait time. */
+  waits: WaitPref;
 }
 
 export const DEFAULT_ANSWERS: QuizAnswers = {
@@ -20,6 +23,7 @@ export const DEFAULT_ANSWERS: QuizAnswers = {
   littleKids: false,
   styles: [],
   spectacle: false,
+  waits: 'any',
 };
 
 const THRILL_TARGET: Record<ThrillPref, number> = { chill: 0, moderate: 2, thrill: 3 };
@@ -47,6 +51,12 @@ export function recommendRides(ans: QuizAnswers, limit = 8): Attraction[] {
       if (ans.spectacle && v.spectacle) score += 2;
       // Don't crowd results with shows unless spectacle was asked for.
       if (!ans.spectacle && v.spectacle && a.kind === 'show') score -= 1;
+      // Wait-time preference: favor shorter typical waits.
+      if (ans.waits === 'short') {
+        if (a.avgWait >= 45) score -= 3;
+        else if (a.avgWait >= 30) score -= 1;
+        else score += 1;
+      }
       return { a, score };
     })
     .filter((x) => x.score > 0)

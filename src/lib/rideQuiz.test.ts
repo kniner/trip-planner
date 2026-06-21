@@ -27,6 +27,16 @@ describe('recommendRides', () => {
     expect(top).not.toContain('space-mountain'); // 44" minimum
   });
 
+  it('preferring short waits favors lower-wait rides', () => {
+    const avg = (ans: typeof DEFAULT_ANSWERS) => {
+      const r = recommendRides(ans, 6);
+      return r.reduce((s, a) => s + a.avgWait, 0) / r.length;
+    };
+    const any = avg({ ...DEFAULT_ANSWERS, thrill: 'moderate', waits: 'any' });
+    const short = avg({ ...DEFAULT_ANSWERS, thrill: 'moderate', waits: 'short' });
+    expect(short).toBeLessThan(any);
+  });
+
   it('motion sensitivity demotes (or drops) motion rides', () => {
     const rank = (ids: string[], id: string) => {
       const i = ids.indexOf(id);
