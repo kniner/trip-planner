@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { suggestedPacking } from '../data/packingSuggestions';
 import { SAVE_MONEY_ITEMS, itemSavings, totalSavings } from '../data/saveMoney';
 import type { ChecklistItem, Collaborator, GroupItem } from '../lib/types';
@@ -219,13 +219,24 @@ function PersonalList() {
   const checked = new Set(myChecks ?? []);
   const doneCount = items.filter((i) => checked.has(i.id)).length;
 
-  // Collapsed by default to keep the page tidy; tap the header to expand.
+  // Collapsed by default to keep the page tidy; the open/closed choice is
+  // remembered per person (keyed by their account id) across reloads.
+  const prefKey = meId ? `mk-planner:checklist-open:${meId}` : null;
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    setOpen(prefKey ? localStorage.getItem(prefKey) === '1' : false);
+  }, [prefKey]);
+  const toggle = () =>
+    setOpen((prev) => {
+      const next = !prev;
+      if (prefKey) localStorage.setItem(prefKey, next ? '1' : '0');
+      return next;
+    });
 
   return (
     <section className="space-y-3">
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
         className="flex w-full items-start justify-between gap-2 text-left"
       >
         <div>
