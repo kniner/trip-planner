@@ -153,6 +153,53 @@ function NoteBody({
   return null;
 }
 
+/**
+ * Click-to-edit item label: shows the text (tap to rename) and swaps to an
+ * input while editing. Saves on Enter/blur, cancels on Escape. Empty edits are
+ * ignored by the store so an item can't lose its label.
+ */
+function EditableText({ text, onSave }: { text: string; onSave: (t: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(text);
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          onSave(draft);
+          setEditing(false);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            onSave(draft);
+            setEditing(false);
+          } else if (e.key === 'Escape') {
+            setDraft(text);
+            setEditing(false);
+          }
+        }}
+        className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
+      />
+    );
+  }
+
+  return (
+    <button
+      onClick={() => {
+        setDraft(text);
+        setEditing(true);
+      }}
+      className="text-left hover:underline"
+      title="Tap to edit"
+    >
+      {text}
+    </button>
+  );
+}
+
 function PersonalList() {
   const allItems = useStore((s) => s.doc.personalItems);
   const meId = useStore((s) => s.meId);
@@ -161,6 +208,7 @@ function PersonalList() {
   const toggleChecked = useStore((s) => s.toggleChecked);
   const addPersonalItem = useStore((s) => s.addPersonalItem);
   const removePersonalItem = useStore((s) => s.removePersonalItem);
+  const setPersonalItemText = useStore((s) => s.setPersonalItemText);
   const setPersonalItemNote = useStore((s) => s.setPersonalItemNote);
   const setPersonalItemQty = useStore((s) => s.setPersonalItemQty);
 
@@ -190,6 +238,7 @@ function PersonalList() {
             who={addedByName(item.addedBy, collaborators)}
             onToggle={() => toggleChecked(item.id)}
             onRemove={() => removePersonalItem(item.id)}
+            onSaveText={(t) => setPersonalItemText(item.id, t)}
             onSaveNote={(n) => setPersonalItemNote(item.id, n)}
             onSetQty={(q) => setPersonalItemQty(item.id, q)}
           />
@@ -214,6 +263,7 @@ function PersonalRow({
   who,
   onToggle,
   onRemove,
+  onSaveText,
   onSaveNote,
   onSetQty,
 }: {
@@ -222,6 +272,7 @@ function PersonalRow({
   who: string | null;
   onToggle: () => void;
   onRemove: () => void;
+  onSaveText: (t: string) => void;
   onSaveNote: (n: string) => void;
   onSetQty: (qty: number | undefined) => void;
 }) {
@@ -236,7 +287,7 @@ function PersonalRow({
           className="h-4 w-4 shrink-0 accent-emerald-600"
         />
         <span className={`min-w-0 flex-1 text-sm ${isChecked ? 'text-slate-400 line-through' : ''}`}>
-          {item.text}
+          <EditableText text={item.text} onSave={onSaveText} />
           {item.private && (
             <span className="ml-1 rounded bg-indigo-50 px-1 text-[10px] font-medium text-indigo-500">
               private
@@ -378,6 +429,7 @@ function GroupRow({ item }: { item: GroupItem }) {
   const meId = useStore((s) => s.meId);
   const toggleSignup = useStore((s) => s.toggleSignup);
   const toggleGroupDone = useStore((s) => s.toggleGroupDone);
+  const setGroupItemText = useStore((s) => s.setGroupItemText);
   const setGroupItemNote = useStore((s) => s.setGroupItemNote);
   const removeGroupItem = useStore((s) => s.removeGroupItem);
   const addManualSignup = useStore((s) => s.addManualSignup);
@@ -403,7 +455,7 @@ function GroupRow({ item }: { item: GroupItem }) {
           title="Mark done"
         />
         <span className={`min-w-0 flex-1 text-sm ${item.done ? 'text-slate-400 line-through' : ''}`}>
-          {item.text}
+          <EditableText text={item.text} onSave={(t) => setGroupItemText(item.id, t)} />
           {who && <span className="ml-1 text-[11px] text-slate-300">Added by: {who}</span>}
         </span>
         {!item.note && !noteEditing && <NoteAddButton onClick={() => setNoteEditing(true)} />}

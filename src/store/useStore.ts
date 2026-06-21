@@ -289,11 +289,13 @@ interface StoreState {
   // Checklist & group sign-up lists
   addPersonalItem: (text: string, isPrivate?: boolean) => void;
   removePersonalItem: (id: string) => void;
+  setPersonalItemText: (id: string, text: string) => void;
   setPersonalItemNote: (id: string, note: string) => void;
   setPersonalItemQty: (id: string, qty: number | undefined) => void;
   toggleChecked: (id: string) => void;
   addGroupItem: (text: string) => void;
   removeGroupItem: (id: string) => void;
+  setGroupItemText: (id: string, text: string) => void;
   setGroupItemNote: (id: string, note: string) => void;
   toggleGroupDone: (id: string) => void;
   toggleSignup: (id: string) => void;
@@ -790,6 +792,16 @@ export const useStore = create<StoreState>((set, get) => {
       commit({ ...doc, personalItems: doc.personalItems.filter((i) => i.id !== id) });
     },
 
+    setPersonalItemText(id, text) {
+      const clean = text.trim();
+      if (!clean) return; // don't let an item lose its label
+      const doc = get().doc;
+      commit({
+        ...doc,
+        personalItems: doc.personalItems.map((i) => (i.id === id ? { ...i, text: clean } : i)),
+      });
+    },
+
     setPersonalItemNote(id, note) {
       const doc = get().doc;
       const clean = note.trim();
@@ -841,6 +853,16 @@ export const useStore = create<StoreState>((set, get) => {
       commit({
         ...doc,
         groupItems: doc.groupItems.map((i) => (i.id === id ? { ...i, done: !i.done } : i)),
+      });
+    },
+
+    setGroupItemText(id, text) {
+      const clean = text.trim();
+      if (!clean) return;
+      const doc = get().doc;
+      commit({
+        ...doc,
+        groupItems: doc.groupItems.map((i) => (i.id === id ? { ...i, text: clean } : i)),
       });
     },
 
