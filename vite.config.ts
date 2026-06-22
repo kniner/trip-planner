@@ -7,7 +7,7 @@ import { TRIP_CONFIG } from './src/trip.config';
 // Local dev stays at "/".
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/shit/' : '/',
+  base: command === 'build' ? '/trip-planner/' : '/',
   plugins: [
     react(),
     VitePWA({
