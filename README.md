@@ -64,7 +64,7 @@ This is a Progressive Web App: deployed to GitHub Pages over HTTPS, you can add
 it to your phone's home screen and it launches full-screen like a native app,
 and works offline.
 
-**Live URL:** `https://kniner.github.io/shit/`
+**Live URL:** `https://kniner.github.io/trip-planner/`
 
 - **iPhone (Safari):** open the URL → tap the **Share** button → **Add to Home
   Screen** → **Add**.
