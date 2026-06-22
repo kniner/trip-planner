@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { itemsForPark, landsForPark, PARKS, WISHLIST_PARK_IDS } from '../data';
 import type { ParkId } from '../lib/types';
+import { TRIP_CONFIG } from '../trip.config';
 import { ItemList } from './ItemList';
 import { RideKey } from './RideKey';
 import { RideQuiz } from './RideQuiz';
@@ -16,12 +17,17 @@ export function TagView() {
   const items = useMemo(() => itemsForPark(park), [park]);
   const lands = useMemo(() => landsForPark(park), [park]);
 
+  // Hide the character-dining "park" when that feature is off.
+  const parkIds = TRIP_CONFIG.features.characterDining
+    ? WISHLIST_PARK_IDS
+    : WISHLIST_PARK_IDS.filter((p) => p !== 'resort');
+
   return (
     <div className="space-y-4">
       {/* Sticky, horizontally-scrollable park picker so you keep context on mobile. */}
       <div className="sticky top-0 z-20 -mx-4 bg-white/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6">
         <div className="flex gap-1 overflow-x-auto rounded-lg bg-slate-100 p-0.5">
-          {WISHLIST_PARK_IDS.map((p) => (
+          {parkIds.map((p) => (
             <button
               key={p}
               onClick={() => setPark(p)}
@@ -40,7 +46,7 @@ export function TagView() {
         items are included too — schedule them onto specific days next.
       </p>
 
-      <RideQuiz />
+      {TRIP_CONFIG.features.rideQuiz && <RideQuiz />}
 
       <RideKey />
 

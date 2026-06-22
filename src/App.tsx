@@ -12,6 +12,7 @@ import { TripCountdown } from './components/TripCountdown';
 import { FinancesView, TripView } from './components/TripView';
 import { UserBar } from './components/UserBar';
 import { useStore } from './store/useStore';
+import { TRIP_CONFIG } from './trip.config';
 
 /** Top-level groups. Schedule (owner-only) folds in the day Map; Trip folds in
  * the trip info, packing lists, meal plan and finances as sub-tabs. */
@@ -42,9 +43,15 @@ export default function App() {
   const ownerName = collaborators.find((c) => c.id === ownerId)?.name;
   const activeGroup: Group =
     (group === 'schedule' || group === 'organizer') && !isOwner ? 'wishlist' : group;
-  // Meals & Finances are owner-only; keep non-owners on a visible sub-tab.
+  // Meals & Finances are owner-only (and feature-gated); keep everyone else on a
+  // visible sub-tab.
+  const f = TRIP_CONFIG.features;
+  const mealsOn = isOwner && f.meals;
+  const financesOn = isOwner && f.finances;
   const effectiveTripSub: TripSub =
-    !isOwner && (tripSub === 'meals' || tripSub === 'finances') ? 'lists' : tripSub;
+    (tripSub === 'meals' && !mealsOn) || (tripSub === 'finances' && !financesOn)
+      ? 'lists'
+      : tripSub;
 
   useEffect(() => {
     void init();
@@ -65,11 +72,9 @@ export default function App() {
     <div className="mx-auto max-w-7xl p-4 sm:p-6">
       <header className="mb-5">
         <h1 className="text-2xl font-extrabold tracking-tight">
-          ✨ Walt Disney World Planner
+          {TRIP_CONFIG.logo} {TRIP_CONFIG.name}
         </h1>
-        <p className="text-sm text-slate-500">
-          Tag what you want to do, then schedule it across your days — together.
-        </p>
+        <p className="text-sm text-slate-500">{TRIP_CONFIG.tagline}</p>
       </header>
 
       <div className="mb-4 space-y-3">
@@ -126,11 +131,13 @@ export default function App() {
             <SubTab active={scheduleSub === 'schedule'} onClick={() => setScheduleSub('schedule')}>
               Schedule
             </SubTab>
-            <SubTab active={scheduleSub === 'map'} onClick={() => setScheduleSub('map')}>
-              Park map
-            </SubTab>
+            {f.parkMap && (
+              <SubTab active={scheduleSub === 'map'} onClick={() => setScheduleSub('map')}>
+                Park map
+              </SubTab>
+            )}
           </SubNav>
-          {scheduleSub === 'schedule' ? <ScheduleView /> : <MapView />}
+          {scheduleSub === 'map' && f.parkMap ? <MapView /> : <ScheduleView />}
         </div>
       )}
 
@@ -143,13 +150,13 @@ export default function App() {
             <SubTab active={effectiveTripSub === 'lists'} onClick={() => setTripSub('lists')}>
               Lists
             </SubTab>
-            {/* Meals & Finances are owner-only to keep it simple for everyone else. */}
-            {isOwner && (
+            {/* Meals & Finances are owner-only and feature-gated. */}
+            {mealsOn && (
               <SubTab active={effectiveTripSub === 'meals'} onClick={() => setTripSub('meals')}>
                 Meals
               </SubTab>
             )}
-            {isOwner && (
+            {financesOn && (
               <SubTab
                 active={effectiveTripSub === 'finances'}
                 onClick={() => setTripSub('finances')}
@@ -160,8 +167,8 @@ export default function App() {
           </SubNav>
           {effectiveTripSub === 'info' && <TripView />}
           {effectiveTripSub === 'lists' && <ListsView />}
-          {effectiveTripSub === 'meals' && isOwner && <MealsView />}
-          {effectiveTripSub === 'finances' && isOwner && <FinancesView />}
+          {effectiveTripSub === 'meals' && mealsOn && <MealsView />}
+          {effectiveTripSub === 'finances' && financesOn && <FinancesView />}
         </div>
       )}
 
@@ -188,8 +195,9 @@ export default function App() {
       )}
 
       <footer className="mt-10 text-center text-[11px] text-slate-400">
-        Wait times are planning estimates; live data via queue-times.com when
-        available.
+        {f.waitTimes
+          ? 'Wait times are planning estimates; live data via queue-times.com when available.'
+          : `${TRIP_CONFIG.name} · plan together.`}
       </footer>
     </div>
   );

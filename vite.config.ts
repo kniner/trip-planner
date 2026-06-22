@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { TRIP_CONFIG } from './src/trip.config';
 
-// Project is deployed to GitHub Pages at https://<user>.github.io/shit/, so the
-// production build is served from the "/shit/" sub-path. Local dev stays at "/".
+// Served from a GitHub Pages sub-path in production; set this to your repo name.
+// Local dev stays at "/".
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/shit/' : '/',
@@ -14,10 +15,9 @@ export default defineConfig(({ command }) => ({
       injectRegister: 'auto',
       includeAssets: ['icons/icon-180.png'],
       manifest: {
-        name: 'Walt Disney World Trip Planner',
-        short_name: 'WDW Planner',
-        description:
-          'Collaboratively plan Magic Kingdom & EPCOT days — tag rides, build routes, and estimate your time.',
+        name: TRIP_CONFIG.name,
+        short_name: TRIP_CONFIG.shortName,
+        description: TRIP_CONFIG.tagline,
         theme_color: '#0f172a',
         background_color: '#f8fafc',
         display: 'standalone',

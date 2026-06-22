@@ -27,6 +27,7 @@ import type {
 } from '../lib/types';
 import { fetchLiveWaits } from '../lib/waitTimes';
 import { createSyncProvider, type SyncProvider } from './sync';
+import { TRIP_CONFIG } from '../trip.config';
 
 const COLORS = [
   '#e11d48', '#7c3aed', '#0891b2', '#ea580c',
@@ -54,11 +55,11 @@ const SEEDED_GROUP_VERSION = 3;
 const SEEDED_EXTRAS_VERSION = 1;
 
 /**
- * The designated schedule owner, pinned by name so it can't be self-claimed.
- * Whoever joins under this name is the owner regardless of join order; change
- * this to hand the role to a different person.
+ * The designated schedule owner, pinned by name (in trip.config) so it can't be
+ * self-claimed. Whoever joins under this name is the owner regardless of join
+ * order; empty means the first person to join becomes owner.
  */
-const OWNER_NAME = 'Kate';
+const OWNER_NAME = TRIP_CONFIG.ownerName;
 
 /** Resolve the owner id: the designated owner by name, else the stored owner,
  * else the first member. */
@@ -66,7 +67,9 @@ function resolveOwnerId(
   collaborators: Collaborator[],
   storedOwnerId: string | undefined,
 ): string | undefined {
-  const designated = collaborators.find((c) => nameKey(c.name) === nameKey(OWNER_NAME));
+  const designated = OWNER_NAME
+    ? collaborators.find((c) => nameKey(c.name) === nameKey(OWNER_NAME))
+    : undefined;
   if (designated) return designated.id;
   if (storedOwnerId && collaborators.some((c) => c.id === storedOwnerId)) return storedOwnerId;
   return collaborators[0]?.id;
