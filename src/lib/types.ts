@@ -239,6 +239,22 @@ export interface PlanDoc {
    * ONBOARDING_VERSION; users below the current version see it again.
    */
   onboardingDismissed: Record<string, number>;
+  /** Owner-only: which pre-trip booking tasks are done (default + custom ids). */
+  bookingDone: string[];
+  /** Owner-only: extra booking tasks the organizer added. */
+  bookingCustom: BookingTask[];
+  /** Owner-only: the organizer's private scratchpad notes. */
+  organizerNotes: string;
+}
+
+/** A pre-trip booking/prep task, due a number of days before the trip starts. */
+export interface BookingTask {
+  id: string;
+  text: string;
+  /** Due this many days before the trip's first date. */
+  daysBefore: number;
+  /** True for organizer-added tasks (removable). */
+  custom?: boolean;
 }
 
 export type InfoCategory = 'lodging' | 'tickets' | 'dining' | 'travel' | 'contact' | 'other';

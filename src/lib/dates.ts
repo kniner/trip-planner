@@ -27,3 +27,12 @@ export function formatShortDate(iso: string | undefined): string | null {
   const dt = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   return dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
+
+/** Shift an ISO "YYYY-MM-DD" date by a whole number of days; null if unparseable. */
+export function shiftISO(iso: string, deltaDays: number): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return null;
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  d.setUTCDate(d.getUTCDate() + deltaDays);
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+}

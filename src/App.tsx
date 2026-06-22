@@ -4,6 +4,7 @@ import { JoinGate } from './components/JoinGate';
 import { ListsView } from './components/ListsView';
 import { MapView } from './components/MapView';
 import { MealsView } from './components/MealsView';
+import { BookingTimeline, OrganizerDashboard, OrganizerNotes } from './components/Organizer';
 import { NowNext } from './components/NowNext';
 import { ScheduleView } from './components/ScheduleView';
 import { TagView } from './components/TagView';
@@ -14,9 +15,10 @@ import { useStore } from './store/useStore';
 
 /** Top-level groups. Schedule (owner-only) folds in the day Map; Trip folds in
  * the trip info, packing lists, meal plan and finances as sub-tabs. */
-type Group = 'wishlist' | 'schedule' | 'trip';
+type Group = 'wishlist' | 'schedule' | 'trip' | 'organizer';
 type ScheduleSub = 'schedule' | 'map';
 type TripSub = 'info' | 'lists' | 'meals' | 'finances';
+type OrganizerSub = 'dashboard' | 'booking' | 'notes';
 
 export default function App() {
   const init = useStore((s) => s.init);
@@ -26,6 +28,7 @@ export default function App() {
   const [group, setGroup] = useState<Group>('wishlist');
   const [scheduleSub, setScheduleSub] = useState<ScheduleSub>('schedule');
   const [tripSub, setTripSub] = useState<TripSub>('lists');
+  const [organizerSub, setOrganizerSub] = useState<OrganizerSub>('dashboard');
 
   // "Joined" requires an identity that still exists in the shared plan. If the
   // plan was reset/cleared, a stale stored id no longer matches anyone, so the
@@ -37,7 +40,8 @@ export default function App() {
   const ownerId = useStore((s) => s.doc.ownerId) ?? collaborators[0]?.id;
   const isOwner = meId != null && ownerId === meId;
   const ownerName = collaborators.find((c) => c.id === ownerId)?.name;
-  const activeGroup: Group = group === 'schedule' && !isOwner ? 'wishlist' : group;
+  const activeGroup: Group =
+    (group === 'schedule' || group === 'organizer') && !isOwner ? 'wishlist' : group;
   // Meals & Finances are owner-only; keep non-owners on a visible sub-tab.
   const effectiveTripSub: TripSub =
     !isOwner && (tripSub === 'meals' || tripSub === 'finances') ? 'lists' : tripSub;
@@ -99,6 +103,11 @@ export default function App() {
           <ViewTab active={activeGroup === 'trip'} onClick={() => setGroup('trip')}>
             Trip
           </ViewTab>
+          {isOwner && (
+            <ViewTab active={activeGroup === 'organizer'} onClick={() => setGroup('organizer')}>
+              Organizer
+            </ViewTab>
+          )}
         </nav>
 
         {/* Non-owners just see who owns the schedule; ownership can't be claimed. */}
@@ -153,6 +162,28 @@ export default function App() {
           {effectiveTripSub === 'lists' && <ListsView />}
           {effectiveTripSub === 'meals' && isOwner && <MealsView />}
           {effectiveTripSub === 'finances' && isOwner && <FinancesView />}
+        </div>
+      )}
+
+      {activeGroup === 'organizer' && isOwner && (
+        <div className="space-y-4">
+          <SubNav>
+            <SubTab
+              active={organizerSub === 'dashboard'}
+              onClick={() => setOrganizerSub('dashboard')}
+            >
+              Dashboard
+            </SubTab>
+            <SubTab active={organizerSub === 'booking'} onClick={() => setOrganizerSub('booking')}>
+              Booking
+            </SubTab>
+            <SubTab active={organizerSub === 'notes'} onClick={() => setOrganizerSub('notes')}>
+              Notes
+            </SubTab>
+          </SubNav>
+          {organizerSub === 'dashboard' && <OrganizerDashboard />}
+          {organizerSub === 'booking' && <BookingTimeline />}
+          {organizerSub === 'notes' && <OrganizerNotes />}
         </div>
       )}
 

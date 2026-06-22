@@ -157,6 +157,9 @@ function emptyDoc(): PlanDoc {
     dining: [],
     expenses: [],
     onboardingDismissed: {},
+    bookingDone: [],
+    bookingCustom: [],
+    organizerNotes: '',
   };
 }
 
@@ -295,6 +298,9 @@ function migrate(raw: unknown): PlanDoc {
       !Array.isArray(doc.onboardingDismissed)
         ? (doc.onboardingDismissed as Record<string, number>)
         : {},
+    bookingDone: Array.isArray(doc.bookingDone) ? doc.bookingDone : [],
+    bookingCustom: Array.isArray(doc.bookingCustom) ? doc.bookingCustom : [],
+    organizerNotes: typeof doc.organizerNotes === 'string' ? doc.organizerNotes : '',
   };
 }
 
@@ -408,6 +414,12 @@ interface StoreState {
   addExpense: (exp: Omit<Expense, 'id'>) => void;
   updateExpense: (id: string, patch: Partial<Omit<Expense, 'id'>>) => void;
   removeExpense: (id: string) => void;
+
+  // Organizer (owner-only) tools
+  toggleBookingTask: (id: string) => void;
+  addBookingTask: (text: string, daysBefore: number) => void;
+  removeBookingTask: (id: string) => void;
+  setOrganizerNotes: (notes: string) => void;
 
   refreshLive: () => Promise<void>;
 }
@@ -1302,6 +1314,39 @@ export const useStore = create<StoreState>((set, get) => {
     removeExpense(id) {
       const doc = get().doc;
       commit({ ...doc, expenses: doc.expenses.filter((e) => e.id !== id) });
+    },
+
+    toggleBookingTask(id) {
+      const doc = get().doc;
+      const done = doc.bookingDone.includes(id)
+        ? doc.bookingDone.filter((x) => x !== id)
+        : [...doc.bookingDone, id];
+      commit({ ...doc, bookingDone: done });
+    },
+
+    addBookingTask(text, daysBefore) {
+      const clean = text.trim();
+      if (!clean) return;
+      const days = Number.isFinite(daysBefore) ? Math.max(0, Math.round(daysBefore)) : 0;
+      const doc = get().doc;
+      commit({
+        ...doc,
+        bookingCustom: [...doc.bookingCustom, { id: uid(), text: clean, daysBefore: days, custom: true }],
+      });
+    },
+
+    removeBookingTask(id) {
+      const doc = get().doc;
+      commit({
+        ...doc,
+        bookingCustom: doc.bookingCustom.filter((t) => t.id !== id),
+        bookingDone: doc.bookingDone.filter((x) => x !== id),
+      });
+    },
+
+    setOrganizerNotes(notes) {
+      const doc = get().doc;
+      commit({ ...doc, organizerNotes: notes });
     },
 
     async refreshLive() {
