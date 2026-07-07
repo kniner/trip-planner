@@ -1,11 +1,21 @@
-export type ParkId = 'mk' | 'epcot' | 'legoland' | 'resort';
+export type ParkId =
+  | 'mk'
+  | 'epcot'
+  | 'dhs'
+  | 'dak'
+  | 'typhoon'
+  | 'blizzard'
+  | 'legoland'
+  | 'resort';
 
 /**
  * The kind of "day" being planned. Regular park days show standard attractions;
  * event days additionally surface event-exclusive experiences (and hide nothing
- * — you can still ride normal rides during a party or festival).
+ * — you can still ride normal rides during a party or festival). Which events
+ * are offered for a given day is gated by that day's calendar date — see
+ * `data/events.ts` (a party/festival only appears when the date falls in it).
  */
-export type EventType = 'regular' | 'mnsshp' | 'food-and-wine';
+export type EventType = 'regular' | 'mnsshp' | 'food-and-wine' | 'mvmcp' | 'holidays';
 
 export type AttractionKind =
   | 'ride'

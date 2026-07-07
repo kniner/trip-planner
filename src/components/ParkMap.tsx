@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ITEMS_BY_ID, itemsForDay } from '../data';
+import { ITEMS_BY_ID, itemsForDay, PARKS } from '../data';
 import { amenitiesForPark, type AmenityType } from '../data/amenities';
 import { PARK_PATHS } from '../data/mapPaths';
 import { TOT_PATH, TOT_STATIONS } from '../data/trickOrTreat';
@@ -80,7 +80,26 @@ const ZONES: Record<ParkId, { label: string; color: string; match: (land: string
     { label: 'World Nature', color: '#bbf7d0', match: (l) => l === 'World Nature' },
     { label: 'World Showcase', color: '#fbcfe8', match: (l) => l.startsWith('World Showcase') },
   ],
-  // No schematic map for the LEGOLAND water park or resort dining.
+  dhs: [
+    { label: 'Hollywood Blvd', color: '#fde68a', match: (l) => l === 'Hollywood Boulevard' },
+    { label: 'Sunset Blvd', color: '#fecaca', match: (l) => l === 'Sunset Boulevard' },
+    { label: 'Echo Lake', color: '#bae6fd', match: (l) => l === 'Echo Lake' },
+    { label: 'Grand Avenue', color: '#e2e8f0', match: (l) => l === 'Grand Avenue' },
+    { label: "Galaxy's Edge", color: '#c7d2fe', match: (l) => l === "Star Wars: Galaxy's Edge" },
+    { label: 'Toy Story Land', color: '#fbcfe8', match: (l) => l === 'Toy Story Land' },
+    { label: 'Animation Courtyard', color: '#bbf7d0', match: (l) => l === 'Animation Courtyard' },
+  ],
+  dak: [
+    { label: 'Discovery Island', color: '#fde68a', match: (l) => l === 'Discovery Island' },
+    { label: 'Pandora', color: '#c7d2fe', match: (l) => l === 'Pandora – The World of Avatar' },
+    { label: 'Africa', color: '#fed7aa', match: (l) => l === 'Africa' },
+    { label: "Rafiki's Planet Watch", color: '#bbf7d0', match: (l) => l === "Rafiki's Planet Watch" },
+    { label: 'Asia', color: '#bae6fd', match: (l) => l === 'Asia' },
+    { label: 'DinoLand U.S.A.', color: '#fbcfe8', match: (l) => l === 'DinoLand U.S.A.' },
+  ],
+  // No schematic maps for the water parks, LEGOLAND, or resort dining.
+  typhoon: [],
+  blizzard: [],
   legoland: [],
   resort: [],
 };
@@ -327,7 +346,7 @@ export function ParkMap() {
           className="h-auto w-full touch-none select-none rounded-md bg-slate-50"
           style={{ cursor: drag.current ? 'grabbing' : 'grab' }}
           role="img"
-          aria-label={`Map of ${day.park === 'mk' ? 'Magic Kingdom' : 'EPCOT'}`}
+          aria-label={`Map of ${PARKS[day.park].name}`}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}

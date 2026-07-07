@@ -1,4 +1,5 @@
 import { EVENT_LABELS, PARKS } from '../data';
+import { PARK_PATHS } from '../data/mapPaths';
 import { useActiveDay } from '../store/useStore';
 import { DayTabs } from './DayTabs';
 import { ParkMap } from './ParkMap';
@@ -7,8 +8,9 @@ import { ParkMap } from './ParkMap';
 export function MapView() {
   const day = useActiveDay();
   const isOther = day.kind === 'other';
-  // Only MK/EPCOT have schematic map data.
-  const hasMap = !isOther && (day.park === 'mk' || day.park === 'epcot');
+  // The theme parks (MK, EPCOT, Hollywood Studios, Animal Kingdom) ship a
+  // schematic walkway layout; water parks and resort dining don't.
+  const hasMap = !isOther && (PARK_PATHS[day.park]?.length ?? 0) > 0;
 
   return (
     <div className="space-y-4">

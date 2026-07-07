@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { ITEMS_BY_ID, PARKS } from '../data';
+import { eventAvailableOn } from '../data/events';
 import {
   SUGGESTED_GROCERY_EXTRAS,
   SUGGESTED_GROUP,
@@ -97,9 +98,13 @@ function uid(): string {
 
 function defaultDayName(park: ParkId, event: EventType): string {
   if (event === 'mnsshp') return 'MNSSHP Night';
+  if (event === 'mvmcp') return 'Very Merry Night';
   if (event === 'food-and-wine') return 'EPCOT — Food & Wine';
+  if (event === 'holidays') return 'EPCOT — Holidays';
   return `${PARKS[park].shortName} Day`;
 }
+
+const EVENT_TYPES: EventType[] = ['mnsshp', 'food-and-wine', 'mvmcp', 'holidays'];
 
 function newDay(park: ParkId, event: EventType, name?: string, date?: string): Day {
   return {
@@ -176,7 +181,7 @@ function normalizeDay(d: Partial<Day> | undefined): Day {
   const raw = (d ?? {}) as Partial<Day>;
   const park: ParkId = raw.park && PARKS[raw.park] ? raw.park : 'mk';
   const event: EventType =
-    raw.event === 'mnsshp' || raw.event === 'food-and-wine' ? raw.event : 'regular';
+    raw.event && EVENT_TYPES.includes(raw.event) ? raw.event : 'regular';
   const s = (raw.settings ?? {}) as Partial<Day['settings']>;
   const kind: Day['kind'] = raw.kind === 'other' ? 'other' : 'park';
   return {
@@ -620,7 +625,16 @@ export const useStore = create<StoreState>((set, get) => {
     setDayDate(dayId, date) {
       const valid = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined;
       const doc = get().doc;
-      const days = sortDays(doc.days.map((d) => (d.id === dayId ? { ...d, date: valid } : d)));
+      const days = sortDays(
+        doc.days.map((d) => {
+          if (d.id !== dayId) return d;
+          // If the day carried a special-event type that no longer falls on the
+          // new date (party moved off a party night, festival out of window),
+          // drop it back to a regular day so stale event content can't linger.
+          const event = eventAvailableOn(d.event, valid) ? d.event : 'regular';
+          return { ...d, date: valid, event };
+        }),
+      );
       commit({ ...doc, days });
     },
 

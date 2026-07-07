@@ -1,9 +1,13 @@
 import type { Attraction, EventType, ParkId } from '../lib/types';
+import { ANIMAL_KINGDOM } from './animalKingdom';
+import { BLIZZARD_BEACH } from './blizzardBeach';
 import { CHARACTER_DINING } from './characterDining';
 import { DESCRIPTIONS } from './descriptions';
 import { EPCOT } from './epcot';
+import { HOLLYWOOD_STUDIOS } from './hollywoodStudios';
 import { LEGOLAND_WATER_PARK } from './legolandWaterPark';
 import { MAGIC_KINGDOM } from './magicKingdom';
+import { TYPHOON_LAGOON } from './typhoonLagoon';
 
 export interface ParkMeta {
   id: ParkId;
@@ -51,6 +55,49 @@ export const PARKS: Record<ParkId, ParkMeta> = {
       'Food & Wine Marketplaces',
     ],
   },
+  dhs: {
+    id: 'dhs',
+    name: "Disney's Hollywood Studios",
+    shortName: 'Hollywood Studios',
+    queueTimesId: 7,
+    lands: [
+      'Hollywood Boulevard',
+      'Sunset Boulevard',
+      'Echo Lake',
+      'Grand Avenue',
+      "Star Wars: Galaxy's Edge",
+      'Toy Story Land',
+      'Animation Courtyard',
+    ],
+  },
+  dak: {
+    id: 'dak',
+    name: "Disney's Animal Kingdom",
+    shortName: 'Animal Kingdom',
+    queueTimesId: 8,
+    lands: [
+      'Discovery Island',
+      'Pandora – The World of Avatar',
+      'Africa',
+      "Rafiki's Planet Watch",
+      'Asia',
+      'DinoLand U.S.A.',
+    ],
+  },
+  typhoon: {
+    id: 'typhoon',
+    name: "Disney's Typhoon Lagoon",
+    shortName: 'Typhoon Lagoon',
+    queueTimesId: 0, // no live wait feed for the water parks; see waitTimes.ts
+    lands: ['Pools & Rivers', 'Thrill Slides', 'Family Rafts', 'Kids'],
+  },
+  blizzard: {
+    id: 'blizzard',
+    name: "Disney's Blizzard Beach",
+    shortName: 'Blizzard Beach',
+    queueTimesId: 0, // no live wait feed for the water parks; see waitTimes.ts
+    lands: ['Pools & Rivers', 'Thrill Slides', 'Family Rafts', 'Kids'],
+  },
   legoland: {
     id: 'legoland',
     name: 'LEGOLAND Water Park (Florida)',
@@ -83,15 +130,34 @@ export const PARKS: Record<ParkId, ParkMeta> = {
 };
 
 /** Parks you can schedule a day at (excludes resort dining). */
-export const PARK_IDS: ParkId[] = ['mk', 'epcot', 'legoland'];
+export const PARK_IDS: ParkId[] = [
+  'mk',
+  'epcot',
+  'dhs',
+  'dak',
+  'typhoon',
+  'blizzard',
+  'legoland',
+];
 
 /** Parks shown in the wishlist picker (adds resort character meals). */
-export const WISHLIST_PARK_IDS: ParkId[] = ['mk', 'epcot', 'resort', 'legoland'];
+export const WISHLIST_PARK_IDS: ParkId[] = [
+  'mk',
+  'epcot',
+  'dhs',
+  'dak',
+  'resort',
+  'typhoon',
+  'blizzard',
+  'legoland',
+];
 
 export const EVENT_LABELS: Record<EventType, string> = {
   regular: 'Regular day',
   mnsshp: "Mickey's Not-So-Scary Halloween Party",
   'food-and-wine': 'Food & Wine Festival',
+  mvmcp: "Mickey's Very Merry Christmas Party",
+  holidays: 'Festival of the Holidays',
 };
 
 /** Short label used on day tabs/badges. */
@@ -99,11 +165,17 @@ export const EVENT_SHORT: Record<EventType, string> = {
   regular: 'Regular',
   mnsshp: 'MNSSHP',
   'food-and-wine': 'Food & Wine',
+  mvmcp: 'Very Merry',
+  holidays: 'Holidays',
 };
 
 export const ITEMS: Attraction[] = [
   ...MAGIC_KINGDOM,
   ...EPCOT,
+  ...HOLLYWOOD_STUDIOS,
+  ...ANIMAL_KINGDOM,
+  ...TYPHOON_LAGOON,
+  ...BLIZZARD_BEACH,
   ...LEGOLAND_WATER_PARK,
   ...CHARACTER_DINING,
 ].map((a) => (DESCRIPTIONS[a.id] ? { ...a, description: DESCRIPTIONS[a.id] } : a));

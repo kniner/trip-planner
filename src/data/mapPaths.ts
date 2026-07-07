@@ -79,6 +79,74 @@ export const PARK_PATHS: Record<ParkId, { x: number; y: number }[][]> = {
       { x: 300, y: 340 },
     ],
   ],
+  dhs: [
+    // Hollywood Boulevard: entrance → Chinese Theater hub
+    [
+      { x: 300, y: 560 },
+      { x: 300, y: 400 },
+    ],
+    // Hub → Sunset Boulevard (Tower of Terror / Rock 'n' Roller / Fantasmic)
+    [
+      { x: 300, y: 430 },
+      { x: 380, y: 500 },
+      { x: 440, y: 540 },
+      { x: 490, y: 585 },
+    ],
+    // Hub → Echo Lake → Grand Avenue (west)
+    [
+      { x: 300, y: 400 },
+      { x: 205, y: 430 },
+      { x: 160, y: 410 },
+      { x: 130, y: 380 },
+    ],
+    // Echo Lake → Toy Story Land → Star Wars: Galaxy's Edge (northwest)
+    [
+      { x: 205, y: 430 },
+      { x: 205, y: 320 },
+      { x: 145, y: 285 },
+      { x: 95, y: 250 },
+    ],
+    // Hub → Animation Courtyard
+    [
+      { x: 300, y: 400 },
+      { x: 320, y: 300 },
+    ],
+  ],
+  dak: [
+    // Oasis: entrance → Discovery Island / Tree of Life
+    [
+      { x: 300, y: 560 },
+      { x: 300, y: 320 },
+    ],
+    // Discovery Island → Pandora (northwest)
+    [
+      { x: 300, y: 320 },
+      { x: 200, y: 240 },
+      { x: 130, y: 160 },
+    ],
+    // Discovery Island → Africa → Rafiki's Planet Watch (north)
+    [
+      { x: 300, y: 320 },
+      { x: 200, y: 275 },
+      { x: 150, y: 280 },
+      { x: 200, y: 120 },
+    ],
+    // Discovery Island → Asia (east)
+    [
+      { x: 300, y: 320 },
+      { x: 430, y: 290 },
+      { x: 470, y: 240 },
+    ],
+    // Discovery Island → DinoLand U.S.A. (southeast)
+    [
+      { x: 300, y: 340 },
+      { x: 400, y: 430 },
+      { x: 430, y: 470 },
+    ],
+  ],
+  // No schematic maps for the water parks.
+  typhoon: [],
+  blizzard: [],
   // No schematic map for the LEGOLAND water park.
   legoland: [],
   resort: [],

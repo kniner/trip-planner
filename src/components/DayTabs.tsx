@@ -1,26 +1,32 @@
 import { useState } from 'react';
-import { EVENT_SHORT, PARK_IDS, PARKS } from '../data';
+import { EVENT_LABELS, EVENT_SHORT, PARK_IDS, PARKS } from '../data';
+import { eventsForParkOn, TRIP_EVENTS } from '../data/events';
 import { formatShortDate } from '../lib/dates';
 import type { EventType, ParkId } from '../lib/types';
 import { useStore } from '../store/useStore';
 
-const EVENTS: { value: EventType; label: string }[] = [
-  { value: 'regular', label: 'Regular day' },
-  { value: 'mnsshp', label: "Mickey's Not-So-Scary Halloween Party" },
-  { value: 'food-and-wine', label: 'Food & Wine Festival' },
-];
+/**
+ * Event day-types offered for a park on a given date. Party/festival options
+ * only appear when the date falls during that event — with no date set, only
+ * "Regular day" is available. See data/events.ts for the gating.
+ */
+function eventOptions(park: ParkId, date: string): { value: EventType; label: string }[] {
+  return eventsForParkOn(park, date || undefined).map((v) => ({ value: v, label: EVENT_LABELS[v] }));
+}
 
-/** Which events make sense for which park. */
-function eventsForPark(park: ParkId): { value: EventType; label: string }[] {
-  if (park === 'mk') return EVENTS.filter((e) => e.value !== 'food-and-wine');
-  if (park === 'epcot') return EVENTS.filter((e) => e.value !== 'mnsshp');
-  return EVENTS.filter((e) => e.value === 'regular'); // legoland & others: regular only
+/** True when this park hosts any special event at all (used for a hint). */
+function parkHasEvents(park: ParkId): boolean {
+  return TRIP_EVENTS.some((e) => e.park === park);
 }
 
 /** Short badge label per park. */
 const PARK_BADGE: Record<ParkId, string> = {
   mk: 'MK',
   epcot: 'EPCOT',
+  dhs: 'DHS',
+  dak: 'AK',
+  typhoon: 'Typhoon',
+  blizzard: 'Blizzard',
   legoland: 'LEGOLAND',
   resort: 'Resort',
 };
@@ -29,6 +35,8 @@ const EVENT_BADGE: Record<EventType, string> = {
   regular: 'bg-slate-100 text-slate-500',
   mnsshp: 'bg-purple-100 text-purple-700',
   'food-and-wine': 'bg-amber-100 text-amber-700',
+  mvmcp: 'bg-rose-100 text-rose-700',
+  holidays: 'bg-emerald-100 text-emerald-700',
 };
 
 export function DayTabs() {
@@ -47,10 +55,14 @@ export function DayTabs() {
   const [date, setDate] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const validEvents = eventsForPark(park);
+  // Event options depend on the chosen date: a party/festival only appears when
+  // the date falls during it (data/events.ts). Recomputes as the date changes.
+  const validEvents = eventOptions(park, date);
   const effectiveEvent = validEvents.some((e) => e.value === event)
     ? event
     : validEvents[0].value;
+  // Hint the organizer when a park has events but none are offered for the date.
+  const showEventHint = parkHasEvents(park) && validEvents.length === 1;
 
   // Show days in calendar order: dated days ascending, undated days kept last
   // in their original order (sort is stable). ISO dates compare chronologically.
@@ -194,6 +206,13 @@ export function DayTabs() {
                     </option>
                   ))}
                 </select>
+                {showEventHint && (
+                  <span className="mt-0.5 block max-w-[13rem] text-[10px] leading-tight text-slate-400">
+                    {date
+                      ? 'No party or festival on this date.'
+                      : 'Set a date to unlock party & festival day-types.'}
+                  </span>
+                )}
               </label>
             </>
           ) : (
