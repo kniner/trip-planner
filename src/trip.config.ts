@@ -39,10 +39,10 @@ export interface TripConfig {
 }
 
 export const TRIP_CONFIG: TripConfig = {
-  name: 'Walt Disney World Planner',
-  shortName: 'WDW Planner',
-  tagline: 'Tag what you want to do, then schedule it across your days — together.',
-  logo: '✨',
+  name: 'Our Trip',
+  shortName: 'Our Trip',
+  tagline: 'Everything for our trip in one place.',
+  logo: '📍',
   ownerName: 'Kate',
   features: {
     waitTimes: true,

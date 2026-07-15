@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../store/useStore';
+import { TRIP_CONFIG } from '../trip.config';
 
 /**
  * Blocking entry screen: until you enter a name and join, the rest of the app
@@ -17,7 +18,7 @@ export function JoinGate() {
       <div className="w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 shadow-lg ring-1 ring-slate-100">
         <div className="text-center">
           <h1 className="text-2xl font-extrabold tracking-tight">
-            ✨ Walt Disney World Planner
+            {TRIP_CONFIG.logo} {TRIP_CONFIG.name}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             Enter your name to start. Everything you tag is shared with the group
