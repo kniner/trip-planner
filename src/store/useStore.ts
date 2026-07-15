@@ -148,7 +148,10 @@ function emptyMealPlan(): PlanDoc['meals'] {
 }
 
 function emptyDoc(): PlanDoc {
-  const day = newDay('mk', 'regular', 'Magic Kingdom — Day 1');
+  // Seed a neutral placeholder so the schedule isn't empty — but don't presume a
+  // park. It's a light off-park "Day 1"; the organizer adds real park days and
+  // can delete this once they have one.
+  const day = newOtherDay('Day 1');
   return {
     collaborators: [],
     tags: [],
@@ -247,12 +250,35 @@ function migrate(raw: unknown): PlanDoc {
   };
   let days = Array.isArray(doc.days) ? doc.days : undefined;
   if (!days || days.length === 0) {
-    const legacy = newDay('mk', 'regular', 'Magic Kingdom — Day 1');
-    if (doc.stops) legacy.stops = doc.stops;
-    if (doc.settings) legacy.settings = doc.settings;
-    days = [legacy];
+    if (doc.stops || doc.settings) {
+      // Legacy single-day plan (app was Magic Kingdom-only then): preserve its
+      // existing route on a Magic Kingdom park day.
+      const legacy = newDay('mk', 'regular', 'Day 1');
+      if (doc.stops) legacy.stops = doc.stops;
+      if (doc.settings) legacy.settings = doc.settings;
+      days = [legacy];
+    } else {
+      // Fresh/empty plan: a neutral placeholder that presumes no park.
+      days = [newOtherDay('Day 1')];
+    }
   }
   days = sortDays(days.map(normalizeDay));
+  // One-time cleanup: retire the old pristine "Magic Kingdom — Day 1" default
+  // seed (from when new plans presumed a park) in favor of a neutral placeholder.
+  // Strictly scoped to the untouched seed as the sole day — a renamed/dated day,
+  // one with a route, or any plan with more days is left exactly as-is.
+  if (
+    days.length === 1 &&
+    days[0].kind === 'park' &&
+    days[0].park === 'mk' &&
+    days[0].event === 'regular' &&
+    days[0].name === 'Magic Kingdom — Day 1' &&
+    days[0].stops.length === 0 &&
+    !days[0].date &&
+    !days[0].hours
+  ) {
+    days = [newOtherDay('Day 1')];
+  }
   const activeDayId = days.some((d) => d.id === doc.activeDayId)
     ? doc.activeDayId!
     : days[0].id;
